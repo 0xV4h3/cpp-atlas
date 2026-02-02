@@ -1,0 +1,135 @@
+# This file is used to ignore files which are generated
+# ----------------------------------------------------------------------------
+
+*~
+*.autosave
+*.a
+*.core
+*.moc
+*.o
+*.obj
+*.orig
+*.rej
+*.so
+*.so.*
+*_pch.h.cpp
+*_resource.rc
+*.qm
+.#*
+*.*#
+core
+!core/
+tags
+.DS_Store
+.directory
+*.debug
+Makefile*
+*.prl
+*.app
+moc_*.cpp
+ui_*.h
+qrc_*.cpp
+Thumbs.db
+*.res
+*.rc
+/.qmake.cache
+/.qmake.stash
+
+# qtcreator generated files
+*.pro.user*
+*.qbs.user*
+CMakeLists.txt.user*
+
+# xemacs temporary files
+*.flc
+
+# Vim temporary files
+.*.swp
+
+# Visual Studio generated files
+*.ib_pdb_index
+*.idb
+*.ilk
+*.pdb
+*.sln
+*.suo
+*.vcproj
+*vcproj.*.*.user
+*.ncb
+*.sdf
+*.opensdf
+*.vcxproj
+*vcxproj.*
+
+# MinGW generated files
+*.Debug
+*.Release
+
+# Python byte code
+*.pyc
+
+# Binaries
+# --------
+*.dll
+*.exe
+
+# Directories with generated files
+.moc/
+.obj/
+.pch/
+.rcc/
+.uic/
+/build*/
+
+# ----------------------------------------------------------------------------
+# Additional exclusions for CppAtlas structure
+# ----------------------------------------------------------------------------
+
+# IDE config/utility folders
+.idea/
+.vscode/
+cmake-build-*/
+
+# Qt, build-system, and platform-specific
+/tests/bin/
+/tools/bin/
+out/
+dist/
+bin/
+lib/
+_debug/
+_release/
+
+# C++ code analysis, coverage, test, dev artifacts
+*.log
+*.bak
+*.tmp
+*.swo
+*.gcda
+*.gcno
+*.gcov
+*.profraw
+*.profdata
+*.coverage
+*.lcov
+*.xml
+*.json
+
+# CMake user/session files
+CMakeSettings.json
+
+# Ignore compiled resource/translation files, but keep source localization (.ts) if under version control
+*.qm
+
+# Ignore generated UI headers in src/include
+ui_*.h
+moc_*.cpp
+qrc_*.cpp
+
+# macOS
+*.DS_Store
+
+# Windows
+Thumbs.db
+
+# End of .gitignore
