@@ -1,0 +1,20 @@
+{
+  "compilers": [
+    {
+      "id": "gcc-system",
+      "type": "gcc",
+      "name": "System GCC",
+      "path": "g++",
+      "autoDetected": true
+    },
+    {
+      "id": "clang-system",
+      "type": "clang",
+      "name": "System Clang",
+      "path": "clang++",
+      "autoDetected": true
+    }
+  ],
+  "defaultCompiler": "gcc-system",
+  "defaultStandard": "c++17"
+}
