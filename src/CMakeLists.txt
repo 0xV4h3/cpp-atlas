@@ -1,11 +1,51 @@
 # Translation files
 set(TS_FILES ${CMAKE_SOURCE_DIR}/resources/cpp-atlas_hy_AM.ts)
 
-# Collect sources, headers, UI, resources (except main.cpp)
-file(GLOB APP_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/*.cpp")
-list(REMOVE_ITEM APP_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/main.cpp")
-file(GLOB APP_HEADERS "${CMAKE_SOURCE_DIR}/include/*.h")
+# Collect source files by module
+set(CORE_SOURCES
+    ${CMAKE_CURRENT_SOURCE_DIR}/core/Project.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/core/FileManager.cpp
+)
+
+set(EDITOR_SOURCES
+    ${CMAKE_CURRENT_SOURCE_DIR}/editor/CodeEditor.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/editor/EditorTabWidget.cpp
+)
+
+set(COMPILER_SOURCES
+    ${CMAKE_CURRENT_SOURCE_DIR}/compiler/GccCompiler.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/compiler/ClangCompiler.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/compiler/CompilerRegistry.cpp
+)
+
+set(OUTPUT_SOURCES
+    ${CMAKE_CURRENT_SOURCE_DIR}/output/OutputPanel.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/output/BuildOutputWidget.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/output/RunOutputWidget.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/output/ProblemsWidget.cpp
+)
+
+set(UI_SOURCES
+    ${CMAKE_CURRENT_SOURCE_DIR}/mainwindow.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/ui/FileTreeWidget.cpp
+)
+
+# Collect all sources
+set(APP_SOURCES
+    ${CORE_SOURCES}
+    ${EDITOR_SOURCES}
+    ${COMPILER_SOURCES}
+    ${OUTPUT_SOURCES}
+    ${UI_SOURCES}
+)
+
+# Collect headers
+file(GLOB_RECURSE APP_HEADERS "${CMAKE_SOURCE_DIR}/include/*.h")
+
+# UI files
 file(GLOB UI_FILES "${CMAKE_SOURCE_DIR}/ui/*.ui")
+
+# Resource files
 file(GLOB QRC_FILES "${CMAKE_SOURCE_DIR}/resources/*.qrc")
 
 set(CMAKE_AUTOUIC_SEARCH_PATHS
@@ -33,10 +73,6 @@ target_link_libraries(CppAtlasLib PUBLIC Qt${QT_VERSION_MAJOR}::Widgets)
 add_executable(CppAtlas main.cpp)
 
 target_link_libraries(CppAtlas PRIVATE CppAtlasLib Qt${QT_VERSION_MAJOR}::Widgets)
-
-if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)
-    qt_create_translation(QM_FILES ${CMAKE_SOURCE_DIR} ${TS_FILES})
-endif()
 
 set_target_properties(CppAtlas PROPERTIES
     WIN32_EXECUTABLE TRUE

@@ -217,10 +217,10 @@ bool CompilerRegistry::saveConfiguration(const QString& filePath) {
         obj["path"] = compiler->executablePath();
         obj["autoDetected"] = true;
         
-        // Determine type
-        if (qobject_cast<GccCompiler*>(compiler.data())) {
+        // Determine type - use id prefix as a simple way to determine type
+        if (compiler->id().startsWith("gcc")) {
             obj["type"] = "gcc";
-        } else if (qobject_cast<ClangCompiler*>(compiler.data())) {
+        } else if (compiler->id().startsWith("clang")) {
             obj["type"] = "clang";
         }
         

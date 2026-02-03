@@ -1,5 +1,6 @@
 #include "ui/FileTreeWidget.h"
 #include <QContextMenuEvent>
+#include <QHeaderView>
 #include <QFileInfo>
 #include <QDir>
 #include <QDesktopServices>
