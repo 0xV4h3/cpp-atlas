@@ -37,3 +37,62 @@ MIT License (see LICENSE file for details)
 - [C++ Insights](https://github.com/andreasfertig/cppinsights)
 - [Compiler Explorer](https://github.com/compiler-explorer/compiler-explorer)
 - [Google Benchmark](https://github.com/google/benchmark)
+
+## Phase 1: IDE Core - Build & Run
+
+### Prerequisites
+
+- Qt 6.4+ (Qt5 also supported)
+- CMake 3.16+
+- C++17 compatible compiler (GCC 13+ or Clang 17+)
+
+### Ubuntu/Debian Installation
+
+```bash
+sudo apt-get install qt6-base-dev qt6-base-dev-tools cmake g++
+```
+
+### Building
+
+```bash
+git clone https://github.com/0xV4h3/cpp-atlas.git
+cd cpp-atlas
+mkdir build && cd build
+cmake ..
+make -j$(nproc)
+```
+
+### Running
+
+```bash
+./src/CppAtlas
+```
+
+### Testing
+
+```bash
+cd build
+./tests/CppAtlasTests
+# Or with offscreen platform:
+QT_QPA_PLATFORM=offscreen ./tests/CppAtlasTests
+```
+
+### Features Implemented (Phase 1)
+
+- ✅ Multi-file code editor with C++ syntax highlighting
+- ✅ Compiler abstraction (GCC & Clang support)
+- ✅ Build & Run integration
+- ✅ Problems panel with diagnostic parsing
+- ✅ File tree navigation
+- ✅ Output panels (Build, Run, Problems)
+- ✅ Auto-detection of system compilers
+- ✅ Configurable C++ standards (C++11 through C++23)
+
+### Usage
+
+1. **Create/Open Files**: Use File → New or File → Open
+2. **Select Compiler**: Choose from toolbar dropdown
+3. **Build**: Press F7 or Build → Build
+4. **Run**: Press F5 or Build → Run
+5. **View Errors**: Check Problems tab for compiler diagnostics
+
