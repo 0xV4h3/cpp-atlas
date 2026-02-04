@@ -24,6 +24,7 @@ struct Theme {
     QColor syntaxPreprocessor;
     QColor syntaxNumber;
     QColor syntaxFunction;
+    QColor cursorColor;
     
     // UI colors
     QColor windowBackground;

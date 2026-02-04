@@ -6,6 +6,8 @@
 #include <QComboBox>
 #include <QLabel>
 #include <QProcess>
+#include <QPushButton>
+#include <QPoint>
 
 QT_BEGIN_NAMESPACE
 namespace Ui {
@@ -30,6 +32,11 @@ public:
 
 protected:
     void closeEvent(QCloseEvent *event) override;
+    void mousePressEvent(QMouseEvent* event) override;
+    void mouseMoveEvent(QMouseEvent* event) override;
+    void mouseReleaseEvent(QMouseEvent* event) override;
+    void mouseDoubleClickEvent(QMouseEvent* event) override;
+    bool nativeEvent(const QByteArray &eventType, void *message, qintptr *result) override;
 
 private slots:
     // File menu
@@ -80,6 +87,18 @@ private slots:
 private:
     Ui::MainWindow *ui;
     
+    // Custom title bar widgets
+    QWidget* m_titleBar = nullptr;
+    QLabel* m_titleLabel = nullptr;
+    QLabel* m_iconLabel = nullptr;
+    QPushButton* m_minimizeBtn = nullptr;
+    QPushButton* m_maximizeBtn = nullptr;
+    QPushButton* m_closeBtn = nullptr;
+    
+    // Drag handling
+    QPoint m_dragPosition;
+    bool m_dragging = false;
+    
     // Main widgets
     EditorTabWidget* m_editorTabs;
     OutputPanel* m_outputPanel;
@@ -105,6 +124,7 @@ private:
     QString m_currentExecutable;
     
     void setupUi();
+    void setupCustomTitleBar();
     void setupMenus();
     void setupToolbar();
     void setupDockWidgets();
@@ -113,6 +133,7 @@ private:
     void loadCompilers();
     void updateStatusBar();
     void updateWindowTitle();
+    void updateCustomTitleLabel(const QString& title);
     
     QString getCurrentSourceFile();
     QString getExecutablePath(const QString& sourceFile);

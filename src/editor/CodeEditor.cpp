@@ -39,6 +39,10 @@ void CodeEditor::setupEditor() {
     setCaretLineVisible(true);
     setCaretLineBackgroundColor(QColor("#2A2A2A"));
     
+    // Cursor settings
+    setCaretWidth(2);
+    setCaretForegroundColor(QColor("#AEAFAD"));
+    
     // Selection colors
     setSelectionBackgroundColor(QColor("#264F78"));
     
@@ -255,6 +259,8 @@ void CodeEditor::applyTheme(const QString& themeName) {
     setPaper(theme.editorBackground);
     setColor(theme.editorForeground);
     setCaretLineBackgroundColor(theme.editorCurrentLine);
+    setCaretWidth(2);
+    setCaretForegroundColor(theme.cursorColor);
     setSelectionBackgroundColor(theme.accent);
     setMarginsBackgroundColor(theme.sidebarBackground);
     setMarginsForegroundColor(theme.textSecondary);
