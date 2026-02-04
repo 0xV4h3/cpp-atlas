@@ -320,6 +320,11 @@ src/CMakeFiles/CppAtlasLib.dir/mainwindow.cpp.o: \
  /usr/include/x86_64-linux-gnu/qt5/QtWidgets/qlabel.h \
  /usr/include/x86_64-linux-gnu/qt5/QtCore/QProcess \
  /usr/include/x86_64-linux-gnu/qt5/QtCore/qprocess.h \
+ /usr/include/x86_64-linux-gnu/qt5/QtWidgets/QPushButton \
+ /usr/include/x86_64-linux-gnu/qt5/QtWidgets/qpushbutton.h \
+ /usr/include/x86_64-linux-gnu/qt5/QtWidgets/qabstractbutton.h \
+ /usr/include/x86_64-linux-gnu/qt5/QtCore/QPoint \
+ /usr/include/x86_64-linux-gnu/qt5/QtCore/qpoint.h \
  /home/runner/work/cpp-atlas/cpp-atlas/_codeql_build_dir/src/CppAtlasLib_autogen/include/./ui_mainwindow.h \
  /usr/include/x86_64-linux-gnu/qt5/QtCore/QVariant \
  /usr/include/x86_64-linux-gnu/qt5/QtCore/qvariant.h \
@@ -366,8 +371,6 @@ src/CMakeFiles/CppAtlasLib.dir/mainwindow.cpp.o: \
  /usr/include/x86_64-linux-gnu/qt5/Qsci/qsciscintillabase.h \
  /usr/include/x86_64-linux-gnu/qt5/QtWidgets/QAbstractScrollArea \
  /usr/include/x86_64-linux-gnu/qt5/QtWidgets/qabstractscrollarea.h \
- /usr/include/x86_64-linux-gnu/qt5/QtCore/QPoint \
- /usr/include/x86_64-linux-gnu/qt5/QtCore/qpoint.h \
  /usr/include/x86_64-linux-gnu/qt5/QtCore/QTimer \
  /usr/include/x86_64-linux-gnu/qt5/QtCore/qtimer.h \
  /usr/include/x86_64-linux-gnu/qt5/QtCore/qbasictimer.h \
@@ -407,9 +410,6 @@ src/CMakeFiles/CppAtlasLib.dir/mainwindow.cpp.o: \
  /usr/include/x86_64-linux-gnu/qt5/QtGui/qglyphrun.h \
  /usr/include/x86_64-linux-gnu/qt5/QtGui/qrawfont.h \
  /usr/include/x86_64-linux-gnu/qt5/QtGui/qfontdatabase.h \
- /usr/include/x86_64-linux-gnu/qt5/QtWidgets/QPushButton \
- /usr/include/x86_64-linux-gnu/qt5/QtWidgets/qpushbutton.h \
- /usr/include/x86_64-linux-gnu/qt5/QtWidgets/qabstractbutton.h \
  /usr/include/x86_64-linux-gnu/qt5/QtWidgets/QVBoxLayout \
  /usr/include/x86_64-linux-gnu/qt5/QtWidgets/qboxlayout.h \
  /usr/include/x86_64-linux-gnu/qt5/QtWidgets/qlayout.h \
@@ -482,4 +482,6 @@ src/CMakeFiles/CppAtlasLib.dir/mainwindow.cpp.o: \
  /usr/include/x86_64-linux-gnu/qt5/QtCore/QStandardPaths \
  /usr/include/x86_64-linux-gnu/qt5/QtCore/qstandardpaths.h \
  /usr/include/x86_64-linux-gnu/qt5/QtCore/QTemporaryDir \
- /usr/include/x86_64-linux-gnu/qt5/QtCore/qtemporarydir.h
+ /usr/include/x86_64-linux-gnu/qt5/QtCore/qtemporarydir.h \
+ /usr/include/x86_64-linux-gnu/qt5/QtGui/QMouseEvent \
+ /usr/include/x86_64-linux-gnu/qt5/QtWidgets/QHBoxLayout

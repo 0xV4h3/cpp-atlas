@@ -83,6 +83,8 @@ src/CppAtlasLib_autogen/7BV4YJK25R/qrc_resources.cpp: /home/runner/work/cpp-atla
 src/CppAtlasLib_autogen/7BV4YJK25R/qrc_resources.cpp: src/CMakeFiles/CppAtlasLib_autogen.dir/AutoRcc_resources_7BV4YJK25R_Info.json
 src/CppAtlasLib_autogen/7BV4YJK25R/qrc_resources.cpp: /home/runner/work/cpp-atlas/cpp-atlas/resources/config/compilers.json
 src/CppAtlasLib_autogen/7BV4YJK25R/qrc_resources.cpp: /home/runner/work/cpp-atlas/cpp-atlas/resources/templates/main.cpp
+src/CppAtlasLib_autogen/7BV4YJK25R/qrc_resources.cpp: /home/runner/work/cpp-atlas/cpp-atlas/resources/icons/app-icon.png
+src/CppAtlasLib_autogen/7BV4YJK25R/qrc_resources.cpp: /home/runner/work/cpp-atlas/cpp-atlas/resources/icons/app-icon.svg
 src/CppAtlasLib_autogen/7BV4YJK25R/qrc_resources.cpp: /usr/lib/qt5/bin/rcc
 src/CppAtlasLib_autogen/7BV4YJK25R/qrc_resources.cpp: /usr/lib/qt5/bin/rcc
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --blue --bold --progress-dir=/home/runner/work/cpp-atlas/cpp-atlas/_codeql_build_dir/CMakeFiles --progress-num=$(CMAKE_PROGRESS_2) "Automatic RCC for ../resources/resources.qrc"

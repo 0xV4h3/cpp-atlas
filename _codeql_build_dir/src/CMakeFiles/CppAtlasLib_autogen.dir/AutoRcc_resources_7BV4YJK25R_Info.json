@@ -10,7 +10,9 @@
 	"INPUTS" : 
 	[
 		"/home/runner/work/cpp-atlas/cpp-atlas/resources/config/compilers.json",
-		"/home/runner/work/cpp-atlas/cpp-atlas/resources/templates/main.cpp"
+		"/home/runner/work/cpp-atlas/cpp-atlas/resources/templates/main.cpp",
+		"/home/runner/work/cpp-atlas/cpp-atlas/resources/icons/app-icon.png",
+		"/home/runner/work/cpp-atlas/cpp-atlas/resources/icons/app-icon.svg"
 	],
 	"LOCK_FILE" : "/home/runner/work/cpp-atlas/cpp-atlas/_codeql_build_dir/src/CMakeFiles/CppAtlasLib_autogen.dir/AutoRcc_resources_7BV4YJK25R_Lock.lock",
 	"MULTI_CONFIG" : false,

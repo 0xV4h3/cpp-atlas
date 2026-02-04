@@ -384,6 +384,9 @@ src/CMakeFiles/CppAtlasLib.dir/CppAtlasLib_autogen/mocs_compilation.cpp.o: \
  /usr/include/x86_64-linux-gnu/qt5/QtCore/qabstractitemmodel.h \
  /usr/include/x86_64-linux-gnu/qt5/QtWidgets/QLabel \
  /usr/include/x86_64-linux-gnu/qt5/QtWidgets/qlabel.h \
+ /usr/include/x86_64-linux-gnu/qt5/QtWidgets/QPushButton \
+ /usr/include/x86_64-linux-gnu/qt5/QtWidgets/qpushbutton.h \
+ /usr/include/x86_64-linux-gnu/qt5/QtWidgets/qabstractbutton.h \
  /home/runner/work/cpp-atlas/cpp-atlas/_codeql_build_dir/src/CppAtlasLib_autogen/G5WWGH5X6V/moc_BuildOutputWidget.cpp \
  /home/runner/work/cpp-atlas/cpp-atlas/_codeql_build_dir/src/CppAtlasLib_autogen/G5WWGH5X6V/../../../../include/output/BuildOutputWidget.h \
  /usr/include/x86_64-linux-gnu/qt5/QtWidgets/QPlainTextEdit \
@@ -408,9 +411,6 @@ src/CMakeFiles/CppAtlasLib.dir/CppAtlasLib_autogen/mocs_compilation.cpp.o: \
  /usr/include/x86_64-linux-gnu/qt5/QtGui/qglyphrun.h \
  /usr/include/x86_64-linux-gnu/qt5/QtGui/qrawfont.h \
  /usr/include/x86_64-linux-gnu/qt5/QtGui/qfontdatabase.h \
- /usr/include/x86_64-linux-gnu/qt5/QtWidgets/QPushButton \
- /usr/include/x86_64-linux-gnu/qt5/QtWidgets/qpushbutton.h \
- /usr/include/x86_64-linux-gnu/qt5/QtWidgets/qabstractbutton.h \
  /usr/include/x86_64-linux-gnu/qt5/QtWidgets/QVBoxLayout \
  /usr/include/x86_64-linux-gnu/qt5/QtWidgets/qboxlayout.h \
  /usr/include/x86_64-linux-gnu/qt5/QtWidgets/qlayout.h \
