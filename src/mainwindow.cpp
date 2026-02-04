@@ -110,7 +110,7 @@ void MainWindow::setupUi() {
 void MainWindow::setupCustomTitleBar() {
     m_titleBar = new QWidget(this);
     m_titleBar->setObjectName("customTitleBar");
-    m_titleBar->setFixedHeight(32);
+    m_titleBar->setFixedHeight(TITLE_BAR_HEIGHT);
     m_titleBar->setMouseTracking(true);
     
     QHBoxLayout* layout = new QHBoxLayout(m_titleBar);
@@ -127,7 +127,7 @@ void MainWindow::setupCustomTitleBar() {
         m_iconLabel->setText("C++");
         m_iconLabel->setStyleSheet("font-weight: bold; font-size: 10px;");
     }
-    m_iconLabel->setFixedSize(20, 32);
+    m_iconLabel->setFixedSize(20, TITLE_BAR_HEIGHT);
     layout->addWidget(m_iconLabel);
     
     layout->addSpacing(8);
@@ -158,7 +158,7 @@ void MainWindow::setupCustomTitleBar() {
     m_minimizeBtn = new QPushButton(this);
     m_minimizeBtn->setObjectName("minimizeButton");
     m_minimizeBtn->setText("─");  // Minimize symbol
-    m_minimizeBtn->setFixedSize(46, 32);
+    m_minimizeBtn->setFixedSize(WINDOW_BUTTON_WIDTH, TITLE_BAR_HEIGHT);
     m_minimizeBtn->setFlat(true);
     connect(m_minimizeBtn, &QPushButton::clicked, this, &QMainWindow::showMinimized);
     btnLayout->addWidget(m_minimizeBtn);
@@ -167,7 +167,7 @@ void MainWindow::setupCustomTitleBar() {
     m_maximizeBtn = new QPushButton(this);
     m_maximizeBtn->setObjectName("maximizeButton");
     m_maximizeBtn->setText("□");  // Maximize symbol
-    m_maximizeBtn->setFixedSize(46, 32);
+    m_maximizeBtn->setFixedSize(WINDOW_BUTTON_WIDTH, TITLE_BAR_HEIGHT);
     m_maximizeBtn->setFlat(true);
     connect(m_maximizeBtn, &QPushButton::clicked, this, [this]() {
         if (isMaximized()) {
@@ -184,7 +184,7 @@ void MainWindow::setupCustomTitleBar() {
     m_closeBtn = new QPushButton(this);
     m_closeBtn->setObjectName("closeButton");
     m_closeBtn->setText("✕");
-    m_closeBtn->setFixedSize(46, 32);
+    m_closeBtn->setFixedSize(WINDOW_BUTTON_WIDTH, TITLE_BAR_HEIGHT);
     m_closeBtn->setFlat(true);
     connect(m_closeBtn, &QPushButton::clicked, this, &QMainWindow::close);
     btnLayout->addWidget(m_closeBtn);
@@ -986,8 +986,9 @@ void MainWindow::onDiagnosticClicked(const QString& file, int line, int column) 
 void MainWindow::mousePressEvent(QMouseEvent* event) {
     if (event->button() == Qt::LeftButton) {
         QPoint pos = event->pos();
-        // Only drag from title bar area (top 32 pixels, excluding buttons)
-        if (pos.y() < 32 && pos.x() < width() - 138) {  // 138 = 3 buttons * 46px
+        // Only drag from title bar area, excluding buttons
+        const int buttonContainerWidth = WINDOW_BUTTON_WIDTH * WINDOW_BUTTON_COUNT;
+        if (pos.y() < TITLE_BAR_HEIGHT && pos.x() < width() - buttonContainerWidth) {
             m_dragging = true;
 #if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
             m_dragPosition = event->globalPosition().toPoint() - frameGeometry().topLeft();
@@ -1021,7 +1022,8 @@ void MainWindow::mouseReleaseEvent(QMouseEvent* event) {
 
 // Double-click title bar to maximize/restore
 void MainWindow::mouseDoubleClickEvent(QMouseEvent* event) {
-    if (event->pos().y() < 32 && event->pos().x() < width() - 138) {
+    const int buttonContainerWidth = WINDOW_BUTTON_WIDTH * WINDOW_BUTTON_COUNT;
+    if (event->pos().y() < TITLE_BAR_HEIGHT && event->pos().x() < width() - buttonContainerWidth) {
         if (isMaximized()) {
             showNormal();
             m_maximizeBtn->setText("□");
@@ -1046,7 +1048,6 @@ bool MainWindow::nativeEvent(const QByteArray &eventType, void *message, long *r
         MSG* msg = static_cast<MSG*>(message);
         if (msg->message == WM_NCHITTEST) {
             // Enable resize from window edges
-            const int borderWidth = 8;
             RECT winrect;
             GetWindowRect(reinterpret_cast<HWND>(winId()), &winrect);
             
@@ -1054,36 +1055,36 @@ bool MainWindow::nativeEvent(const QByteArray &eventType, void *message, long *r
             int y = GET_Y_LPARAM(msg->lParam);
             
             // Check corners first
-            if (x < winrect.left + borderWidth && y < winrect.top + borderWidth) {
+            if (x < winrect.left + RESIZE_BORDER_WIDTH && y < winrect.top + RESIZE_BORDER_WIDTH) {
                 *result = HTTOPLEFT;
                 return true;
             }
-            if (x > winrect.right - borderWidth && y < winrect.top + borderWidth) {
+            if (x > winrect.right - RESIZE_BORDER_WIDTH && y < winrect.top + RESIZE_BORDER_WIDTH) {
                 *result = HTTOPRIGHT;
                 return true;
             }
-            if (x < winrect.left + borderWidth && y > winrect.bottom - borderWidth) {
+            if (x < winrect.left + RESIZE_BORDER_WIDTH && y > winrect.bottom - RESIZE_BORDER_WIDTH) {
                 *result = HTBOTTOMLEFT;
                 return true;
             }
-            if (x > winrect.right - borderWidth && y > winrect.bottom - borderWidth) {
+            if (x > winrect.right - RESIZE_BORDER_WIDTH && y > winrect.bottom - RESIZE_BORDER_WIDTH) {
                 *result = HTBOTTOMRIGHT;
                 return true;
             }
             // Check edges
-            if (x < winrect.left + borderWidth) {
+            if (x < winrect.left + RESIZE_BORDER_WIDTH) {
                 *result = HTLEFT;
                 return true;
             }
-            if (x > winrect.right - borderWidth) {
+            if (x > winrect.right - RESIZE_BORDER_WIDTH) {
                 *result = HTRIGHT;
                 return true;
             }
-            if (y < winrect.top + borderWidth) {
+            if (y < winrect.top + RESIZE_BORDER_WIDTH) {
                 *result = HTTOP;
                 return true;
             }
-            if (y > winrect.bottom - borderWidth) {
+            if (y > winrect.bottom - RESIZE_BORDER_WIDTH) {
                 *result = HTBOTTOM;
                 return true;
             }

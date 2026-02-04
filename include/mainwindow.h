@@ -91,6 +91,12 @@ private slots:
 private:
     Ui::MainWindow *ui;
     
+    // Title bar constants
+    static constexpr int TITLE_BAR_HEIGHT = 32;
+    static constexpr int WINDOW_BUTTON_WIDTH = 46;
+    static constexpr int WINDOW_BUTTON_COUNT = 3;
+    static constexpr int RESIZE_BORDER_WIDTH = 8;
+    
     // Custom title bar widgets
     QWidget* m_titleBar = nullptr;
     QLabel* m_titleLabel = nullptr;

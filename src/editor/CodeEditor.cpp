@@ -39,9 +39,8 @@ void CodeEditor::setupEditor() {
     setCaretLineVisible(true);
     setCaretLineBackgroundColor(QColor("#2A2A2A"));
     
-    // Cursor settings
+    // Cursor settings (will be updated by theme)
     setCaretWidth(2);
-    setCaretForegroundColor(QColor("#AEAFAD"));
     
     // Selection colors
     setSelectionBackgroundColor(QColor("#264F78"));
