@@ -98,15 +98,53 @@ QString ThemeManager::generateStylesheet() const {
     qss += QString("QTabBar::tab:hover:!selected { background-color: %1; }\n")
         .arg(theme.tabInactive.lighter(110).name());
     
-    // QTabBar close button
-    qss += QString("QTabBar::close-button { subcontrol-position: right; }\n");
-    qss += QString("QTabBar::close-button:hover { background-color: %1; }\n")
-        .arg(theme.error.name());
+    // QTabBar close button - MAKE IT VISIBLE AND CLICKABLE
+    qss += QString(R"(
+QTabBar::close-button {
+    subcontrol-position: right;
+    width: 16px;
+    height: 16px;
+    margin: 2px;
+    border-radius: 3px;
+    background-color: transparent;
+}
+QTabBar::close-button:hover {
+    background-color: rgba(255, 0, 0, 0.3);
+}
+QTabBar::close-button:pressed {
+    background-color: %1;
+}
+)").arg(theme.error.name());
     
     // QDockWidget
-    qss += QString("QDockWidget::title { background-color: %1; color: %2; padding: 5px; }\n")
-        .arg(theme.sidebarBackground.name())
-        .arg(theme.textPrimary.name());
+    qss += QString(R"(
+QDockWidget {
+    color: %1;
+}
+QDockWidget::title {
+    background-color: %2;
+    color: %1;
+    padding: 6px;
+    font-weight: bold;
+}
+QDockWidget::close-button, QDockWidget::float-button {
+    border: none;
+    background: transparent;
+    padding: 4px;
+    min-width: 20px;
+    min-height: 20px;
+}
+QDockWidget::close-button:hover, QDockWidget::float-button:hover {
+    background-color: %3;
+    border-radius: 3px;
+}
+QDockWidget::close-button:pressed, QDockWidget::float-button:pressed {
+    background-color: %4;
+}
+)").arg(theme.textPrimary.name())
+   .arg(theme.sidebarBackground.name())
+   .arg(theme.accent.lighter(150).name())
+   .arg(theme.accent.name());
     
     // QTreeView (FileTree)
     qss += QString("QTreeView { background-color: %1; color: %2; border: none; }\n")
@@ -178,9 +216,18 @@ QString ThemeManager::generateStylesheet() const {
         .arg(theme.accent.name());
     
     // QPlainTextEdit (output panels)
-    qss += QString("QPlainTextEdit { background-color: %1; color: %2; border: none; font-family: monospace; }\n")
-        .arg(theme.editorBackground.name())
-        .arg(theme.editorForeground.name());
+    qss += QString(R"(
+QPlainTextEdit {
+    background-color: %1;
+    color: %2;
+    border: none;
+    font-family: 'JetBrains Mono', 'Consolas', 'Monaco', monospace;
+    font-size: 10pt;
+    selection-background-color: %3;
+}
+)").arg(theme.editorBackground.name())
+   .arg(theme.editorForeground.name())
+   .arg(theme.accent.name());
     
     // QTableView (problems)
     qss += QString("QTableView { background-color: %1; color: %2; border: none; gridline-color: %3; }\n")
@@ -192,6 +239,9 @@ QString ThemeManager::generateStylesheet() const {
     qss += QString("QHeaderView::section { background-color: %1; color: %2; border: none; padding: 4px; }\n")
         .arg(theme.sidebarBackground.name())
         .arg(theme.textPrimary.name());
+    
+    // QLabel in panels
+    qss += QString("QLabel { color: %1; }\n").arg(theme.textPrimary.name());
     
     // QStatusBar
     qss += QString("QStatusBar { background-color: %1; color: %2; border-top: 1px solid %3; }\n")
@@ -235,6 +285,9 @@ Theme ThemeManager::darkTheme() {
     theme.warning = QColor("#CCA700");
     theme.success = QColor("#89D185");
     
+    // Cursor
+    theme.cursorColor = QColor("#FFFFFF");
+    
     // Fonts
     theme.editorFontFamily = "Monospace";
     theme.editorFontSize = 10;
@@ -274,6 +327,9 @@ Theme ThemeManager::lightTheme() {
     theme.error = QColor("#E51400");
     theme.warning = QColor("#BF8803");
     theme.success = QColor("#388A34");
+    
+    // Cursor
+    theme.cursorColor = QColor("#000000");
     
     // Fonts
     theme.editorFontFamily = "Monospace";
@@ -315,6 +371,9 @@ Theme ThemeManager::draculaTheme() {
     theme.warning = QColor("#FFB86C");
     theme.success = QColor("#50FA7B");
     
+    // Cursor
+    theme.cursorColor = QColor("#F8F8F2");
+    
     // Fonts
     theme.editorFontFamily = "Monospace";
     theme.editorFontSize = 10;
@@ -354,6 +413,9 @@ Theme ThemeManager::monokaiTheme() {
     theme.error = QColor("#F92672");
     theme.warning = QColor("#FD971F");
     theme.success = QColor("#A6E22E");
+    
+    // Cursor
+    theme.cursorColor = QColor("#F8F8F0");
     
     // Fonts
     theme.editorFontFamily = "Monospace";

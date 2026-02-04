@@ -41,6 +41,9 @@ struct Theme {
     QColor warning;
     QColor success;
     
+    // Cursor
+    QColor cursorColor;
+    
     // Fonts
     QString editorFontFamily;
     int editorFontSize;

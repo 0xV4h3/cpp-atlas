@@ -48,6 +48,17 @@ void CodeEditor::setupEditor() {
     // EOL mode
     setEolMode(QsciScintilla::EolUnix);
     setEolVisibility(false);
+    
+    // Remove any shadow/extra padding
+    setFrameShape(QFrame::NoFrame);
+    setFrameShadow(QFrame::Plain);
+    
+    // Disable edge line if enabled
+    setEdgeMode(QsciScintilla::EdgeNone);
+    
+    // Cursor - Make it thick and visible
+    setCaretWidth(2);  // 2 pixels wide
+    setCaretForegroundColor(QColor("#FFFFFF"));  // White cursor for dark theme
 }
 
 void CodeEditor::setupLexer() {
@@ -259,6 +270,12 @@ void CodeEditor::applyTheme(const QString& themeName) {
     setMarginsBackgroundColor(theme.sidebarBackground);
     setMarginsForegroundColor(theme.textSecondary);
     setFoldMarginColors(theme.sidebarBackground, theme.sidebarBackground);
+    
+    // CURSOR - Make it thick and visible
+    setCaretWidth(2);  // 2 pixels wide
+    setCaretForegroundColor(theme.cursorColor);
+    setCaretLineVisible(true);
+    setCaretLineBackgroundColor(theme.editorCurrentLine);
     
     // Apply lexer colors
     if (m_lexer) {

@@ -72,14 +72,14 @@ target_include_directories(CppAtlasLib PUBLIC
 )
 
 target_link_libraries(CppAtlasLib PUBLIC 
-    Qt${QT_VERSION_MAJOR}::Widgets
+    Qt6::Widgets 
     ${QSCINTILLA_LIBRARY}
 )
 
 # Main executable
 add_executable(CppAtlas main.cpp)
 
-target_link_libraries(CppAtlas PRIVATE CppAtlasLib Qt${QT_VERSION_MAJOR}::Widgets)
+target_link_libraries(CppAtlas PRIVATE CppAtlasLib Qt6::Widgets)
 
 set_target_properties(CppAtlas PROPERTIES
     WIN32_EXECUTABLE TRUE
@@ -96,6 +96,4 @@ install(TARGETS CppAtlas
     RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
 )
 
-if(QT_VERSION_MAJOR EQUAL 6)
-    qt_finalize_executable(CppAtlas)
-endif()
+qt_finalize_executable(CppAtlas)
