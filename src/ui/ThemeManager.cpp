@@ -99,12 +99,11 @@ QString ThemeManager::generateStylesheet() const {
         .arg(theme.tabInactive.lighter(110).name());
     
     // QTabBar close button
-    qss += QString("QTabBar::close-button { image: url(:/icons/close.svg); subcontrol-position: right; }\n");
+    qss += QString("QTabBar::close-button { subcontrol-position: right; }\n");
     qss += QString("QTabBar::close-button:hover { background-color: %1; }\n")
         .arg(theme.error.name());
     
     // QDockWidget
-    qss += QString("QDockWidget { titlebar-close-icon: url(:/icons/close.svg); titlebar-normal-icon: url(:/icons/maximize.svg); }\n");
     qss += QString("QDockWidget::title { background-color: %1; color: %2; padding: 5px; }\n")
         .arg(theme.sidebarBackground.name())
         .arg(theme.textPrimary.name());

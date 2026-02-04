@@ -511,7 +511,7 @@ void MainWindow::onEditFind() {
         
         bool found = editor->findFirst(
             text,
-            false,  // regex
+            dialog->useRegex(),  // use regex option
             dialog->caseSensitive(),
             dialog->wholeWord(),
             false,  // wrap
@@ -529,7 +529,7 @@ void MainWindow::onEditFind() {
         
         bool found = editor->findFirst(
             text,
-            false,  // regex
+            dialog->useRegex(),  // use regex option
             dialog->caseSensitive(),
             dialog->wholeWord(),
             false,  // wrap
@@ -558,7 +558,7 @@ void MainWindow::onEditReplace() {
         
         bool found = editor->findFirst(
             text,
-            false,
+            dialog->useRegex(),  // use regex option
             dialog->caseSensitive(),
             dialog->wholeWord(),
             false,
@@ -575,15 +575,22 @@ void MainWindow::onEditReplace() {
         QString replaceText = dialog->replaceText();
         if (findText.isEmpty()) return;
         
-        // Replace current selection if it matches
-        if (editor->hasSelectedText() && editor->selectedText() == findText) {
-            editor->replaceSelectedText(replaceText);
+        // Replace current selection if it matches (considering case sensitivity)
+        if (editor->hasSelectedText()) {
+            QString selectedText = editor->selectedText();
+            bool matches = dialog->caseSensitive() ? 
+                (selectedText == findText) : 
+                (selectedText.toLower() == findText.toLower());
+                
+            if (matches) {
+                editor->replaceSelectedText(replaceText);
+            }
         }
         
         // Find next
         editor->findFirst(
             findText,
-            false,
+            dialog->useRegex(),  // use regex option
             dialog->caseSensitive(),
             dialog->wholeWord(),
             false,
@@ -596,21 +603,49 @@ void MainWindow::onEditReplace() {
         QString replaceText = dialog->replaceText();
         if (findText.isEmpty()) return;
         
+        // Prevent infinite loop if replacement contains search text
+        if (!dialog->useRegex() && replaceText.contains(findText, 
+            dialog->caseSensitive() ? Qt::CaseSensitive : Qt::CaseInsensitive)) {
+            QMessageBox::warning(this, "Replace All", 
+                "Replacement text contains search text. This would cause an infinite loop.");
+            return;
+        }
+        
         int count = 0;
         
         // Go to beginning
         editor->setCursorPosition(0, 0);
         
+        // Use a position-based approach to avoid infinite loops
+        int lastLine = -1, lastCol = -1;
         while (editor->findFirst(
             findText,
-            false,
+            dialog->useRegex(),  // use regex option
             dialog->caseSensitive(),
             dialog->wholeWord(),
             false,
             true
         )) {
+            int line, col;
+            editor->getCursorPosition(&line, &col);
+            
+            // Break if we're at the same position (shouldn't happen but safety check)
+            if (line == lastLine && col == lastCol) {
+                break;
+            }
+            
+            lastLine = line;
+            lastCol = col;
+            
             editor->replaceSelectedText(replaceText);
             count++;
+            
+            // Safety limit
+            if (count > 10000) {
+                QMessageBox::warning(this, "Replace All", 
+                    QString("Stopped after %1 replacements (safety limit).").arg(count));
+                return;
+            }
         }
         
         QMessageBox::information(this, "Replace All", 
