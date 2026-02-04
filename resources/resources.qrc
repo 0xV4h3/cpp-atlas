@@ -1,0 +1,6 @@
+<RCC>
+    <qresource prefix="/">
+        <file>config/compilers.json</file>
+        <file>templates/main.cpp</file>
+    </qresource>
+</RCC>
