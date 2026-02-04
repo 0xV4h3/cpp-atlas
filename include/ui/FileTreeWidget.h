@@ -27,11 +27,24 @@ public:
      */
     QString rootPath() const;
     
+    /**
+     * @brief Open folder and show file tree
+     * @param path Directory path
+     */
+    void openFolder(const QString& path);
+    
+    /**
+     * @brief Close folder and hide file tree
+     */
+    void closeFolder();
+    
 signals:
     void fileDoubleClicked(const QString& filePath);
     void newFileRequested(const QString& directory);
     void deleteFileRequested(const QString& filePath);
     void renameFileRequested(const QString& filePath);
+    void folderOpened(const QString& path);
+    void folderClosed();
     
 protected:
     void contextMenuEvent(QContextMenuEvent *event) override;

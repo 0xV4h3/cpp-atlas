@@ -37,6 +37,7 @@ private slots:
     void onFileOpen();
     void onFileSave();
     void onFileSaveAs();
+    void onFileOpenFolder();
     void onFileOpenProject();
     void onFileExit();
     
@@ -48,6 +49,7 @@ private slots:
     void onEditPaste();
     void onEditFind();
     void onEditReplace();
+    void onEditGotoLine();
     
     // Build menu
     void onBuildCompile();

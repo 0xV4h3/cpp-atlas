@@ -131,3 +131,6 @@ qrc_*.cpp
 Thumbs.db
 
 # End of .gitignore
+
+# External dependencies (using system packages)
+external/

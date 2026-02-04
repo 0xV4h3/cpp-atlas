@@ -1,0 +1,26 @@
+{
+	"BUILD_DIR" : "/home/runner/work/cpp-atlas/cpp-atlas/_codeql_build_dir/src/CppAtlasLib_autogen",
+	"CMAKE_BINARY_DIR" : "/home/runner/work/cpp-atlas/cpp-atlas/_codeql_build_dir",
+	"CMAKE_CURRENT_BINARY_DIR" : "/home/runner/work/cpp-atlas/cpp-atlas/_codeql_build_dir/src",
+	"CMAKE_CURRENT_SOURCE_DIR" : "/home/runner/work/cpp-atlas/cpp-atlas/src",
+	"CMAKE_SOURCE_DIR" : "/home/runner/work/cpp-atlas/cpp-atlas",
+	"CROSS_CONFIG" : false,
+	"GENERATOR" : "Unix Makefiles",
+	"INCLUDE_DIR" : "/home/runner/work/cpp-atlas/cpp-atlas/_codeql_build_dir/src/CppAtlasLib_autogen/include",
+	"INPUTS" : 
+	[
+		"/home/runner/work/cpp-atlas/cpp-atlas/resources/config/compilers.json",
+		"/home/runner/work/cpp-atlas/cpp-atlas/resources/templates/main.cpp"
+	],
+	"LOCK_FILE" : "/home/runner/work/cpp-atlas/cpp-atlas/_codeql_build_dir/src/CMakeFiles/CppAtlasLib_autogen.dir/AutoRcc_resources_7BV4YJK25R_Lock.lock",
+	"MULTI_CONFIG" : false,
+	"OPTIONS" : [ "-name", "resources" ],
+	"OUTPUT_CHECKSUM" : "7BV4YJK25R",
+	"OUTPUT_NAME" : "qrc_resources.cpp",
+	"RCC_EXECUTABLE" : "/usr/lib/qt5/bin/rcc",
+	"RCC_LIST_OPTIONS" : [ "--list" ],
+	"SETTINGS_FILE" : "/home/runner/work/cpp-atlas/cpp-atlas/_codeql_build_dir/src/CMakeFiles/CppAtlasLib_autogen.dir/AutoRcc_resources_7BV4YJK25R_Used.txt",
+	"SOURCE" : "/home/runner/work/cpp-atlas/cpp-atlas/resources/resources.qrc",
+	"USE_BETTER_GRAPH" : false,
+	"VERBOSITY" : 0
+}

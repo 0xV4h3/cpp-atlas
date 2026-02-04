@@ -1,0 +1,279 @@
+{
+	"BUILD_DIR" : "/home/runner/work/cpp-atlas/cpp-atlas/_codeql_build_dir/src/CppAtlasLib_autogen",
+	"CMAKE_BINARY_DIR" : "/home/runner/work/cpp-atlas/cpp-atlas/_codeql_build_dir",
+	"CMAKE_CURRENT_BINARY_DIR" : "/home/runner/work/cpp-atlas/cpp-atlas/_codeql_build_dir/src",
+	"CMAKE_CURRENT_SOURCE_DIR" : "/home/runner/work/cpp-atlas/cpp-atlas/src",
+	"CMAKE_EXECUTABLE" : "/usr/local/bin/cmake",
+	"CMAKE_LIST_FILES" : 
+	[
+		"/home/runner/work/cpp-atlas/cpp-atlas/src/CMakeLists.txt",
+		"/usr/local/share/cmake-3.31/Modules/GNUInstallDirs.cmake",
+		"/home/runner/work/cpp-atlas/cpp-atlas/resources/resources.qrc"
+	],
+	"CMAKE_SOURCE_DIR" : "/home/runner/work/cpp-atlas/cpp-atlas",
+	"CROSS_CONFIG" : false,
+	"DEP_FILE" : "/home/runner/work/cpp-atlas/cpp-atlas/_codeql_build_dir/src/CppAtlasLib_autogen/deps",
+	"DEP_FILE_RULE_NAME" : "CppAtlasLib_autogen/timestamp",
+	"HEADERS" : 
+	[
+		[
+			"/home/runner/work/cpp-atlas/cpp-atlas/include/compiler/ClangCompiler.h",
+			"MU",
+			"PSRDPUXT5M/moc_ClangCompiler.cpp",
+			null
+		],
+		[
+			"/home/runner/work/cpp-atlas/cpp-atlas/include/compiler/CompileRequest.h",
+			"MU",
+			"PSRDPUXT5M/moc_CompileRequest.cpp",
+			null
+		],
+		[
+			"/home/runner/work/cpp-atlas/cpp-atlas/include/compiler/CompileResult.h",
+			"MU",
+			"PSRDPUXT5M/moc_CompileResult.cpp",
+			null
+		],
+		[
+			"/home/runner/work/cpp-atlas/cpp-atlas/include/compiler/CompilerRegistry.h",
+			"MU",
+			"PSRDPUXT5M/moc_CompilerRegistry.cpp",
+			null
+		],
+		[
+			"/home/runner/work/cpp-atlas/cpp-atlas/include/compiler/GccCompiler.h",
+			"MU",
+			"PSRDPUXT5M/moc_GccCompiler.cpp",
+			null
+		],
+		[
+			"/home/runner/work/cpp-atlas/cpp-atlas/include/compiler/ICompiler.h",
+			"MU",
+			"PSRDPUXT5M/moc_ICompiler.cpp",
+			null
+		],
+		[
+			"/home/runner/work/cpp-atlas/cpp-atlas/include/core/FileManager.h",
+			"MU",
+			"EZC5ESNXS2/moc_FileManager.cpp",
+			null
+		],
+		[
+			"/home/runner/work/cpp-atlas/cpp-atlas/include/core/Project.h",
+			"MU",
+			"EZC5ESNXS2/moc_Project.cpp",
+			null
+		],
+		[
+			"/home/runner/work/cpp-atlas/cpp-atlas/include/editor/CodeEditor.h",
+			"MU",
+			"FN73PALC2B/moc_CodeEditor.cpp",
+			null
+		],
+		[
+			"/home/runner/work/cpp-atlas/cpp-atlas/include/editor/EditorTabWidget.h",
+			"MU",
+			"FN73PALC2B/moc_EditorTabWidget.cpp",
+			null
+		],
+		[
+			"/home/runner/work/cpp-atlas/cpp-atlas/include/mainwindow.h",
+			"MU",
+			"DGKZTCOIDE/moc_mainwindow.cpp",
+			null
+		],
+		[
+			"/home/runner/work/cpp-atlas/cpp-atlas/include/output/BuildOutputWidget.h",
+			"MU",
+			"G5WWGH5X6V/moc_BuildOutputWidget.cpp",
+			null
+		],
+		[
+			"/home/runner/work/cpp-atlas/cpp-atlas/include/output/OutputPanel.h",
+			"MU",
+			"G5WWGH5X6V/moc_OutputPanel.cpp",
+			null
+		],
+		[
+			"/home/runner/work/cpp-atlas/cpp-atlas/include/output/ProblemsWidget.h",
+			"MU",
+			"G5WWGH5X6V/moc_ProblemsWidget.cpp",
+			null
+		],
+		[
+			"/home/runner/work/cpp-atlas/cpp-atlas/include/output/RunOutputWidget.h",
+			"MU",
+			"G5WWGH5X6V/moc_RunOutputWidget.cpp",
+			null
+		],
+		[
+			"/home/runner/work/cpp-atlas/cpp-atlas/include/ui/FileTreeWidget.h",
+			"MU",
+			"GAHUQPC7KX/moc_FileTreeWidget.cpp",
+			null
+		],
+		[
+			"/home/runner/work/cpp-atlas/cpp-atlas/include/ui/FindReplaceDialog.h",
+			"MU",
+			"GAHUQPC7KX/moc_FindReplaceDialog.cpp",
+			null
+		],
+		[
+			"/home/runner/work/cpp-atlas/cpp-atlas/include/ui/GotoLineDialog.h",
+			"MU",
+			"GAHUQPC7KX/moc_GotoLineDialog.cpp",
+			null
+		],
+		[
+			"/home/runner/work/cpp-atlas/cpp-atlas/include/ui/ThemeManager.h",
+			"MU",
+			"GAHUQPC7KX/moc_ThemeManager.cpp",
+			null
+		]
+	],
+	"HEADER_EXTENSIONS" : [ "h", "hh", "h++", "hm", "hpp", "hxx", "in", "txx" ],
+	"INCLUDE_DIR" : "/home/runner/work/cpp-atlas/cpp-atlas/_codeql_build_dir/src/CppAtlasLib_autogen/include",
+	"MOC_COMPILATION_FILE" : "/home/runner/work/cpp-atlas/cpp-atlas/_codeql_build_dir/src/CppAtlasLib_autogen/mocs_compilation.cpp",
+	"MOC_DEFINITIONS" : [ "QT_CORE_LIB", "QT_GUI_LIB", "QT_NO_DEBUG", "QT_WIDGETS_LIB" ],
+	"MOC_DEPEND_FILTERS" : 
+	[
+		[
+			"Q_PLUGIN_METADATA",
+			"[\n][ \t]*Q_PLUGIN_METADATA[ \t]*\\([^\\)]*FILE[ \t]*\"([^\"]+)\""
+		]
+	],
+	"MOC_INCLUDES" : 
+	[
+		"/home/runner/work/cpp-atlas/cpp-atlas/_codeql_build_dir",
+		"/home/runner/work/cpp-atlas/cpp-atlas/include",
+		"/home/runner/work/cpp-atlas/cpp-atlas/src",
+		"/usr/include/x86_64-linux-gnu/qt5",
+		"/usr/include/x86_64-linux-gnu/qt5/QtWidgets",
+		"/usr/include/x86_64-linux-gnu/qt5/QtGui",
+		"/usr/include/x86_64-linux-gnu/qt5/QtCore",
+		"/usr/lib/x86_64-linux-gnu/qt5/mkspecs/linux-g++",
+		"/usr/include/c++/13",
+		"/usr/include/x86_64-linux-gnu/c++/13",
+		"/usr/include/c++/13/backward",
+		"/usr/lib/gcc/x86_64-linux-gnu/13/include",
+		"/usr/local/include",
+		"/usr/include/x86_64-linux-gnu",
+		"/usr/include"
+	],
+	"MOC_MACRO_NAMES" : [ "Q_OBJECT", "Q_GADGET", "Q_NAMESPACE", "Q_NAMESPACE_EXPORT" ],
+	"MOC_OPTIONS" : [],
+	"MOC_PATH_PREFIX" : false,
+	"MOC_PREDEFS_CMD" : 
+	[
+		"/home/runner/work/cpp-atlas/.codeql-scratch/dbs/cpp/working/autobuild/bin/c++",
+		"-std=gnu++17",
+		"-dM",
+		"-E",
+		"-c",
+		"/usr/local/share/cmake-3.31/Modules/CMakeCXXCompilerABI.cpp"
+	],
+	"MOC_PREDEFS_FILE" : "/home/runner/work/cpp-atlas/cpp-atlas/_codeql_build_dir/src/CppAtlasLib_autogen/moc_predefs.h",
+	"MOC_RELAXED_MODE" : false,
+	"MOC_SKIP" : [],
+	"MULTI_CONFIG" : false,
+	"PARALLEL" : 2,
+	"PARSE_CACHE_FILE" : "/home/runner/work/cpp-atlas/cpp-atlas/_codeql_build_dir/src/CMakeFiles/CppAtlasLib_autogen.dir/ParseCache.txt",
+	"QT_MOC_EXECUTABLE" : "/usr/lib/qt5/bin/moc",
+	"QT_UIC_EXECUTABLE" : "/usr/lib/qt5/bin/uic",
+	"QT_VERSION_MAJOR" : 5,
+	"QT_VERSION_MINOR" : 15,
+	"SETTINGS_FILE" : "/home/runner/work/cpp-atlas/cpp-atlas/_codeql_build_dir/src/CMakeFiles/CppAtlasLib_autogen.dir/AutogenUsed.txt",
+	"SOURCES" : 
+	[
+		[
+			"/home/runner/work/cpp-atlas/cpp-atlas/src/compiler/ClangCompiler.cpp",
+			"MU",
+			null
+		],
+		[
+			"/home/runner/work/cpp-atlas/cpp-atlas/src/compiler/CompilerRegistry.cpp",
+			"MU",
+			null
+		],
+		[
+			"/home/runner/work/cpp-atlas/cpp-atlas/src/compiler/GccCompiler.cpp",
+			"MU",
+			null
+		],
+		[
+			"/home/runner/work/cpp-atlas/cpp-atlas/src/core/FileManager.cpp",
+			"MU",
+			null
+		],
+		[
+			"/home/runner/work/cpp-atlas/cpp-atlas/src/core/Project.cpp",
+			"MU",
+			null
+		],
+		[
+			"/home/runner/work/cpp-atlas/cpp-atlas/src/editor/CodeEditor.cpp",
+			"MU",
+			null
+		],
+		[
+			"/home/runner/work/cpp-atlas/cpp-atlas/src/editor/EditorTabWidget.cpp",
+			"MU",
+			null
+		],
+		[
+			"/home/runner/work/cpp-atlas/cpp-atlas/src/mainwindow.cpp",
+			"MU",
+			null
+		],
+		[
+			"/home/runner/work/cpp-atlas/cpp-atlas/src/output/BuildOutputWidget.cpp",
+			"MU",
+			null
+		],
+		[
+			"/home/runner/work/cpp-atlas/cpp-atlas/src/output/OutputPanel.cpp",
+			"MU",
+			null
+		],
+		[
+			"/home/runner/work/cpp-atlas/cpp-atlas/src/output/ProblemsWidget.cpp",
+			"MU",
+			null
+		],
+		[
+			"/home/runner/work/cpp-atlas/cpp-atlas/src/output/RunOutputWidget.cpp",
+			"MU",
+			null
+		],
+		[
+			"/home/runner/work/cpp-atlas/cpp-atlas/src/ui/FileTreeWidget.cpp",
+			"MU",
+			null
+		],
+		[
+			"/home/runner/work/cpp-atlas/cpp-atlas/src/ui/FindReplaceDialog.cpp",
+			"MU",
+			null
+		],
+		[
+			"/home/runner/work/cpp-atlas/cpp-atlas/src/ui/GotoLineDialog.cpp",
+			"MU",
+			null
+		],
+		[
+			"/home/runner/work/cpp-atlas/cpp-atlas/src/ui/ThemeManager.cpp",
+			"MU",
+			null
+		]
+	],
+	"UIC_OPTIONS" : [],
+	"UIC_SEARCH_PATHS" : 
+	[
+		"/home/runner/work/cpp-atlas/cpp-atlas/ui",
+		"/home/runner/work/cpp-atlas/cpp-atlas/src"
+	],
+	"UIC_SKIP" : [],
+	"UIC_UI_FILES" : [],
+	"USE_BETTER_GRAPH" : false,
+	"VERBOSITY" : 0
+}

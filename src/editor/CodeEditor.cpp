@@ -1,173 +1,21 @@
 #include "editor/CodeEditor.h"
-#include <QSyntaxHighlighter>
-#include <QTextCharFormat>
-#include <QRegularExpression>
-#include <QPainter>
-#include <QTextBlock>
+#include "ui/ThemeManager.h"
 #include <QFile>
 #include <QTextStream>
-#include <QKeyEvent>
-#include <QScrollBar>
-
-/**
- * @brief C++ syntax highlighter
- */
-class CppSyntaxHighlighter : public QSyntaxHighlighter {
-public:
-    CppSyntaxHighlighter(QTextDocument *parent = nullptr)
-        : QSyntaxHighlighter(parent)
-    {
-        // Keywords
-        QTextCharFormat keywordFormat;
-        keywordFormat.setForeground(QColor("#569CD6")); // Blue
-        keywordFormat.setFontWeight(QFont::Bold);
-        
-        QStringList keywordPatterns = {
-            "\\bclass\\b", "\\bstruct\\b", "\\benum\\b", "\\bunion\\b",
-            "\\bif\\b", "\\belse\\b", "\\bfor\\b", "\\bwhile\\b", "\\bdo\\b",
-            "\\bswitch\\b", "\\bcase\\b", "\\bdefault\\b", "\\bbreak\\b",
-            "\\bcontinue\\b", "\\breturn\\b", "\\bgoto\\b",
-            "\\btry\\b", "\\bcatch\\b", "\\bthrow\\b",
-            "\\bpublic\\b", "\\bprivate\\b", "\\bprotected\\b",
-            "\\bvirtual\\b", "\\boverride\\b", "\\bfinal\\b",
-            "\\bconst\\b", "\\bconstexpr\\b", "\\bstatic\\b",
-            "\\bextern\\b", "\\binline\\b", "\\bexplicit\\b",
-            "\\bnamespace\\b", "\\busing\\b", "\\btypedef\\b",
-            "\\btemplate\\b", "\\btypename\\b",
-            "\\bnew\\b", "\\bdelete\\b", "\\bsizeof\\b",
-            "\\bauto\\b", "\\bdecltype\\b", "\\bnullptr\\b",
-            "\\bvolatile\\b", "\\bmutable\\b", "\\boperator\\b"
-        };
-        
-        for (const QString &pattern : keywordPatterns) {
-            HighlightingRule rule;
-            rule.pattern = QRegularExpression(pattern);
-            rule.format = keywordFormat;
-            m_highlightingRules.append(rule);
-        }
-        
-        // Types
-        QTextCharFormat typeFormat;
-        typeFormat.setForeground(QColor("#4EC9B0")); // Cyan
-        
-        QStringList typePatterns = {
-            "\\bvoid\\b", "\\bbool\\b", "\\bchar\\b", "\\bint\\b",
-            "\\bshort\\b", "\\blong\\b", "\\bfloat\\b", "\\bdouble\\b",
-            "\\bunsigned\\b", "\\bsigned\\b",
-            "\\bint8_t\\b", "\\bint16_t\\b", "\\bint32_t\\b", "\\bint64_t\\b",
-            "\\buint8_t\\b", "\\buint16_t\\b", "\\buint32_t\\b", "\\buint64_t\\b",
-            "\\bsize_t\\b", "\\bptrdiff_t\\b", "\\bstring\\b"
-        };
-        
-        for (const QString &pattern : typePatterns) {
-            HighlightingRule rule;
-            rule.pattern = QRegularExpression(pattern);
-            rule.format = typeFormat;
-            m_highlightingRules.append(rule);
-        }
-        
-        // Preprocessor directives
-        QTextCharFormat preprocessorFormat;
-        preprocessorFormat.setForeground(QColor("#C586C0")); // Purple
-        
-        HighlightingRule preprocessorRule;
-        preprocessorRule.pattern = QRegularExpression("^\\s*#.*");
-        preprocessorRule.format = preprocessorFormat;
-        m_highlightingRules.append(preprocessorRule);
-        
-        // String literals
-        QTextCharFormat stringFormat;
-        stringFormat.setForeground(QColor("#CE9178")); // Orange
-        
-        HighlightingRule stringRule;
-        stringRule.pattern = QRegularExpression("\".*?\"");
-        stringRule.format = stringFormat;
-        m_highlightingRules.append(stringRule);
-        
-        // Character literals
-        stringRule.pattern = QRegularExpression("'.'");
-        m_highlightingRules.append(stringRule);
-        
-        // Single-line comments
-        QTextCharFormat commentFormat;
-        commentFormat.setForeground(QColor("#6A9955")); // Green
-        
-        HighlightingRule commentRule;
-        commentRule.pattern = QRegularExpression("//.*");
-        commentRule.format = commentFormat;
-        m_highlightingRules.append(commentRule);
-        
-        // Multi-line comments
-        m_commentStartExpression = QRegularExpression("/\\*");
-        m_commentEndExpression = QRegularExpression("\\*/");
-        m_multiLineCommentFormat = commentFormat;
-    }
-    
-protected:
-    void highlightBlock(const QString &text) override {
-        // Apply single-line rules
-        for (const HighlightingRule &rule : m_highlightingRules) {
-            QRegularExpressionMatchIterator matchIterator = rule.pattern.globalMatch(text);
-            while (matchIterator.hasNext()) {
-                QRegularExpressionMatch match = matchIterator.next();
-                setFormat(match.capturedStart(), match.capturedLength(), rule.format);
-            }
-        }
-        
-        // Handle multi-line comments
-        setCurrentBlockState(0);
-        
-        int startIndex = 0;
-        if (previousBlockState() != 1)
-            startIndex = text.indexOf(m_commentStartExpression);
-        
-        while (startIndex >= 0) {
-            QRegularExpressionMatch match = m_commentEndExpression.match(text, startIndex);
-            int endIndex = match.capturedStart();
-            int commentLength = 0;
-            if (endIndex == -1) {
-                setCurrentBlockState(1);
-                commentLength = text.length() - startIndex;
-            } else {
-                commentLength = endIndex - startIndex + match.capturedLength();
-            }
-            setFormat(startIndex, commentLength, m_multiLineCommentFormat);
-            startIndex = text.indexOf(m_commentStartExpression, startIndex + commentLength);
-        }
-    }
-    
-private:
-    struct HighlightingRule {
-        QRegularExpression pattern;
-        QTextCharFormat format;
-    };
-    
-    QVector<HighlightingRule> m_highlightingRules;
-    QRegularExpression m_commentStartExpression;
-    QRegularExpression m_commentEndExpression;
-    QTextCharFormat m_multiLineCommentFormat;
-};
+#include <QFont>
+#include <QFontDatabase>
 
 CodeEditor::CodeEditor(QWidget *parent)
-    : QPlainTextEdit(parent)
+    : QsciScintilla(parent)
 {
-    m_lineNumberArea = new LineNumberArea(this);
-    m_highlighter = new CppSyntaxHighlighter(document());
-    
     setupEditor();
+    setupLexer();
+    setupMargins();
+    setupFolding();
+    setupAutoCompletion();
+    setupBraceMatching();
     
-    connect(this, &CodeEditor::blockCountChanged, this, &CodeEditor::updateLineNumberAreaWidth);
-    connect(this, &CodeEditor::updateRequest, this, &CodeEditor::updateLineNumberArea);
-    connect(this, &CodeEditor::cursorPositionChanged, this, &CodeEditor::highlightCurrentLine);
-    connect(this, &CodeEditor::textChanged, this, [this]() {
-        if (!m_isModified) {
-            m_isModified = true;
-            emit modificationChanged(true);
-        }
-    });
-    
-    updateLineNumberAreaWidth(0);
-    highlightCurrentLine();
+    connect(this, &QsciScintilla::textChanged, this, &CodeEditor::onTextChanged);
 }
 
 void CodeEditor::setupEditor() {
@@ -177,18 +25,133 @@ void CodeEditor::setupEditor() {
     font.setPointSize(10);
     setFont(font);
     
-    // Set tab width to 4 spaces
-    QFontMetrics metrics(font);
-    setTabStopDistance(metrics.horizontalAdvance(' ') * 4);
+    // Tab settings
+    setTabWidth(4);
+    setIndentationsUseTabs(false);
+    setTabIndents(true);
+    setAutoIndent(true);
+    setBackspaceUnindents(true);
     
-    // Enable line wrap
-    setLineWrapMode(QPlainTextEdit::NoWrap);
+    // Line wrapping
+    setWrapMode(QsciScintilla::WrapNone);
     
-    // Set background color
-    QPalette p = palette();
-    p.setColor(QPalette::Base, QColor("#1E1E1E"));
-    p.setColor(QPalette::Text, QColor("#D4D4D4"));
-    setPalette(p);
+    // Current line highlighting
+    setCaretLineVisible(true);
+    setCaretLineBackgroundColor(QColor("#2A2A2A"));
+    
+    // Selection colors
+    setSelectionBackgroundColor(QColor("#264F78"));
+    
+    // Whitespace visibility
+    setWhitespaceVisibility(QsciScintilla::WsInvisible);
+    
+    // EOL mode
+    setEolMode(QsciScintilla::EolUnix);
+    setEolVisibility(false);
+}
+
+void CodeEditor::setupLexer() {
+    m_lexer = new QsciLexerCPP(this);
+    
+    // Set lexer font
+    QFont font("Monospace", 10);
+    m_lexer->setDefaultFont(font);
+    
+    // Apply dark theme colors to lexer
+    applyTheme("dark");
+    
+    setLexer(m_lexer);
+}
+
+void CodeEditor::setupMargins() {
+    // Line numbers margin
+    setMarginType(0, QsciScintilla::NumberMargin);
+    setMarginWidth(0, "00000");
+    setMarginsForegroundColor(QColor("#858585"));
+    setMarginsBackgroundColor(QColor("#252526"));
+    
+    // Symbol margin for markers (errors, warnings, breakpoints)
+    setMarginType(1, QsciScintilla::SymbolMargin);
+    setMarginWidth(1, 16);
+    setMarginSensitivity(1, true);
+    setMarginsBackgroundColor(QColor("#252526"));
+    
+    // Define marker symbols
+    m_errorMarkerHandle = markerDefine(QsciScintilla::Circle);
+    setMarkerBackgroundColor(QColor("#F14C4C"), m_errorMarkerHandle);
+    setMarkerForegroundColor(QColor("#FFFFFF"), m_errorMarkerHandle);
+    
+    m_warningMarkerHandle = markerDefine(QsciScintilla::Circle);
+    setMarkerBackgroundColor(QColor("#CCA700"), m_warningMarkerHandle);
+    setMarkerForegroundColor(QColor("#FFFFFF"), m_warningMarkerHandle);
+}
+
+void CodeEditor::setupFolding() {
+    // Enable code folding
+    setFolding(QsciScintilla::BoxedTreeFoldStyle);
+    setFoldMarginColors(QColor("#252526"), QColor("#252526"));
+}
+
+void CodeEditor::setupAutoCompletion() {
+    // Setup API for auto-completion
+    m_apis = new QsciAPIs(m_lexer);
+    
+    // C++ keywords
+    QStringList keywords = {
+        "class", "struct", "template", "namespace", "public", "private", 
+        "protected", "virtual", "override", "const", "constexpr", "static", 
+        "auto", "nullptr", "void", "bool", "char", "int", "float", "double",
+        "if", "else", "for", "while", "do", "switch", "case", "break", 
+        "continue", "return", "try", "catch", "throw", "new", "delete",
+        "enum", "union", "typedef", "using", "typename", "inline", "extern",
+        "explicit", "operator", "friend", "mutable", "volatile", "register",
+        "signed", "unsigned", "short", "long", "sizeof", "decltype", "final"
+    };
+    
+    // C++ types
+    QStringList types = {
+        "int8_t", "int16_t", "int32_t", "int64_t",
+        "uint8_t", "uint16_t", "uint32_t", "uint64_t",
+        "size_t", "ptrdiff_t", "string", "wstring"
+    };
+    
+    // STL containers and utilities
+    QStringList stl = {
+        "std::vector", "std::string", "std::map", "std::set", "std::list",
+        "std::unique_ptr", "std::shared_ptr", "std::weak_ptr", "std::make_unique",
+        "std::make_shared", "std::cout", "std::cin", "std::cerr", "std::endl",
+        "std::array", "std::deque", "std::queue", "std::stack", "std::unordered_map",
+        "std::unordered_set", "std::pair", "std::tuple", "std::optional",
+        "std::function", "std::move", "std::forward", "std::begin", "std::end"
+    };
+    
+    // Add all to API
+    for (const QString& keyword : keywords) {
+        m_apis->add(keyword);
+    }
+    for (const QString& type : types) {
+        m_apis->add(type);
+    }
+    for (const QString& item : stl) {
+        m_apis->add(item);
+    }
+    
+    m_apis->prepare();
+    
+    // Auto-completion settings
+    setAutoCompletionSource(QsciScintilla::AcsAll);
+    setAutoCompletionThreshold(2);
+    setAutoCompletionCaseSensitivity(true);
+    setAutoCompletionReplaceWord(false);
+}
+
+void CodeEditor::setupBraceMatching() {
+    // Enable strict brace matching
+    setBraceMatching(QsciScintilla::StrictBraceMatch);
+    setMatchedBraceBackgroundColor(QColor("#007ACC"));
+    setMatchedBraceForegroundColor(QColor("#FFFFFF"));
+    setUnmatchedBraceBackgroundColor(QColor("#F14C4C"));
+    setUnmatchedBraceForegroundColor(QColor("#FFFFFF"));
 }
 
 bool CodeEditor::loadFile(const QString& filePath) {
@@ -198,11 +161,12 @@ bool CodeEditor::loadFile(const QString& filePath) {
     }
     
     QTextStream in(&file);
-    setPlainText(in.readAll());
+    setText(in.readAll());
     file.close();
     
     m_filePath = filePath;
     m_isModified = false;
+    setModified(false);
     emit modificationChanged(false);
     
     return true;
@@ -215,11 +179,12 @@ bool CodeEditor::saveFile(const QString& filePath) {
     }
     
     QTextStream out(&file);
-    out << toPlainText();
+    out << text();
     file.close();
     
     m_filePath = filePath;
     m_isModified = false;
+    setModified(false);
     emit modificationChanged(false);
     
     return true;
@@ -234,6 +199,7 @@ void CodeEditor::setModified(bool modified) {
         m_isModified = modified;
         emit modificationChanged(modified);
     }
+    QsciScintilla::setModified(modified);
 }
 
 QString CodeEditor::filePath() const {
@@ -245,144 +211,75 @@ void CodeEditor::setFilePath(const QString& path) {
 }
 
 void CodeEditor::gotoLine(int line) {
-    QTextCursor cursor(document()->findBlockByLineNumber(line - 1));
-    setTextCursor(cursor);
-    ensureCursorVisible();
-    centerCursor();
+    // QScintilla uses 0-based line numbers internally
+    setCursorPosition(line - 1, 0);
+    ensureLineVisible(line - 1);
 }
 
 void CodeEditor::setErrorMarker(int line, const QString& message) {
+    // QScintilla uses 0-based line numbers
+    markerAdd(line - 1, m_errorMarkerHandle);
     m_errorMarkers[line] = message;
-    viewport()->update();
+}
+
+void CodeEditor::setWarningMarker(int line, const QString& message) {
+    // QScintilla uses 0-based line numbers
+    markerAdd(line - 1, m_warningMarkerHandle);
 }
 
 void CodeEditor::clearErrorMarkers() {
+    markerDeleteAll(m_errorMarkerHandle);
     m_errorMarkers.clear();
-    viewport()->update();
 }
 
-int CodeEditor::lineNumberAreaWidth() {
-    int digits = 1;
-    int max = qMax(1, blockCount());
-    while (max >= 10) {
-        max /= 10;
-        ++digits;
+void CodeEditor::clearAllMarkers() {
+    markerDeleteAll(-1);  // -1 means all markers
+    m_errorMarkers.clear();
+}
+
+void CodeEditor::applyTheme(const QString& themeName) {
+    Theme theme;
+    if (themeName == "dark") {
+        theme = ThemeManager::darkTheme();
+    } else if (themeName == "light") {
+        theme = ThemeManager::lightTheme();
+    } else if (themeName == "dracula") {
+        theme = ThemeManager::draculaTheme();
+    } else if (themeName == "monokai") {
+        theme = ThemeManager::monokaiTheme();
+    } else {
+        theme = ThemeManager::darkTheme();  // default
     }
     
-    int space = 13 + fontMetrics().horizontalAdvance(QLatin1Char('9')) * digits;
-    return space;
-}
-
-void CodeEditor::updateLineNumberAreaWidth(int /* newBlockCount */) {
-    setViewportMargins(lineNumberAreaWidth(), 0, 0, 0);
-}
-
-void CodeEditor::updateLineNumberArea(const QRect &rect, int dy) {
-    if (dy)
-        m_lineNumberArea->scroll(0, dy);
-    else
-        m_lineNumberArea->update(0, rect.y(), m_lineNumberArea->width(), rect.height());
+    // Apply editor colors
+    setPaper(theme.editorBackground);
+    setColor(theme.editorForeground);
+    setCaretLineBackgroundColor(theme.editorCurrentLine);
+    setSelectionBackgroundColor(theme.accent);
+    setMarginsBackgroundColor(theme.sidebarBackground);
+    setMarginsForegroundColor(theme.textSecondary);
+    setFoldMarginColors(theme.sidebarBackground, theme.sidebarBackground);
     
-    if (rect.contains(viewport()->rect()))
-        updateLineNumberAreaWidth(0);
-}
-
-void CodeEditor::resizeEvent(QResizeEvent *e) {
-    QPlainTextEdit::resizeEvent(e);
-    
-    QRect cr = contentsRect();
-    m_lineNumberArea->setGeometry(QRect(cr.left(), cr.top(), lineNumberAreaWidth(), cr.height()));
-}
-
-void CodeEditor::highlightCurrentLine() {
-    QList<QTextEdit::ExtraSelection> extraSelections;
-    
-    if (!isReadOnly()) {
-        QTextEdit::ExtraSelection selection;
-        
-        QColor lineColor = QColor("#2A2A2A");
-        
-        selection.format.setBackground(lineColor);
-        selection.format.setProperty(QTextFormat::FullWidthSelection, true);
-        selection.cursor = textCursor();
-        selection.cursor.clearSelection();
-        extraSelections.append(selection);
-    }
-    
-    setExtraSelections(extraSelections);
-}
-
-void CodeEditor::lineNumberAreaPaintEvent(QPaintEvent *event) {
-    QPainter painter(m_lineNumberArea);
-    painter.fillRect(event->rect(), QColor("#252526"));
-    
-    QTextBlock block = firstVisibleBlock();
-    int blockNumber = block.blockNumber();
-    int top = qRound(blockBoundingGeometry(block).translated(contentOffset()).top());
-    int bottom = top + qRound(blockBoundingRect(block).height());
-    
-    while (block.isValid() && top <= event->rect().bottom()) {
-        if (block.isVisible() && bottom >= event->rect().top()) {
-            QString number = QString::number(blockNumber + 1);
-            painter.setPen(QColor("#858585"));
-            
-            // Check for error marker
-            if (m_errorMarkers.contains(blockNumber + 1)) {
-                painter.fillRect(0, top, m_lineNumberArea->width(), fontMetrics().height(),
-                               QColor("#5A1D1D"));
-            }
-            
-            painter.drawText(0, top, m_lineNumberArea->width() - 5, fontMetrics().height(),
-                           Qt::AlignRight, number);
-        }
-        
-        block = block.next();
-        top = bottom;
-        bottom = top + qRound(blockBoundingRect(block).height());
-        ++blockNumber;
+    // Apply lexer colors
+    if (m_lexer) {
+        m_lexer->setDefaultPaper(theme.editorBackground);
+        m_lexer->setDefaultColor(theme.editorForeground);
+        m_lexer->setColor(theme.syntaxKeyword, QsciLexerCPP::Keyword);
+        m_lexer->setColor(theme.syntaxType, QsciLexerCPP::KeywordSet2);
+        m_lexer->setColor(theme.syntaxString, QsciLexerCPP::DoubleQuotedString);
+        m_lexer->setColor(theme.syntaxString, QsciLexerCPP::SingleQuotedString);
+        m_lexer->setColor(theme.syntaxComment, QsciLexerCPP::Comment);
+        m_lexer->setColor(theme.syntaxComment, QsciLexerCPP::CommentLine);
+        m_lexer->setColor(theme.syntaxComment, QsciLexerCPP::CommentDoc);
+        m_lexer->setColor(theme.syntaxPreprocessor, QsciLexerCPP::PreProcessor);
+        m_lexer->setColor(theme.syntaxNumber, QsciLexerCPP::Number);
+        m_lexer->setColor(theme.syntaxFunction, QsciLexerCPP::Operator);
     }
 }
 
-void CodeEditor::keyPressEvent(QKeyEvent *event) {
-    // Auto-indentation
-    if (event->key() == Qt::Key_Return || event->key() == Qt::Key_Enter) {
-        QTextCursor cursor = textCursor();
-        QString currentLine = cursor.block().text();
-        
-        // Calculate indentation
-        int indent = 0;
-        for (QChar ch : currentLine) {
-            if (ch == ' ') indent++;
-            else if (ch == '\t') indent += 4;
-            else break;
-        }
-        
-        // Check if line ends with opening brace
-        if (currentLine.trimmed().endsWith('{')) {
-            QPlainTextEdit::keyPressEvent(event);
-            insertPlainText(QString(indent + 4, ' '));
-            return;
-        }
-        
-        QPlainTextEdit::keyPressEvent(event);
-        if (indent > 0) {
-            insertPlainText(QString(indent, ' '));
-        }
-        return;
+void CodeEditor::onTextChanged() {
+    if (!m_isModified) {
+        m_isModified = true;
+        emit modificationChanged(true);
     }
-    
-    // Handle closing brace with automatic dedent
-    if (event->key() == Qt::Key_BraceRight) {
-        QTextCursor cursor = textCursor();
-        QString currentLine = cursor.block().text().left(cursor.positionInBlock());
-        
-        // If line only contains whitespace, dedent by one level
-        if (currentLine.trimmed().isEmpty() && currentLine.length() >= 4) {
-            cursor.movePosition(QTextCursor::StartOfBlock);
-            cursor.movePosition(QTextCursor::Right, QTextCursor::KeepAnchor, 4);
-            cursor.removeSelectedText();
-        }
-    }
-    
-    QPlainTextEdit::keyPressEvent(event);
 }

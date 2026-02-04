@@ -7,6 +7,9 @@
 #include "output/RunOutputWidget.h"
 #include "output/ProblemsWidget.h"
 #include "ui/FileTreeWidget.h"
+#include "ui/ThemeManager.h"
+#include "ui/GotoLineDialog.h"
+#include "ui/FindReplaceDialog.h"
 #include "core/FileManager.h"
 #include "core/Project.h"
 #include "compiler/CompilerRegistry.h"
@@ -20,6 +23,7 @@
 #include <QCloseEvent>
 #include <QSettings>
 #include <QDir>
+#include <QActionGroup>
 #include <QInputDialog>
 #include <QStandardPaths>
 #include <QTemporaryDir>
@@ -45,8 +49,11 @@ MainWindow::MainWindow(QWidget *parent)
     CompilerRegistry::instance().autoScanCompilers();
     loadCompilers();
     
-    // Set default directory
-    m_fileTree->setRootPath(QDir::currentPath());
+    // Apply default theme
+    ThemeManager::instance()->setTheme("dark");
+    
+    // Set default directory (removed - now handled by openFolder)
+    // m_fileTree->setRootPath(QDir::currentPath());
     
     // Open a default file
     m_editorTabs->newFile();
@@ -102,6 +109,10 @@ void MainWindow::setupMenus() {
     
     fileMenu->addSeparator();
     
+    QAction* openFolderAction = fileMenu->addAction("Open &Folder...");
+    openFolderAction->setShortcut(QKeySequence("Ctrl+K"));
+    connect(openFolderAction, &QAction::triggered, this, &MainWindow::onFileOpenFolder);
+    
     QAction* openProjectAction = fileMenu->addAction("Open &Project...");
     connect(openProjectAction, &QAction::triggered, this, &MainWindow::onFileOpenProject);
     
@@ -146,6 +157,12 @@ void MainWindow::setupMenus() {
     replaceAction->setShortcut(QKeySequence::Replace);
     connect(replaceAction, &QAction::triggered, this, &MainWindow::onEditReplace);
     
+    editMenu->addSeparator();
+    
+    QAction* gotoLineAction = editMenu->addAction("&Go to Line...");
+    gotoLineAction->setShortcut(QKeySequence(Qt::CTRL | Qt::Key_G));
+    connect(gotoLineAction, &QAction::triggered, this, &MainWindow::onEditGotoLine);
+    
     // Build menu
     QMenu* buildMenu = menuBar()->addMenu("&Build");
     
@@ -178,6 +195,45 @@ void MainWindow::setupMenus() {
     
     QAction* toggleOutputAction = viewMenu->addAction("Toggle &Output Panel");
     connect(toggleOutputAction, &QAction::triggered, this, &MainWindow::onViewToggleOutputPanel);
+    
+    viewMenu->addSeparator();
+    
+    // Theme submenu
+    QMenu* themeMenu = viewMenu->addMenu("&Theme");
+    QActionGroup* themeGroup = new QActionGroup(this);
+    
+    QAction* darkThemeAction = themeMenu->addAction("Dark");
+    darkThemeAction->setCheckable(true);
+    darkThemeAction->setChecked(true);
+    darkThemeAction->setData("dark");
+    themeGroup->addAction(darkThemeAction);
+    
+    QAction* lightThemeAction = themeMenu->addAction("Light");
+    lightThemeAction->setCheckable(true);
+    lightThemeAction->setData("light");
+    themeGroup->addAction(lightThemeAction);
+    
+    QAction* draculaThemeAction = themeMenu->addAction("Dracula");
+    draculaThemeAction->setCheckable(true);
+    draculaThemeAction->setData("dracula");
+    themeGroup->addAction(draculaThemeAction);
+    
+    QAction* monokaiThemeAction = themeMenu->addAction("Monokai");
+    monokaiThemeAction->setCheckable(true);
+    monokaiThemeAction->setData("monokai");
+    themeGroup->addAction(monokaiThemeAction);
+    
+    connect(themeGroup, &QActionGroup::triggered, this, [this](QAction* action) {
+        QString themeName = action->data().toString();
+        ThemeManager::instance()->setTheme(themeName);
+        // Update all open editors
+        for (int i = 0; i < m_editorTabs->count(); ++i) {
+            CodeEditor* editor = m_editorTabs->editorAt(i);
+            if (editor) {
+                editor->applyTheme(themeName);
+            }
+        }
+    });
     
     viewMenu->addSeparator();
     
@@ -302,10 +358,9 @@ void MainWindow::loadCompilers() {
 void MainWindow::updateStatusBar() {
     CodeEditor* editor = m_editorTabs->currentEditor();
     if (editor) {
-        QTextCursor cursor = editor->textCursor();
-        int line = cursor.blockNumber() + 1;
-        int col = cursor.columnNumber() + 1;
-        m_cursorPosLabel->setText(QString("Ln %1, Col %2").arg(line).arg(col));
+        int line, col;
+        editor->getCursorPosition(&line, &col);
+        m_cursorPosLabel->setText(QString("Ln %1, Col %2").arg(line + 1).arg(col + 1));
     }
     
     m_standardLabel->setText(m_standardCombo->currentText().toUpper());
@@ -370,6 +425,20 @@ void MainWindow::onFileSaveAs() {
     updateWindowTitle();
 }
 
+void MainWindow::onFileOpenFolder() {
+    QString folderPath = QFileDialog::getExistingDirectory(
+        this,
+        "Open Folder",
+        QString(),
+        QFileDialog::ShowDirsOnly | QFileDialog::DontResolveSymlinks
+    );
+    
+    if (!folderPath.isEmpty()) {
+        m_fileTree->openFolder(folderPath);
+        m_statusLabel->setText("Opened folder: " + folderPath);
+    }
+}
+
 void MainWindow::onFileOpenProject() {
     QString filePath = QFileDialog::getOpenFileName(
         this,
@@ -380,7 +449,7 @@ void MainWindow::onFileOpenProject() {
     
     if (!filePath.isEmpty()) {
         if (m_project->load(filePath)) {
-            m_fileTree->setRootPath(m_project->directory());
+            m_fileTree->openFolder(m_project->directory());
             m_statusLabel->setText("Project loaded: " + m_project->name());
         } else {
             QMessageBox::warning(this, "Error", "Failed to load project.");
@@ -430,17 +499,174 @@ void MainWindow::onEditPaste() {
 
 void MainWindow::onEditFind() {
     CodeEditor* editor = m_editorTabs->currentEditor();
-    if (editor) {
-        // TODO: Implement find dialog
-        QMessageBox::information(this, "Find", "Find functionality not yet implemented.");
+    if (!editor) {
+        return;
     }
+    
+    FindReplaceDialog* dialog = new FindReplaceDialog(FindReplaceDialog::Find, this);
+    
+    connect(dialog, &FindReplaceDialog::findNext, this, [this, dialog, editor]() {
+        QString text = dialog->findText();
+        if (text.isEmpty()) return;
+        
+        bool found = editor->findFirst(
+            text,
+            dialog->useRegex(),  // use regex option
+            dialog->caseSensitive(),
+            dialog->wholeWord(),
+            false,  // wrap
+            true    // forward
+        );
+        
+        if (!found) {
+            QMessageBox::information(this, "Find", "Text not found.");
+        }
+    });
+    
+    connect(dialog, &FindReplaceDialog::findPrevious, this, [this, dialog, editor]() {
+        QString text = dialog->findText();
+        if (text.isEmpty()) return;
+        
+        bool found = editor->findFirst(
+            text,
+            dialog->useRegex(),  // use regex option
+            dialog->caseSensitive(),
+            dialog->wholeWord(),
+            false,  // wrap
+            false   // forward (backward)
+        );
+        
+        if (!found) {
+            QMessageBox::information(this, "Find", "Text not found.");
+        }
+    });
+    
+    dialog->show();
 }
 
 void MainWindow::onEditReplace() {
     CodeEditor* editor = m_editorTabs->currentEditor();
-    if (editor) {
-        // TODO: Implement replace dialog
-        QMessageBox::information(this, "Replace", "Replace functionality not yet implemented.");
+    if (!editor) {
+        return;
+    }
+    
+    FindReplaceDialog* dialog = new FindReplaceDialog(FindReplaceDialog::Replace, this);
+    
+    connect(dialog, &FindReplaceDialog::findNext, this, [this, dialog, editor]() {
+        QString text = dialog->findText();
+        if (text.isEmpty()) return;
+        
+        bool found = editor->findFirst(
+            text,
+            dialog->useRegex(),  // use regex option
+            dialog->caseSensitive(),
+            dialog->wholeWord(),
+            false,
+            true
+        );
+        
+        if (!found) {
+            QMessageBox::information(this, "Find", "Text not found.");
+        }
+    });
+    
+    connect(dialog, &FindReplaceDialog::replaceNext, this, [dialog, editor]() {
+        QString findText = dialog->findText();
+        QString replaceText = dialog->replaceText();
+        if (findText.isEmpty()) return;
+        
+        // Replace current selection if it matches (considering case sensitivity)
+        if (editor->hasSelectedText()) {
+            QString selectedText = editor->selectedText();
+            bool matches = dialog->caseSensitive() ? 
+                (selectedText == findText) : 
+                (selectedText.toLower() == findText.toLower());
+                
+            if (matches) {
+                editor->replaceSelectedText(replaceText);
+            }
+        }
+        
+        // Find next
+        editor->findFirst(
+            findText,
+            dialog->useRegex(),  // use regex option
+            dialog->caseSensitive(),
+            dialog->wholeWord(),
+            false,
+            true
+        );
+    });
+    
+    connect(dialog, &FindReplaceDialog::replaceAll, this, [this, dialog, editor]() {
+        QString findText = dialog->findText();
+        QString replaceText = dialog->replaceText();
+        if (findText.isEmpty()) return;
+        
+        // Prevent infinite loop if replacement contains search text
+        if (!dialog->useRegex() && replaceText.contains(findText, 
+            dialog->caseSensitive() ? Qt::CaseSensitive : Qt::CaseInsensitive)) {
+            QMessageBox::warning(this, "Replace All", 
+                "Replacement text contains search text. This would cause an infinite loop.");
+            return;
+        }
+        
+        int count = 0;
+        
+        // Go to beginning
+        editor->setCursorPosition(0, 0);
+        
+        // Use a position-based approach to avoid infinite loops
+        int lastLine = -1, lastCol = -1;
+        while (editor->findFirst(
+            findText,
+            dialog->useRegex(),  // use regex option
+            dialog->caseSensitive(),
+            dialog->wholeWord(),
+            false,
+            true
+        )) {
+            int line, col;
+            editor->getCursorPosition(&line, &col);
+            
+            // Break if we're at the same position (shouldn't happen but safety check)
+            if (line == lastLine && col == lastCol) {
+                break;
+            }
+            
+            lastLine = line;
+            lastCol = col;
+            
+            editor->replaceSelectedText(replaceText);
+            count++;
+            
+            // Safety limit
+            if (count > 10000) {
+                QMessageBox::warning(this, "Replace All", 
+                    QString("Stopped after %1 replacements (safety limit).").arg(count));
+                return;
+            }
+        }
+        
+        QMessageBox::information(this, "Replace All", 
+            QString("Replaced %1 occurrence(s).").arg(count));
+    });
+    
+    dialog->show();
+}
+
+void MainWindow::onEditGotoLine() {
+    CodeEditor* editor = m_editorTabs->currentEditor();
+    if (!editor) {
+        return;
+    }
+    
+    int maxLine = editor->lines();
+    GotoLineDialog dialog(maxLine, this);
+    
+    if (dialog.exec() == QDialog::Accepted) {
+        int line = dialog.lineNumber();
+        editor->gotoLine(line);
     }
 }
 
@@ -466,7 +692,7 @@ void MainWindow::onBuildCompile() {
     request.sourceFile = sourceFile;
     request.outputFile = getExecutablePath(sourceFile);
     request.standard = m_standardCombo->currentText();
-    request.additionalFlags = {"-Wall", "-Wextra"};
+    request.additionalFlags = QStringList() << "-Wall" << "-Wextra";
     request.optimizationEnabled = false;
     request.optLevel = OptimizationLevel::O0;
     
