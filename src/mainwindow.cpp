@@ -60,8 +60,8 @@ MainWindow::MainWindow(QWidget *parent)
     m_project = new Project(this);
     
     setupUi();
-    setupCustomTitleBar();
     setupMenus();
+    setupCustomTitleBar();
     setupToolbar();
     setupDockWidgets();
     setupStatusBar();
@@ -1037,7 +1037,11 @@ void MainWindow::mouseDoubleClickEvent(QMouseEvent* event) {
 
 // Windows native event for resize from edges
 #ifdef Q_OS_WIN
+#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
 bool MainWindow::nativeEvent(const QByteArray &eventType, void *message, qintptr *result) {
+#else
+bool MainWindow::nativeEvent(const QByteArray &eventType, void *message, long *result) {
+#endif
     if (eventType == "windows_generic_MSG") {
         MSG* msg = static_cast<MSG*>(message);
         if (msg->message == WM_NCHITTEST) {
@@ -1088,7 +1092,11 @@ bool MainWindow::nativeEvent(const QByteArray &eventType, void *message, qintptr
     return QMainWindow::nativeEvent(eventType, message, result);
 }
 #else
+#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
 bool MainWindow::nativeEvent(const QByteArray &eventType, void *message, qintptr *result) {
+#else
+bool MainWindow::nativeEvent(const QByteArray &eventType, void *message, long *result) {
+#endif
     return QMainWindow::nativeEvent(eventType, message, result);
 }
 #endif
