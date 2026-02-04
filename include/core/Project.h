@@ -113,6 +113,18 @@ public:
      */
     void setCompilerFlags(const QStringList& flags);
     
+    /**
+     * @brief Check if project has CMakeLists.txt
+     * @return true if CMakeLists.txt exists in project directory
+     */
+    bool hasCMake() const;
+    
+    /**
+     * @brief Get path to CMakeLists.txt
+     * @return Full path to CMakeLists.txt, or empty if not exists
+     */
+    QString cmakeListsPath() const;
+    
 signals:
     void projectChanged();
     

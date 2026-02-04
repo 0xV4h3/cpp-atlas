@@ -125,3 +125,17 @@ void Project::setCompilerFlags(const QStringList& flags) {
     m_compilerFlags = flags;
     emit projectChanged();
 }
+
+bool Project::hasCMake() const {
+    if (m_directory.isEmpty()) {
+        return false;
+    }
+    return QFile::exists(m_directory + "/CMakeLists.txt");
+}
+
+QString Project::cmakeListsPath() const {
+    if (!hasCMake()) {
+        return QString();
+    }
+    return m_directory + "/CMakeLists.txt";
+}

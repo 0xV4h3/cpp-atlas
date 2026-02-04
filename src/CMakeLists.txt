@@ -18,6 +18,11 @@ set(COMPILER_SOURCES
     ${CMAKE_CURRENT_SOURCE_DIR}/compiler/CompilerRegistry.cpp
 )
 
+set(VCS_SOURCES
+    ${CMAKE_CURRENT_SOURCE_DIR}/vcs/GitManager.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/vcs/GitPanelWidget.cpp
+)
+
 set(OUTPUT_SOURCES
     ${CMAKE_CURRENT_SOURCE_DIR}/output/OutputPanel.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/output/BuildOutputWidget.cpp
@@ -31,6 +36,8 @@ set(UI_SOURCES
     ${CMAKE_CURRENT_SOURCE_DIR}/ui/ThemeManager.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/ui/GotoLineDialog.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/ui/FindReplaceDialog.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/ui/WelcomeWidget.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/ui/SettingsDialog.cpp
 )
 
 # Collect all sources
@@ -38,6 +45,7 @@ set(APP_SOURCES
     ${CORE_SOURCES}
     ${EDITOR_SOURCES}
     ${COMPILER_SOURCES}
+    ${VCS_SOURCES}
     ${OUTPUT_SOURCES}
     ${UI_SOURCES}
 )
@@ -72,14 +80,14 @@ target_include_directories(CppAtlasLib PUBLIC
 )
 
 target_link_libraries(CppAtlasLib PUBLIC 
-    Qt6::Widgets 
+    Qt${QT_VERSION_MAJOR}::Widgets 
     ${QSCINTILLA_LIBRARY}
 )
 
 # Main executable
 add_executable(CppAtlas main.cpp)
 
-target_link_libraries(CppAtlas PRIVATE CppAtlasLib Qt6::Widgets)
+target_link_libraries(CppAtlas PRIVATE CppAtlasLib Qt${QT_VERSION_MAJOR}::Widgets)
 
 set_target_properties(CppAtlas PROPERTIES
     WIN32_EXECUTABLE TRUE
@@ -96,4 +104,6 @@ install(TARGETS CppAtlas
     RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
 )
 
-qt_finalize_executable(CppAtlas)
+if(QT_VERSION_MAJOR EQUAL 6)
+    qt_finalize_executable(CppAtlas)
+endif()
