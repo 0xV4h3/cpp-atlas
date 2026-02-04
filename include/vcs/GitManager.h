@@ -56,6 +56,7 @@ private:
     QString runGit(const QStringList& args) const;
     bool runGitBool(const QStringList& args);
     
+    static constexpr int GIT_TIMEOUT_MS = 5000;
     QString m_workDir;
 };
 

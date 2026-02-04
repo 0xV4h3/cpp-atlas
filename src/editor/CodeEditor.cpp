@@ -56,9 +56,8 @@ void CodeEditor::setupEditor() {
     // Disable edge line if enabled
     setEdgeMode(QsciScintilla::EdgeNone);
     
-    // Cursor - Make it thick and visible
+    // Cursor - Make it thick and visible (color will be set by applyTheme)
     setCaretWidth(2);  // 2 pixels wide
-    setCaretForegroundColor(QColor("#FFFFFF"));  // White cursor for dark theme
 }
 
 void CodeEditor::setupLexer() {

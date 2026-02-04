@@ -170,7 +170,8 @@ void SettingsDialog::saveSettings() {
 
 void SettingsDialog::onApply() {
     saveSettings();
-    accept();
+    // Note: Apply button saves settings but does not close dialog
+    // Only OK button should close the dialog
 }
 
 void SettingsDialog::onPageChanged(int row) {

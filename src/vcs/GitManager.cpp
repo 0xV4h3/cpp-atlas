@@ -34,7 +34,7 @@ QString GitManager::runGit(const QStringList& args) const {
     QProcess proc;
     proc.setWorkingDirectory(m_workDir);
     proc.start("git", args);
-    proc.waitForFinished(5000);
+    proc.waitForFinished(GIT_TIMEOUT_MS);
     return QString::fromUtf8(proc.readAllStandardOutput());
 }
 
@@ -42,7 +42,7 @@ bool GitManager::runGitBool(const QStringList& args) {
     QProcess proc;
     proc.setWorkingDirectory(m_workDir);
     proc.start("git", args);
-    proc.waitForFinished(5000);
+    proc.waitForFinished(GIT_TIMEOUT_MS);
     return proc.exitCode() == 0;
 }
 
@@ -133,7 +133,12 @@ bool GitManager::commit(const QString& message) {
 }
 
 bool GitManager::discardChanges(const QString& filePath) {
-    bool ok = runGitBool({"checkout", "--", filePath});
+    // Use git restore (modern) or checkout (fallback) to discard changes
+    bool ok = runGitBool({"restore", "--", filePath});
+    if (!ok) {
+        // Fallback to checkout for older Git versions
+        ok = runGitBool({"checkout", "--", filePath});
+    }
     if (ok) emit statusChanged();
     return ok;
 }
