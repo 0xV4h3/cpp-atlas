@@ -17,7 +17,7 @@ FileTreeWidget::FileTreeWidget(QWidget *parent)
 
 void FileTreeWidget::setupModel() {
     m_model = new QFileSystemModel(this);
-    m_model->setRootPath(QDir::currentPath());
+    // DON'T call m_model->setRootPath(QDir::currentPath()) - let user open folder explicitly
     
     // Set name filters for relevant files
     QStringList filters;
@@ -36,6 +36,9 @@ void FileTreeWidget::setupModel() {
     // Set header
     header()->setStretchLastSection(false);
     header()->setSectionResizeMode(0, QHeaderView::Stretch);
+    
+    // Initially hide the widget until folder is opened
+    setVisible(false);
 }
 
 void FileTreeWidget::setupContextMenu() {
@@ -61,6 +64,19 @@ void FileTreeWidget::setRootPath(const QString& path) {
 
 QString FileTreeWidget::rootPath() const {
     return m_model->rootPath();
+}
+
+void FileTreeWidget::openFolder(const QString& path) {
+    QModelIndex index = m_model->setRootPath(path);
+    setRootIndex(index);
+    setVisible(true);
+    emit folderOpened(path);
+}
+
+void FileTreeWidget::closeFolder() {
+    setRootIndex(QModelIndex());
+    setVisible(false);
+    emit folderClosed();
 }
 
 void FileTreeWidget::contextMenuEvent(QContextMenuEvent *event) {

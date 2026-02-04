@@ -102,6 +102,10 @@ void MainWindow::setupMenus() {
     
     fileMenu->addSeparator();
     
+    QAction* openFolderAction = fileMenu->addAction("Open &Folder...");
+    openFolderAction->setShortcut(QKeySequence("Ctrl+K"));
+    connect(openFolderAction, &QAction::triggered, this, &MainWindow::onFileOpenFolder);
+    
     QAction* openProjectAction = fileMenu->addAction("Open &Project...");
     connect(openProjectAction, &QAction::triggered, this, &MainWindow::onFileOpenProject);
     
@@ -369,6 +373,20 @@ void MainWindow::onFileSaveAs() {
     updateWindowTitle();
 }
 
+void MainWindow::onFileOpenFolder() {
+    QString folderPath = QFileDialog::getExistingDirectory(
+        this,
+        "Open Folder",
+        QString(),
+        QFileDialog::ShowDirsOnly | QFileDialog::DontResolveSymlinks
+    );
+    
+    if (!folderPath.isEmpty()) {
+        m_fileTree->openFolder(folderPath);
+        m_statusLabel->setText("Opened folder: " + folderPath);
+    }
+}
+
 void MainWindow::onFileOpenProject() {
     QString filePath = QFileDialog::getOpenFileName(
         this,
@@ -379,7 +397,7 @@ void MainWindow::onFileOpenProject() {
     
     if (!filePath.isEmpty()) {
         if (m_project->load(filePath)) {
-            m_fileTree->setRootPath(m_project->directory());
+            m_fileTree->openFolder(m_project->directory());
             m_statusLabel->setText("Project loaded: " + m_project->name());
         } else {
             QMessageBox::warning(this, "Error", "Failed to load project.");

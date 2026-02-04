@@ -37,6 +37,7 @@ private slots:
     void onFileOpen();
     void onFileSave();
     void onFileSaveAs();
+    void onFileOpenFolder();
     void onFileOpenProject();
     void onFileExit();
     
