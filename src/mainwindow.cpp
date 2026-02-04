@@ -8,6 +8,8 @@
 #include "output/ProblemsWidget.h"
 #include "ui/FileTreeWidget.h"
 #include "ui/ThemeManager.h"
+#include "ui/GotoLineDialog.h"
+#include "ui/FindReplaceDialog.h"
 #include "core/FileManager.h"
 #include "core/Project.h"
 #include "compiler/CompilerRegistry.h"
@@ -154,6 +156,12 @@ void MainWindow::setupMenus() {
     QAction* replaceAction = editMenu->addAction("&Replace...");
     replaceAction->setShortcut(QKeySequence::Replace);
     connect(replaceAction, &QAction::triggered, this, &MainWindow::onEditReplace);
+    
+    editMenu->addSeparator();
+    
+    QAction* gotoLineAction = editMenu->addAction("&Go to Line...");
+    gotoLineAction->setShortcut(QKeySequence(Qt::CTRL | Qt::Key_G));
+    connect(gotoLineAction, &QAction::triggered, this, &MainWindow::onEditGotoLine);
     
     // Build menu
     QMenu* buildMenu = menuBar()->addMenu("&Build");
@@ -491,17 +499,139 @@ void MainWindow::onEditPaste() {
 
 void MainWindow::onEditFind() {
     CodeEditor* editor = m_editorTabs->currentEditor();
-    if (editor) {
-        // TODO: Implement find dialog
-        QMessageBox::information(this, "Find", "Find functionality not yet implemented.");
+    if (!editor) {
+        return;
     }
+    
+    FindReplaceDialog* dialog = new FindReplaceDialog(FindReplaceDialog::Find, this);
+    
+    connect(dialog, &FindReplaceDialog::findNext, this, [this, dialog, editor]() {
+        QString text = dialog->findText();
+        if (text.isEmpty()) return;
+        
+        bool found = editor->findFirst(
+            text,
+            false,  // regex
+            dialog->caseSensitive(),
+            dialog->wholeWord(),
+            false,  // wrap
+            true    // forward
+        );
+        
+        if (!found) {
+            QMessageBox::information(this, "Find", "Text not found.");
+        }
+    });
+    
+    connect(dialog, &FindReplaceDialog::findPrevious, this, [this, dialog, editor]() {
+        QString text = dialog->findText();
+        if (text.isEmpty()) return;
+        
+        bool found = editor->findFirst(
+            text,
+            false,  // regex
+            dialog->caseSensitive(),
+            dialog->wholeWord(),
+            false,  // wrap
+            false   // forward (backward)
+        );
+        
+        if (!found) {
+            QMessageBox::information(this, "Find", "Text not found.");
+        }
+    });
+    
+    dialog->show();
 }
 
 void MainWindow::onEditReplace() {
     CodeEditor* editor = m_editorTabs->currentEditor();
-    if (editor) {
-        // TODO: Implement replace dialog
-        QMessageBox::information(this, "Replace", "Replace functionality not yet implemented.");
+    if (!editor) {
+        return;
+    }
+    
+    FindReplaceDialog* dialog = new FindReplaceDialog(FindReplaceDialog::Replace, this);
+    
+    connect(dialog, &FindReplaceDialog::findNext, this, [this, dialog, editor]() {
+        QString text = dialog->findText();
+        if (text.isEmpty()) return;
+        
+        bool found = editor->findFirst(
+            text,
+            false,
+            dialog->caseSensitive(),
+            dialog->wholeWord(),
+            false,
+            true
+        );
+        
+        if (!found) {
+            QMessageBox::information(this, "Find", "Text not found.");
+        }
+    });
+    
+    connect(dialog, &FindReplaceDialog::replaceNext, this, [dialog, editor]() {
+        QString findText = dialog->findText();
+        QString replaceText = dialog->replaceText();
+        if (findText.isEmpty()) return;
+        
+        // Replace current selection if it matches
+        if (editor->hasSelectedText() && editor->selectedText() == findText) {
+            editor->replaceSelectedText(replaceText);
+        }
+        
+        // Find next
+        editor->findFirst(
+            findText,
+            false,
+            dialog->caseSensitive(),
+            dialog->wholeWord(),
+            false,
+            true
+        );
+    });
+    
+    connect(dialog, &FindReplaceDialog::replaceAll, this, [this, dialog, editor]() {
+        QString findText = dialog->findText();
+        QString replaceText = dialog->replaceText();
+        if (findText.isEmpty()) return;
+        
+        int count = 0;
+        
+        // Go to beginning
+        editor->setCursorPosition(0, 0);
+        
+        while (editor->findFirst(
+            findText,
+            false,
+            dialog->caseSensitive(),
+            dialog->wholeWord(),
+            false,
+            true
+        )) {
+            editor->replaceSelectedText(replaceText);
+            count++;
+        }
+        
+        QMessageBox::information(this, "Replace All", 
+            QString("Replaced %1 occurrence(s).").arg(count));
+    });
+    
+    dialog->show();
+}
+
+void MainWindow::onEditGotoLine() {
+    CodeEditor* editor = m_editorTabs->currentEditor();
+    if (!editor) {
+        return;
+    }
+    
+    int maxLine = editor->lines();
+    GotoLineDialog dialog(maxLine, this);
+    
+    if (dialog.exec() == QDialog::Accepted) {
+        int line = dialog.lineNumber();
+        editor->gotoLine(line);
     }
 }
 

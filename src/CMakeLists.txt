@@ -29,6 +29,8 @@ set(UI_SOURCES
     ${CMAKE_CURRENT_SOURCE_DIR}/mainwindow.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/ui/FileTreeWidget.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/ui/ThemeManager.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/ui/GotoLineDialog.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/ui/FindReplaceDialog.cpp
 )
 
 # Collect all sources

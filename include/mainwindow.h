@@ -49,6 +49,7 @@ private slots:
     void onEditPaste();
     void onEditFind();
     void onEditReplace();
+    void onEditGotoLine();
     
     // Build menu
     void onBuildCompile();
