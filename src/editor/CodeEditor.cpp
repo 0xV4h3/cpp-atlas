@@ -1,4 +1,5 @@
 #include "editor/CodeEditor.h"
+#include "ui/ThemeManager.h"
 #include <QFile>
 #include <QTextStream>
 #include <QFont>
@@ -237,54 +238,42 @@ void CodeEditor::clearAllMarkers() {
 }
 
 void CodeEditor::applyTheme(const QString& themeName) {
+    Theme theme;
     if (themeName == "dark") {
-        // Dark theme (VS Code Dark+)
-        setPaper(QColor("#1E1E1E"));
-        setColor(QColor("#D4D4D4"));
-        setCaretLineBackgroundColor(QColor("#2A2A2A"));
-        setSelectionBackgroundColor(QColor("#264F78"));
-        setMarginsBackgroundColor(QColor("#252526"));
-        setMarginsForegroundColor(QColor("#858585"));
-        setFoldMarginColors(QColor("#252526"), QColor("#252526"));
-        
-        if (m_lexer) {
-            m_lexer->setDefaultPaper(QColor("#1E1E1E"));
-            m_lexer->setDefaultColor(QColor("#D4D4D4"));
-            m_lexer->setColor(QColor("#569CD6"), QsciLexerCPP::Keyword);      // Blue
-            m_lexer->setColor(QColor("#4EC9B0"), QsciLexerCPP::KeywordSet2);  // Cyan (types)
-            m_lexer->setColor(QColor("#CE9178"), QsciLexerCPP::DoubleQuotedString); // Orange
-            m_lexer->setColor(QColor("#CE9178"), QsciLexerCPP::SingleQuotedString);
-            m_lexer->setColor(QColor("#6A9955"), QsciLexerCPP::Comment);      // Green
-            m_lexer->setColor(QColor("#6A9955"), QsciLexerCPP::CommentLine);
-            m_lexer->setColor(QColor("#6A9955"), QsciLexerCPP::CommentDoc);
-            m_lexer->setColor(QColor("#C586C0"), QsciLexerCPP::PreProcessor); // Purple
-            m_lexer->setColor(QColor("#B5CEA8"), QsciLexerCPP::Number);       // Light green
-            m_lexer->setColor(QColor("#DCDCAA"), QsciLexerCPP::Operator);     // Yellow
-        }
+        theme = ThemeManager::darkTheme();
     } else if (themeName == "light") {
-        // Light theme (VS Code Light+)
-        setPaper(QColor("#FFFFFF"));
-        setColor(QColor("#000000"));
-        setCaretLineBackgroundColor(QColor("#F3F3F3"));
-        setSelectionBackgroundColor(QColor("#ADD6FF"));
-        setMarginsBackgroundColor(QColor("#F5F5F5"));
-        setMarginsForegroundColor(QColor("#237893"));
-        setFoldMarginColors(QColor("#F5F5F5"), QColor("#F5F5F5"));
-        
-        if (m_lexer) {
-            m_lexer->setDefaultPaper(QColor("#FFFFFF"));
-            m_lexer->setDefaultColor(QColor("#000000"));
-            m_lexer->setColor(QColor("#0000FF"), QsciLexerCPP::Keyword);
-            m_lexer->setColor(QColor("#267F99"), QsciLexerCPP::KeywordSet2);
-            m_lexer->setColor(QColor("#A31515"), QsciLexerCPP::DoubleQuotedString);
-            m_lexer->setColor(QColor("#A31515"), QsciLexerCPP::SingleQuotedString);
-            m_lexer->setColor(QColor("#008000"), QsciLexerCPP::Comment);
-            m_lexer->setColor(QColor("#008000"), QsciLexerCPP::CommentLine);
-            m_lexer->setColor(QColor("#008000"), QsciLexerCPP::CommentDoc);
-            m_lexer->setColor(QColor("#0000FF"), QsciLexerCPP::PreProcessor);
-            m_lexer->setColor(QColor("#098658"), QsciLexerCPP::Number);
-            m_lexer->setColor(QColor("#000000"), QsciLexerCPP::Operator);
-        }
+        theme = ThemeManager::lightTheme();
+    } else if (themeName == "dracula") {
+        theme = ThemeManager::draculaTheme();
+    } else if (themeName == "monokai") {
+        theme = ThemeManager::monokaiTheme();
+    } else {
+        theme = ThemeManager::darkTheme();  // default
+    }
+    
+    // Apply editor colors
+    setPaper(theme.editorBackground);
+    setColor(theme.editorForeground);
+    setCaretLineBackgroundColor(theme.editorCurrentLine);
+    setSelectionBackgroundColor(theme.accent);
+    setMarginsBackgroundColor(theme.sidebarBackground);
+    setMarginsForegroundColor(theme.textSecondary);
+    setFoldMarginColors(theme.sidebarBackground, theme.sidebarBackground);
+    
+    // Apply lexer colors
+    if (m_lexer) {
+        m_lexer->setDefaultPaper(theme.editorBackground);
+        m_lexer->setDefaultColor(theme.editorForeground);
+        m_lexer->setColor(theme.syntaxKeyword, QsciLexerCPP::Keyword);
+        m_lexer->setColor(theme.syntaxType, QsciLexerCPP::KeywordSet2);
+        m_lexer->setColor(theme.syntaxString, QsciLexerCPP::DoubleQuotedString);
+        m_lexer->setColor(theme.syntaxString, QsciLexerCPP::SingleQuotedString);
+        m_lexer->setColor(theme.syntaxComment, QsciLexerCPP::Comment);
+        m_lexer->setColor(theme.syntaxComment, QsciLexerCPP::CommentLine);
+        m_lexer->setColor(theme.syntaxComment, QsciLexerCPP::CommentDoc);
+        m_lexer->setColor(theme.syntaxPreprocessor, QsciLexerCPP::PreProcessor);
+        m_lexer->setColor(theme.syntaxNumber, QsciLexerCPP::Number);
+        m_lexer->setColor(theme.syntaxFunction, QsciLexerCPP::Operator);
     }
 }
 

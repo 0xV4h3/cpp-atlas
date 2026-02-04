@@ -7,6 +7,7 @@
 #include "output/RunOutputWidget.h"
 #include "output/ProblemsWidget.h"
 #include "ui/FileTreeWidget.h"
+#include "ui/ThemeManager.h"
 #include "core/FileManager.h"
 #include "core/Project.h"
 #include "compiler/CompilerRegistry.h"
@@ -20,6 +21,7 @@
 #include <QCloseEvent>
 #include <QSettings>
 #include <QDir>
+#include <QActionGroup>
 #include <QInputDialog>
 #include <QStandardPaths>
 #include <QTemporaryDir>
@@ -45,8 +47,11 @@ MainWindow::MainWindow(QWidget *parent)
     CompilerRegistry::instance().autoScanCompilers();
     loadCompilers();
     
-    // Set default directory
-    m_fileTree->setRootPath(QDir::currentPath());
+    // Apply default theme
+    ThemeManager::instance()->setTheme("dark");
+    
+    // Set default directory (removed - now handled by openFolder)
+    // m_fileTree->setRootPath(QDir::currentPath());
     
     // Open a default file
     m_editorTabs->newFile();
@@ -182,6 +187,45 @@ void MainWindow::setupMenus() {
     
     QAction* toggleOutputAction = viewMenu->addAction("Toggle &Output Panel");
     connect(toggleOutputAction, &QAction::triggered, this, &MainWindow::onViewToggleOutputPanel);
+    
+    viewMenu->addSeparator();
+    
+    // Theme submenu
+    QMenu* themeMenu = viewMenu->addMenu("&Theme");
+    QActionGroup* themeGroup = new QActionGroup(this);
+    
+    QAction* darkThemeAction = themeMenu->addAction("Dark");
+    darkThemeAction->setCheckable(true);
+    darkThemeAction->setChecked(true);
+    darkThemeAction->setData("dark");
+    themeGroup->addAction(darkThemeAction);
+    
+    QAction* lightThemeAction = themeMenu->addAction("Light");
+    lightThemeAction->setCheckable(true);
+    lightThemeAction->setData("light");
+    themeGroup->addAction(lightThemeAction);
+    
+    QAction* draculaThemeAction = themeMenu->addAction("Dracula");
+    draculaThemeAction->setCheckable(true);
+    draculaThemeAction->setData("dracula");
+    themeGroup->addAction(draculaThemeAction);
+    
+    QAction* monokaiThemeAction = themeMenu->addAction("Monokai");
+    monokaiThemeAction->setCheckable(true);
+    monokaiThemeAction->setData("monokai");
+    themeGroup->addAction(monokaiThemeAction);
+    
+    connect(themeGroup, &QActionGroup::triggered, this, [this](QAction* action) {
+        QString themeName = action->data().toString();
+        ThemeManager::instance()->setTheme(themeName);
+        // Update all open editors
+        for (int i = 0; i < m_editorTabs->count(); ++i) {
+            CodeEditor* editor = m_editorTabs->editorAt(i);
+            if (editor) {
+                editor->applyTheme(themeName);
+            }
+        }
+    });
     
     viewMenu->addSeparator();
     
