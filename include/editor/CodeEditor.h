@@ -1,17 +1,15 @@
 #ifndef CODEEDITOR_H
 #define CODEEDITOR_H
 
-#include <QPlainTextEdit>
-#include <QObject>
+#include <Qsci/qsciscintilla.h>
+#include <Qsci/qscilexercpp.h>
+#include <Qsci/qsciapis.h>
 #include <QMap>
 
-class QSyntaxHighlighter;
-class LineNumberArea;
-
 /**
- * @brief Code editor widget with C++ syntax highlighting and features
+ * @brief Code editor widget with C++ syntax highlighting and QScintilla features
  */
-class CodeEditor : public QPlainTextEdit {
+class CodeEditor : public QsciScintilla {
     Q_OBJECT
     
 public:
@@ -70,62 +68,49 @@ public:
     void setErrorMarker(int line, const QString& message);
     
     /**
+     * @brief Set warning marker at line
+     * @param line Line number (1-based)
+     * @param message Warning message
+     */
+    void setWarningMarker(int line, const QString& message);
+    
+    /**
      * @brief Clear all error markers
      */
     void clearErrorMarkers();
     
     /**
-     * @brief Paint line number area
-     * @param event Paint event
+     * @brief Clear all markers
      */
-    void lineNumberAreaPaintEvent(QPaintEvent *event);
+    void clearAllMarkers();
     
     /**
-     * @brief Get width of line number area
-     * @return Width in pixels
+     * @brief Apply theme to editor
+     * @param themeName Theme name (dark, light, etc.)
      */
-    int lineNumberAreaWidth();
+    void applyTheme(const QString& themeName);
     
 signals:
     void modificationChanged(bool modified);
     
-protected:
-    void resizeEvent(QResizeEvent *event) override;
-    void keyPressEvent(QKeyEvent *event) override;
-    
 private slots:
-    void updateLineNumberAreaWidth(int newBlockCount);
-    void highlightCurrentLine();
-    void updateLineNumberArea(const QRect &rect, int dy);
+    void onTextChanged();
     
 private:
-    LineNumberArea *m_lineNumberArea;
-    QSyntaxHighlighter *m_highlighter;
-    QString m_filePath;
-    bool m_isModified = false;
-    QMap<int, QString> m_errorMarkers;  // line -> error message
-    
     void setupEditor();
-};
-
-/**
- * @brief Widget for displaying line numbers
- */
-class LineNumberArea : public QWidget {
-public:
-    LineNumberArea(CodeEditor *editor) : QWidget(editor), m_codeEditor(editor) {}
+    void setupLexer();
+    void setupMargins();
+    void setupFolding();
+    void setupAutoCompletion();
+    void setupBraceMatching();
     
-    QSize sizeHint() const override {
-        return QSize(m_codeEditor->lineNumberAreaWidth(), 0);
-    }
-    
-protected:
-    void paintEvent(QPaintEvent *event) override {
-        m_codeEditor->lineNumberAreaPaintEvent(event);
-    }
-    
-private:
-    CodeEditor *m_codeEditor;
+    QString m_filePath;
+    QsciLexerCPP* m_lexer = nullptr;
+    QsciAPIs* m_apis = nullptr;
+    int m_errorMarkerHandle = -1;
+    int m_warningMarkerHandle = -1;
+    QMap<int, QString> m_errorMarkers;  // line -> error message
+    bool m_isModified = false;
 };
 
 #endif // CODEEDITOR_H

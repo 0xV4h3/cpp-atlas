@@ -302,10 +302,9 @@ void MainWindow::loadCompilers() {
 void MainWindow::updateStatusBar() {
     CodeEditor* editor = m_editorTabs->currentEditor();
     if (editor) {
-        QTextCursor cursor = editor->textCursor();
-        int line = cursor.blockNumber() + 1;
-        int col = cursor.columnNumber() + 1;
-        m_cursorPosLabel->setText(QString("Ln %1, Col %2").arg(line).arg(col));
+        int line, col;
+        editor->getCursorPosition(&line, &col);
+        m_cursorPosLabel->setText(QString("Ln %1, Col %2").arg(line + 1).arg(col + 1));
     }
     
     m_standardLabel->setText(m_standardCombo->currentText().toUpper());
@@ -466,7 +465,7 @@ void MainWindow::onBuildCompile() {
     request.sourceFile = sourceFile;
     request.outputFile = getExecutablePath(sourceFile);
     request.standard = m_standardCombo->currentText();
-    request.additionalFlags = {"-Wall", "-Wextra"};
+    request.additionalFlags = QStringList() << "-Wall" << "-Wextra";
     request.optimizationEnabled = false;
     request.optLevel = OptimizationLevel::O0;
     

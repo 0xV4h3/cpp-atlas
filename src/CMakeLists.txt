@@ -65,9 +65,13 @@ target_include_directories(CppAtlasLib PUBLIC
     ${CMAKE_BINARY_DIR}
     ${CMAKE_SOURCE_DIR}/include
     ${CMAKE_CURRENT_SOURCE_DIR}
+    ${QSCINTILLA_INCLUDE_DIR}
 )
 
-target_link_libraries(CppAtlasLib PUBLIC Qt${QT_VERSION_MAJOR}::Widgets)
+target_link_libraries(CppAtlasLib PUBLIC 
+    Qt${QT_VERSION_MAJOR}::Widgets
+    ${QSCINTILLA_LIBRARY}
+)
 
 # Main executable
 add_executable(CppAtlas main.cpp)
