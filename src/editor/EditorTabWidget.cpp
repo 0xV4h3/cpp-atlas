@@ -3,7 +3,6 @@
 #include <QFileDialog>
 #include <QMessageBox>
 #include <QFileInfo>
-#include <QDebug>
 
 EditorTabWidget::EditorTabWidget(QWidget *parent)
     : QTabWidget(parent)
@@ -14,8 +13,6 @@ EditorTabWidget::EditorTabWidget(QWidget *parent)
     
     connect(this, &QTabWidget::currentChanged, this, &EditorTabWidget::onTabChanged);
     connect(this, &QTabWidget::tabCloseRequested, this, &EditorTabWidget::onTabCloseRequested);
-    
-    qDebug() << "EditorTabWidget: TabsClosable =" << tabsClosable();
 }
 
 CodeEditor* EditorTabWidget::newFile() {
@@ -61,10 +58,8 @@ CodeEditor* EditorTabWidget::openFile(const QString& filePath) {
 }
 
 bool EditorTabWidget::closeTab(int index) {
-    qDebug() << "EditorTabWidget: closeTab called for index:" << index;
     CodeEditor* editor = editorAt(index);
     if (!editor) {
-        qDebug() << "EditorTabWidget: No editor at index:" << index;
         return false;
     }
     
@@ -109,7 +104,6 @@ bool EditorTabWidget::closeTab(int index) {
     removeTab(index);
     editor->deleteLater();
     
-    qDebug() << "EditorTabWidget: Tab closed successfully";
     return true;
 }
 
@@ -181,7 +175,6 @@ void EditorTabWidget::onTabChanged(int index) {
 }
 
 void EditorTabWidget::onTabCloseRequested(int index) {
-    qDebug() << "EditorTabWidget: Tab close requested for index:" << index << "total tabs:" << count();
     closeTab(index);
 }
 

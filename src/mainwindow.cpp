@@ -295,7 +295,11 @@ void MainWindow::setupMenus() {
     // View menu
     QMenu* viewMenu = menuBar()->addMenu("&View");
     
-    // Dock visibility toggles will be added after docks are created
+    QAction* toggleFileTreeAction = viewMenu->addAction("Toggle &File Tree");
+    connect(toggleFileTreeAction, &QAction::triggered, this, &MainWindow::onViewToggleFileTree);
+    
+    QAction* toggleOutputAction = viewMenu->addAction("Toggle &Output Panel");
+    connect(toggleOutputAction, &QAction::triggered, this, &MainWindow::onViewToggleOutputPanel);
     
     viewMenu->addSeparator();
     
@@ -356,12 +360,6 @@ void MainWindow::setupMenus() {
 void MainWindow::setupToolbar() {
     QToolBar* toolbar = addToolBar("Main Toolbar");
     toolbar->setMovable(false);
-    toolbar->setObjectName("mainToolbar");
-    
-    // Add left margin to align with menu bar (C++ icon width + spacing)
-    QWidget* spacer = new QWidget(toolbar);
-    spacer->setFixedWidth(44);  // 36 (icon) + 8 (spacing)
-    toolbar->addWidget(spacer);
     
     // New, Open, Save buttons
     toolbar->addAction("New", this, &MainWindow::onFileNew);
@@ -401,78 +399,13 @@ void MainWindow::setupDockWidgets() {
     m_fileTreeDock = new QDockWidget("File Tree", this);
     m_fileTree = new FileTreeWidget(m_fileTreeDock);
     m_fileTreeDock->setWidget(m_fileTree);
-    m_fileTreeDock->setFeatures(QDockWidget::DockWidgetClosable | 
-                                QDockWidget::DockWidgetMovable | 
-                                QDockWidget::DockWidgetFloatable);
     addDockWidget(Qt::LeftDockWidgetArea, m_fileTreeDock);
     
     // Output panel dock
     m_outputPanelDock = new QDockWidget("Output", this);
     m_outputPanel = new OutputPanel(m_outputPanelDock);
     m_outputPanelDock->setWidget(m_outputPanel);
-    m_outputPanelDock->setFeatures(QDockWidget::DockWidgetClosable | 
-                                   QDockWidget::DockWidgetMovable | 
-                                   QDockWidget::DockWidgetFloatable);
     addDockWidget(Qt::BottomDockWidgetArea, m_outputPanelDock);
-    
-    // Add dock actions to View menu
-    // Find the View menu
-    QList<QAction*> menuActions = menuBar()->actions();
-    QMenu* viewMenu = nullptr;
-    for (QAction* action : menuActions) {
-        if (action->menu() && action->menu()->title() == "&View") {
-            viewMenu = action->menu();
-            break;
-        }
-    }
-    
-    if (viewMenu) {
-        // Get first action (after separators will be theme menu)
-        QList<QAction*> actions = viewMenu->actions();
-        QAction* beforeThis = actions.isEmpty() ? nullptr : actions.first();
-        
-        // Insert dock toggle actions
-        QAction* fileTreeAction = m_fileTreeDock->toggleViewAction();
-        QAction* outputAction = m_outputPanelDock->toggleViewAction();
-        
-        if (beforeThis) {
-            viewMenu->insertAction(beforeThis, fileTreeAction);
-            viewMenu->insertAction(beforeThis, outputAction);
-            viewMenu->insertSeparator(beforeThis);
-        } else {
-            viewMenu->addAction(fileTreeAction);
-            viewMenu->addAction(outputAction);
-            viewMenu->addSeparator();
-        }
-        
-        // Add "Reset Window Layout" action
-        QAction* resetLayoutAction = new QAction("Reset Window &Layout", this);
-        connect(resetLayoutAction, &QAction::triggered, this, [this]() {
-            // Redock all floating docks
-            if (m_fileTreeDock->isFloating()) {
-                m_fileTreeDock->setFloating(false);
-            }
-            if (m_outputPanelDock->isFloating()) {
-                m_outputPanelDock->setFloating(false);
-            }
-            
-            // Reset to default positions
-            addDockWidget(Qt::LeftDockWidgetArea, m_fileTreeDock);
-            addDockWidget(Qt::BottomDockWidgetArea, m_outputPanelDock);
-            
-            // Show both docks
-            m_fileTreeDock->show();
-            m_outputPanelDock->show();
-        });
-        
-        if (beforeThis) {
-            viewMenu->insertAction(beforeThis, resetLayoutAction);
-            viewMenu->insertSeparator(beforeThis);
-        } else {
-            viewMenu->addAction(resetLayoutAction);
-            viewMenu->addSeparator();
-        }
-    }
 }
 
 void MainWindow::setupStatusBar() {
