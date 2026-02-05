@@ -119,15 +119,10 @@ void MainWindow::setupCustomTitleBar() {
     
     // App icon (C++ icon)
     m_iconLabel = new QLabel(this);
-    QPixmap iconPixmap(":/icons/app-icon.png");
-    if (!iconPixmap.isNull()) {
-        m_iconLabel->setPixmap(iconPixmap.scaled(16, 16, Qt::KeepAspectRatio, Qt::SmoothTransformation));
-    } else {
-        // Fallback to text if icon not found
-        m_iconLabel->setText("C++");
-        m_iconLabel->setStyleSheet("font-weight: bold; font-size: 10px;");
-    }
-    m_iconLabel->setFixedSize(20, TITLE_BAR_HEIGHT);
+    m_iconLabel->setText("C++");
+    m_iconLabel->setObjectName("appIcon");
+    m_iconLabel->setFixedSize(36, 28);  // Wider to fit "C++"
+    m_iconLabel->setAlignment(Qt::AlignCenter);
     layout->addWidget(m_iconLabel);
     
     layout->addSpacing(8);

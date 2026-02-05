@@ -105,6 +105,15 @@ QString ThemeManager::generateStylesheet() const {
     color: white;
 }
 
+/* App icon */
+#appIcon {
+    color: %3;
+    font-size: 12px;
+    font-weight: bold;
+    font-family: "Consolas", "Monaco", "Courier New", monospace;
+    padding: 0 8px;
+}
+
 )").arg(theme.toolbarBackground.name())      // %1 - title bar bg
    .arg(theme.border.name())                  // %2 - subtle border
    .arg(theme.textPrimary.name())             // %3 - text color
@@ -166,11 +175,42 @@ QString ThemeManager::generateStylesheet() const {
     qss += QString("QTabBar::close-button:hover { background-color: %1; }\n")
         .arg(theme.error.name());
     
-    // QDockWidget - no extra borders
-    qss += QString("QDockWidget { border: none; }\n");
-    qss += QString("QDockWidget::title { background-color: %1; color: %2; padding: 5px; }\n")
-        .arg(theme.sidebarBackground.name())
-        .arg(theme.textPrimary.name());
+    // QDockWidget title bar
+    qss += QString(R"(
+QDockWidget {
+    color: %1;
+    font-weight: bold;
+}
+
+QDockWidget::title {
+    background-color: %2;
+    color: %1;
+    padding: 6px 8px;
+    border: none;
+    text-align: left;
+}
+
+QDockWidget::close-button, QDockWidget::float-button {
+    background-color: transparent;
+    border: none;
+    padding: 2px;
+}
+
+QDockWidget::close-button:hover, QDockWidget::float-button:hover {
+    background-color: %3;
+}
+
+/* Labels and tabs inside dock widgets */
+QDockWidget QLabel {
+    color: %1;
+}
+
+QDockWidget QTabBar::tab {
+    color: %1;
+}
+)").arg(theme.textPrimary.name())       // %1 - text color (visible!)
+   .arg(theme.sidebarBackground.name()) // %2 - title bg
+   .arg(theme.accent.name());           // %3 - button hover
     
     // QTreeView (FileTree)
     qss += QString("QTreeView { background-color: %1; color: %2; border: none; }\n")
