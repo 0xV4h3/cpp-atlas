@@ -21,7 +21,6 @@ if(Qt6_FOUND)
             /usr/local/include/qt6
             ${Qt6Widgets_INCLUDE_DIRS}
         PATH_SUFFIXES Qsci
-        NO_DEFAULT_PATH
     )
     
     if(NOT QSCINTILLA_INCLUDE_DIR)

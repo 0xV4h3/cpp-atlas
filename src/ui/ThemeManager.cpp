@@ -179,7 +179,6 @@ QString ThemeManager::generateStylesheet() const {
     qss += QString(R"(
 QDockWidget {
     color: %1;
-    font-weight: bold;
 }
 
 QDockWidget::title {
@@ -188,6 +187,7 @@ QDockWidget::title {
     padding: 6px 8px;
     border: none;
     text-align: left;
+    font-weight: bold;
 }
 
 QDockWidget::close-button, QDockWidget::float-button {
