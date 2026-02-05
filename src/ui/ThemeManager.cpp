@@ -173,9 +173,19 @@ QString ThemeManager::generateStylesheet() const {
         .arg(theme.tabInactive.lighter(110).name());
     
     // QTabBar close button
-    qss += QString("QTabBar::close-button { subcontrol-position: right; }\n");
-    qss += QString("QTabBar::close-button:hover { background-color: %1; }\n")
-        .arg(theme.error.name());
+    qss += QString(R"(
+QTabBar::close-button {
+    subcontrol-position: right;
+    margin: 2px;
+    min-width: 14px;
+    min-height: 14px;
+}
+
+QTabBar::close-button:hover {
+    background-color: %1;
+    border-radius: 2px;
+}
+)").arg(theme.error.name());
     
     // QDockWidget title bar
     qss += QString(R"(
@@ -186,23 +196,31 @@ QDockWidget {
 QDockWidget::title {
     background-color: %2;
     color: %1;
-    padding: 6px 8px;
+    padding: 8px;
     border: none;
     text-align: left;
     font-weight: bold;
 }
 
 QDockWidget::close-button, QDockWidget::float-button {
-    background-color: transparent;
     border: none;
+    background: transparent;
     padding: 4px;
-    width: 20px;
-    height: 20px;
+    icon-size: 16px;
+    min-width: 20px;
+    min-height: 20px;
+    max-width: 20px;
+    max-height: 20px;
 }
 
-QDockWidget::close-button:hover, QDockWidget::float-button:hover {
+QDockWidget::close-button:hover {
+    background-color: #E81123;
+    border-radius: 2px;
+}
+
+QDockWidget::float-button:hover {
     background-color: %3;
-    border-radius: 3px;
+    border-radius: 2px;
 }
 
 /* Labels and tabs inside dock widgets */
