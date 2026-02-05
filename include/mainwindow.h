@@ -6,6 +6,8 @@
 #include <QComboBox>
 #include <QLabel>
 #include <QProcess>
+#include <QPushButton>
+#include <QPoint>
 
 QT_BEGIN_NAMESPACE
 namespace Ui {
@@ -30,6 +32,15 @@ public:
 
 protected:
     void closeEvent(QCloseEvent *event) override;
+    void mousePressEvent(QMouseEvent* event) override;
+    void mouseMoveEvent(QMouseEvent* event) override;
+    void mouseReleaseEvent(QMouseEvent* event) override;
+    void mouseDoubleClickEvent(QMouseEvent* event) override;
+#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
+    bool nativeEvent(const QByteArray &eventType, void *message, qintptr *result) override;
+#else
+    bool nativeEvent(const QByteArray &eventType, void *message, long *result) override;
+#endif
 
 private slots:
     // File menu
@@ -80,6 +91,24 @@ private slots:
 private:
     Ui::MainWindow *ui;
     
+    // Title bar constants
+    static constexpr int TITLE_BAR_HEIGHT = 32;
+    static constexpr int WINDOW_BUTTON_WIDTH = 46;
+    static constexpr int WINDOW_BUTTON_COUNT = 3;
+    static constexpr int RESIZE_BORDER_WIDTH = 8;
+    
+    // Custom title bar widgets
+    QWidget* m_titleBar = nullptr;
+    QLabel* m_titleLabel = nullptr;
+    QLabel* m_iconLabel = nullptr;
+    QPushButton* m_minimizeBtn = nullptr;
+    QPushButton* m_maximizeBtn = nullptr;
+    QPushButton* m_closeBtn = nullptr;
+    
+    // Drag handling
+    QPoint m_dragPosition;
+    bool m_dragging = false;
+    
     // Main widgets
     EditorTabWidget* m_editorTabs;
     OutputPanel* m_outputPanel;
@@ -105,6 +134,7 @@ private:
     QString m_currentExecutable;
     
     void setupUi();
+    void setupCustomTitleBar();
     void setupMenus();
     void setupToolbar();
     void setupDockWidgets();
@@ -113,6 +143,7 @@ private:
     void loadCompilers();
     void updateStatusBar();
     void updateWindowTitle();
+    void updateCustomTitleLabel(const QString& title);
     
     QString getCurrentSourceFile();
     QString getExecutablePath(const QString& sourceFile);

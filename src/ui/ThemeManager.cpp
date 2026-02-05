@@ -49,8 +49,83 @@ QString ThemeManager::generateStylesheet() const {
     
     QString qss;
     
+    // Custom frameless title bar
+    qss += QString(R"(
+/* Custom Title Bar */
+#customTitleBar {
+    background-color: %1;
+    border: none;
+    border-bottom: 1px solid %2;
+}
+
+#windowTitle {
+    color: %3;
+    font-size: 12px;
+    font-weight: normal;
+}
+
+/* Menu bar in title bar */
+#titleBarMenu {
+    background-color: transparent;
+    border: none;
+    padding: 0;
+    margin: 0;
+}
+
+#titleBarMenu::item {
+    background-color: transparent;
+    color: %3;
+    padding: 5px 10px;
+    margin: 0;
+}
+
+#titleBarMenu::item:selected {
+    background-color: %4;
+}
+
+/* Window control buttons */
+#minimizeButton, #maximizeButton {
+    background-color: transparent;
+    color: %3;
+    border: none;
+    font-size: 11px;
+}
+
+#minimizeButton:hover, #maximizeButton:hover {
+    background-color: %5;
+}
+
+#closeButton {
+    background-color: transparent;
+    color: %3;
+    border: none;
+    font-size: 10px;
+}
+
+#closeButton:hover {
+    background-color: #E81123;
+    color: white;
+}
+
+/* App icon */
+#appIcon {
+    color: %3;
+    font-size: 12px;
+    font-weight: bold;
+    font-family: "Consolas", "Monaco", "Courier New", monospace;
+    padding: 0 8px;
+}
+
+)").arg(theme.toolbarBackground.name())      // %1 - title bar bg
+   .arg(theme.border.name())                  // %2 - subtle border
+   .arg(theme.textPrimary.name())             // %3 - text color
+   .arg(theme.accent.name())                  // %4 - menu hover
+   .arg(theme.accent.lighter(170).name());    // %5 - button hover
+    
     // QMainWindow
-    qss += QString("QMainWindow { background-color: %1; color: %2; }\n")
+    
+    // QMainWindow - no borders
+    qss += QString("QMainWindow { background-color: %1; color: %2; border: none; }\n")
         .arg(theme.windowBackground.name())
         .arg(theme.textPrimary.name());
     
@@ -84,9 +159,8 @@ QString ThemeManager::generateStylesheet() const {
     qss += QString("QToolButton:pressed { background-color: %1; }\n")
         .arg(theme.accent.darker(120).name());
     
-    // QTabWidget and QTabBar
-    qss += QString("QTabWidget::pane { border: 1px solid %1; background-color: %2; }\n")
-        .arg(theme.border.name())
+    // QTabWidget and QTabBar - without extra borders
+    qss += QString("QTabWidget::pane { border: none; background-color: %1; }\n")
         .arg(theme.windowBackground.name());
     qss += QString("QTabBar::tab { background-color: %1; color: %2; padding: 8px 16px; border: 1px solid %3; border-bottom: none; }\n")
         .arg(theme.tabInactive.name())
@@ -103,10 +177,45 @@ QString ThemeManager::generateStylesheet() const {
     qss += QString("QTabBar::close-button:hover { background-color: %1; }\n")
         .arg(theme.error.name());
     
-    // QDockWidget
-    qss += QString("QDockWidget::title { background-color: %1; color: %2; padding: 5px; }\n")
-        .arg(theme.sidebarBackground.name())
-        .arg(theme.textPrimary.name());
+    // QDockWidget title bar
+    qss += QString(R"(
+QDockWidget {
+    color: %1;
+}
+
+QDockWidget::title {
+    background-color: %2;
+    color: %1;
+    padding: 6px 8px;
+    border: none;
+    text-align: left;
+    font-weight: bold;
+}
+
+QDockWidget::close-button, QDockWidget::float-button {
+    background-color: transparent;
+    border: none;
+    padding: 4px;
+    width: 20px;
+    height: 20px;
+}
+
+QDockWidget::close-button:hover, QDockWidget::float-button:hover {
+    background-color: %3;
+    border-radius: 3px;
+}
+
+/* Labels and tabs inside dock widgets */
+QDockWidget QLabel {
+    color: %1;
+}
+
+QDockWidget QTabBar::tab {
+    color: %1;
+}
+)").arg(theme.textPrimary.name())       // %1 - text color (visible!)
+   .arg(theme.sidebarBackground.name()) // %2 - title bg
+   .arg(theme.accent.name());           // %3 - button hover
     
     // QTreeView (FileTree)
     qss += QString("QTreeView { background-color: %1; color: %2; border: none; }\n")
@@ -177,10 +286,14 @@ QString ThemeManager::generateStylesheet() const {
     qss += QString("QSplitter::handle:hover { background-color: %1; }\n")
         .arg(theme.accent.name());
     
-    // QPlainTextEdit (output panels)
+    // QPlainTextEdit (output panels) - ensure text visibility
     qss += QString("QPlainTextEdit { background-color: %1; color: %2; border: none; font-family: monospace; }\n")
         .arg(theme.editorBackground.name())
         .arg(theme.editorForeground.name());
+    
+    // QLabel - ensure text visibility in panels
+    qss += QString("QLabel { color: %1; }\n")
+        .arg(theme.textPrimary.name());
     
     // QTableView (problems)
     qss += QString("QTableView { background-color: %1; color: %2; border: none; gridline-color: %3; }\n")
@@ -198,6 +311,18 @@ QString ThemeManager::generateStylesheet() const {
         .arg(theme.statusBarBackground.name())
         .arg(theme.textPrimary.name())
         .arg(theme.border.name());
+    
+    // QMessageBox and QDialog - theme modal dialogs
+    qss += QString("QMessageBox { background-color: %1; color: %2; }\n")
+        .arg(theme.windowBackground.name())
+        .arg(theme.textPrimary.name());
+    qss += QString("QMessageBox QLabel { color: %1; }\n")
+        .arg(theme.textPrimary.name());
+    qss += QString("QDialog { background-color: %1; color: %2; }\n")
+        .arg(theme.windowBackground.name())
+        .arg(theme.textPrimary.name());
+    qss += QString("QDialog QLabel { color: %1; }\n")
+        .arg(theme.textPrimary.name());
     
     return qss;
 }
@@ -218,6 +343,7 @@ Theme ThemeManager::darkTheme() {
     theme.syntaxPreprocessor = QColor("#C586C0");  // Purple
     theme.syntaxNumber = QColor("#B5CEA8");        // Light green
     theme.syntaxFunction = QColor("#DCDCAA");      // Yellow
+    theme.cursorColor = QColor("#AEAFAD");         // Light gray cursor
     
     // UI colors
     theme.windowBackground = QColor("#1E1E1E");
@@ -258,6 +384,7 @@ Theme ThemeManager::lightTheme() {
     theme.syntaxPreprocessor = QColor("#0000FF");  // Blue
     theme.syntaxNumber = QColor("#098658");        // Dark green
     theme.syntaxFunction = QColor("#795E26");      // Brown
+    theme.cursorColor = QColor("#000000");         // Black cursor
     
     // UI colors
     theme.windowBackground = QColor("#FFFFFF");
@@ -298,6 +425,7 @@ Theme ThemeManager::draculaTheme() {
     theme.syntaxPreprocessor = QColor("#FF79C6");  // Pink
     theme.syntaxNumber = QColor("#BD93F9");        // Purple
     theme.syntaxFunction = QColor("#50FA7B");      // Green
+    theme.cursorColor = QColor("#F8F8F2");         // Light cursor
     
     // UI colors
     theme.windowBackground = QColor("#282A36");
@@ -338,6 +466,7 @@ Theme ThemeManager::monokaiTheme() {
     theme.syntaxPreprocessor = QColor("#F92672");  // Pink
     theme.syntaxNumber = QColor("#AE81FF");        // Purple
     theme.syntaxFunction = QColor("#A6E22E");      // Green
+    theme.cursorColor = QColor("#F8F8F0");         // Light cursor
     
     // UI colors
     theme.windowBackground = QColor("#272822");

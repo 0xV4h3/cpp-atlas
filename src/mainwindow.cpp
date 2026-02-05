@@ -27,6 +27,14 @@
 #include <QInputDialog>
 #include <QStandardPaths>
 #include <QTemporaryDir>
+#include <QMouseEvent>
+#include <QHBoxLayout>
+#include <QPushButton>
+
+#ifdef Q_OS_WIN
+#include <windows.h>
+#include <windowsx.h>
+#endif
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
@@ -34,12 +42,26 @@ MainWindow::MainWindow(QWidget *parent)
 {
     ui->setupUi(this);
     
+    // Enable frameless window with custom styling
+#ifdef Q_OS_WIN
+    // On Windows, use native frameless with resize support
+    setWindowFlags(Qt::Window | Qt::FramelessWindowHint);
+    // Enable Windows Aero Snap, resize from edges
+    setAttribute(Qt::WA_NativeWindow);
+#else
+    // On Linux/macOS
+    setWindowFlags(Qt::FramelessWindowHint);
+#endif
+    
+    setAttribute(Qt::WA_TranslucentBackground, false);
+    
     // Initialize components
     m_fileManager = new FileManager(this);
     m_project = new Project(this);
     
     setupUi();
     setupMenus();
+    setupCustomTitleBar();
     setupToolbar();
     setupDockWidgets();
     setupStatusBar();
@@ -83,6 +105,89 @@ void MainWindow::setupUi() {
     // Create central widget - editor tabs
     m_editorTabs = new EditorTabWidget(this);
     setCentralWidget(m_editorTabs);
+}
+
+void MainWindow::setupCustomTitleBar() {
+    m_titleBar = new QWidget(this);
+    m_titleBar->setObjectName("customTitleBar");
+    m_titleBar->setFixedHeight(TITLE_BAR_HEIGHT);
+    m_titleBar->setMouseTracking(true);
+    
+    QHBoxLayout* layout = new QHBoxLayout(m_titleBar);
+    layout->setContentsMargins(8, 0, 0, 0);
+    layout->setSpacing(0);
+    
+    // App icon (C++ icon)
+    m_iconLabel = new QLabel(this);
+    m_iconLabel->setText("C++");
+    m_iconLabel->setObjectName("appIcon");
+    m_iconLabel->setFixedSize(36, 28);  // Wider to fit "C++"
+    m_iconLabel->setAlignment(Qt::AlignCenter);
+    layout->addWidget(m_iconLabel);
+    
+    layout->addSpacing(8);
+    
+    // Menu bar goes here (move existing menu bar into title bar)
+    if (menuBar()) {
+        menuBar()->setObjectName("titleBarMenu");
+        layout->addWidget(menuBar());
+    }
+    
+    layout->addStretch();
+    
+    // Window title (filename - CppAtlas)
+    m_titleLabel = new QLabel("CppAtlas - C++ Learning IDE", this);
+    m_titleLabel->setObjectName("windowTitle");
+    m_titleLabel->setAlignment(Qt::AlignCenter);
+    layout->addWidget(m_titleLabel);
+    
+    layout->addStretch();
+    
+    // Window control buttons (right side)
+    QWidget* buttonContainer = new QWidget(this);
+    QHBoxLayout* btnLayout = new QHBoxLayout(buttonContainer);
+    btnLayout->setContentsMargins(0, 0, 0, 0);
+    btnLayout->setSpacing(0);
+    
+    // Minimize button
+    m_minimizeBtn = new QPushButton(this);
+    m_minimizeBtn->setObjectName("minimizeButton");
+    m_minimizeBtn->setText("─");  // Minimize symbol
+    m_minimizeBtn->setFixedSize(WINDOW_BUTTON_WIDTH, TITLE_BAR_HEIGHT);
+    m_minimizeBtn->setFlat(true);
+    connect(m_minimizeBtn, &QPushButton::clicked, this, &QMainWindow::showMinimized);
+    btnLayout->addWidget(m_minimizeBtn);
+    
+    // Maximize/Restore button
+    m_maximizeBtn = new QPushButton(this);
+    m_maximizeBtn->setObjectName("maximizeButton");
+    m_maximizeBtn->setText("□");  // Maximize symbol
+    m_maximizeBtn->setFixedSize(WINDOW_BUTTON_WIDTH, TITLE_BAR_HEIGHT);
+    m_maximizeBtn->setFlat(true);
+    connect(m_maximizeBtn, &QPushButton::clicked, this, [this]() {
+        if (isMaximized()) {
+            showNormal();
+            m_maximizeBtn->setText("□");
+        } else {
+            showMaximized();
+            m_maximizeBtn->setText("❐");  // Restore icon
+        }
+    });
+    btnLayout->addWidget(m_maximizeBtn);
+    
+    // Close button
+    m_closeBtn = new QPushButton(this);
+    m_closeBtn->setObjectName("closeButton");
+    m_closeBtn->setText("✕");
+    m_closeBtn->setFixedSize(WINDOW_BUTTON_WIDTH, TITLE_BAR_HEIGHT);
+    m_closeBtn->setFlat(true);
+    connect(m_closeBtn, &QPushButton::clicked, this, &QMainWindow::close);
+    btnLayout->addWidget(m_closeBtn);
+    
+    layout->addWidget(buttonContainer);
+    
+    // Set title bar as menu widget (replaces default)
+    setMenuWidget(m_titleBar);
 }
 
 void MainWindow::setupMenus() {
@@ -386,6 +491,13 @@ void MainWindow::updateWindowTitle() {
     }
     
     setWindowTitle(title);
+    updateCustomTitleLabel(title);
+}
+
+void MainWindow::updateCustomTitleLabel(const QString& title) {
+    if (m_titleLabel) {
+        m_titleLabel->setText(title);
+    }
 }
 
 void MainWindow::closeEvent(QCloseEvent *event) {
@@ -864,6 +976,126 @@ void MainWindow::onDiagnosticClicked(const QString& file, int line, int column) 
         editor->gotoLine(line);
     }
 }
+
+// Window dragging
+void MainWindow::mousePressEvent(QMouseEvent* event) {
+    if (event->button() == Qt::LeftButton) {
+        QPoint pos = event->pos();
+        // Only drag from title bar area, excluding buttons
+        const int buttonContainerWidth = WINDOW_BUTTON_WIDTH * WINDOW_BUTTON_COUNT;
+        if (pos.y() < TITLE_BAR_HEIGHT && pos.x() < width() - buttonContainerWidth) {
+            m_dragging = true;
+#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
+            m_dragPosition = event->globalPosition().toPoint() - frameGeometry().topLeft();
+#else
+            m_dragPosition = event->globalPos() - frameGeometry().topLeft();
+#endif
+            event->accept();
+            return;
+        }
+    }
+    QMainWindow::mousePressEvent(event);
+}
+
+void MainWindow::mouseMoveEvent(QMouseEvent* event) {
+    if (m_dragging && (event->buttons() & Qt::LeftButton)) {
+#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
+        move(event->globalPosition().toPoint() - m_dragPosition);
+#else
+        move(event->globalPos() - m_dragPosition);
+#endif
+        event->accept();
+        return;
+    }
+    QMainWindow::mouseMoveEvent(event);
+}
+
+void MainWindow::mouseReleaseEvent(QMouseEvent* event) {
+    m_dragging = false;
+    QMainWindow::mouseReleaseEvent(event);
+}
+
+// Double-click title bar to maximize/restore
+void MainWindow::mouseDoubleClickEvent(QMouseEvent* event) {
+    const int buttonContainerWidth = WINDOW_BUTTON_WIDTH * WINDOW_BUTTON_COUNT;
+    if (event->pos().y() < TITLE_BAR_HEIGHT && event->pos().x() < width() - buttonContainerWidth) {
+        if (isMaximized()) {
+            showNormal();
+            m_maximizeBtn->setText("□");
+        } else {
+            showMaximized();
+            m_maximizeBtn->setText("❐");
+        }
+        event->accept();
+        return;
+    }
+    QMainWindow::mouseDoubleClickEvent(event);
+}
+
+// Windows native event for resize from edges
+#ifdef Q_OS_WIN
+#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
+bool MainWindow::nativeEvent(const QByteArray &eventType, void *message, qintptr *result) {
+#else
+bool MainWindow::nativeEvent(const QByteArray &eventType, void *message, long *result) {
+#endif
+    if (eventType == "windows_generic_MSG") {
+        MSG* msg = static_cast<MSG*>(message);
+        if (msg->message == WM_NCHITTEST) {
+            // Enable resize from window edges
+            RECT winrect;
+            GetWindowRect(reinterpret_cast<HWND>(winId()), &winrect);
+            
+            int x = GET_X_LPARAM(msg->lParam);
+            int y = GET_Y_LPARAM(msg->lParam);
+            
+            // Check corners first
+            if (x < winrect.left + RESIZE_BORDER_WIDTH && y < winrect.top + RESIZE_BORDER_WIDTH) {
+                *result = HTTOPLEFT;
+                return true;
+            }
+            if (x > winrect.right - RESIZE_BORDER_WIDTH && y < winrect.top + RESIZE_BORDER_WIDTH) {
+                *result = HTTOPRIGHT;
+                return true;
+            }
+            if (x < winrect.left + RESIZE_BORDER_WIDTH && y > winrect.bottom - RESIZE_BORDER_WIDTH) {
+                *result = HTBOTTOMLEFT;
+                return true;
+            }
+            if (x > winrect.right - RESIZE_BORDER_WIDTH && y > winrect.bottom - RESIZE_BORDER_WIDTH) {
+                *result = HTBOTTOMRIGHT;
+                return true;
+            }
+            // Check edges
+            if (x < winrect.left + RESIZE_BORDER_WIDTH) {
+                *result = HTLEFT;
+                return true;
+            }
+            if (x > winrect.right - RESIZE_BORDER_WIDTH) {
+                *result = HTRIGHT;
+                return true;
+            }
+            if (y < winrect.top + RESIZE_BORDER_WIDTH) {
+                *result = HTTOP;
+                return true;
+            }
+            if (y > winrect.bottom - RESIZE_BORDER_WIDTH) {
+                *result = HTBOTTOM;
+                return true;
+            }
+        }
+    }
+    return QMainWindow::nativeEvent(eventType, message, result);
+}
+#else
+#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
+bool MainWindow::nativeEvent(const QByteArray &eventType, void *message, qintptr *result) {
+#else
+bool MainWindow::nativeEvent(const QByteArray &eventType, void *message, long *result) {
+#endif
+    return QMainWindow::nativeEvent(eventType, message, result);
+}
+#endif
 
 // Helper methods
 QString MainWindow::getCurrentSourceFile() {
