@@ -69,12 +69,14 @@ QString ThemeManager::generateStylesheet() const {
     background-color: transparent;
     border: none;
     padding: 0;
+    margin: 0;
 }
 
 #titleBarMenu::item {
     background-color: transparent;
     color: %3;
-    padding: 6px 10px;
+    padding: 5px 10px;
+    margin: 0;
 }
 
 #titleBarMenu::item:selected {
@@ -193,11 +195,14 @@ QDockWidget::title {
 QDockWidget::close-button, QDockWidget::float-button {
     background-color: transparent;
     border: none;
-    padding: 2px;
+    padding: 4px;
+    width: 20px;
+    height: 20px;
 }
 
 QDockWidget::close-button:hover, QDockWidget::float-button:hover {
     background-color: %3;
+    border-radius: 3px;
 }
 
 /* Labels and tabs inside dock widgets */
@@ -306,6 +311,18 @@ QDockWidget QTabBar::tab {
         .arg(theme.statusBarBackground.name())
         .arg(theme.textPrimary.name())
         .arg(theme.border.name());
+    
+    // QMessageBox and QDialog - theme modal dialogs
+    qss += QString("QMessageBox { background-color: %1; color: %2; }\n")
+        .arg(theme.windowBackground.name())
+        .arg(theme.textPrimary.name());
+    qss += QString("QMessageBox QLabel { color: %1; }\n")
+        .arg(theme.textPrimary.name());
+    qss += QString("QDialog { background-color: %1; color: %2; }\n")
+        .arg(theme.windowBackground.name())
+        .arg(theme.textPrimary.name());
+    qss += QString("QDialog QLabel { color: %1; }\n")
+        .arg(theme.textPrimary.name());
     
     return qss;
 }
