@@ -10,8 +10,10 @@
 #include "ui/ThemeManager.h"
 #include "ui/GotoLineDialog.h"
 #include "ui/FindReplaceDialog.h"
+#include "ui/WelcomeScreen.h"
 #include "core/FileManager.h"
 #include "core/Project.h"
+#include "core/RecentProjectsManager.h"
 #include "compiler/CompilerRegistry.h"
 #include "compiler/ICompiler.h"
 
@@ -66,6 +68,7 @@ MainWindow::MainWindow(QWidget *parent)
     setupDockWidgets();
     setupStatusBar();
     setupConnections();
+    setupWelcomeScreen();
     
     // Auto-scan for compilers
     CompilerRegistry::instance().autoScanCompilers();
@@ -74,18 +77,15 @@ MainWindow::MainWindow(QWidget *parent)
     // Apply default theme
     ThemeManager::instance()->setTheme("dark");
     
-    // Set default directory (removed - now handled by openFolder)
-    // m_fileTree->setRootPath(QDir::currentPath());
-    
-    // Open a default file
-    m_editorTabs->newFile();
-    
     updateWindowTitle();
     
     // Restore window state
     QSettings settings("CppAtlas", "CppAtlas");
     restoreGeometry(settings.value("geometry").toByteArray());
     restoreState(settings.value("windowState").toByteArray());
+    
+    // Show Welcome Screen on startup
+    showWelcomeScreen();
 }
 
 MainWindow::~MainWindow()
@@ -102,9 +102,14 @@ void MainWindow::setupUi() {
     setWindowTitle("CppAtlas - C++ Learning IDE");
     resize(1200, 800);
     
+    // Create stacked widget for Welcome/IDE switching
+    m_centralStack = new QStackedWidget(this);
+    
     // Create central widget - editor tabs
     m_editorTabs = new EditorTabWidget(this);
-    setCentralWidget(m_editorTabs);
+    m_centralStack->addWidget(m_editorTabs);
+    
+    setCentralWidget(m_centralStack);
 }
 
 void MainWindow::setupCustomTitleBar() {
@@ -346,6 +351,12 @@ void MainWindow::setupMenus() {
     fullscreenAction->setShortcut(Qt::Key_F11);
     connect(fullscreenAction, &QAction::triggered, this, &MainWindow::onViewFullscreen);
     
+    viewMenu->addSeparator();
+    
+    QAction* showWelcomeAction = viewMenu->addAction("Show &Welcome Screen");
+    showWelcomeAction->setShortcut(QKeySequence("Ctrl+Shift+W"));
+    connect(showWelcomeAction, &QAction::triggered, this, &MainWindow::showWelcomeScreen);
+    
     // Help menu
     QMenu* helpMenu = menuBar()->addMenu("&Help");
     QAction* aboutAction = helpMenu->addAction("&About");
@@ -436,6 +447,81 @@ void MainWindow::setupConnections() {
             this, &MainWindow::onDiagnosticClicked);
 }
 
+void MainWindow::setupWelcomeScreen() {
+    m_welcomeScreen = new WelcomeScreen(this);
+    m_centralStack->addWidget(m_welcomeScreen);
+    
+    // Connect Welcome Screen signals
+    connect(m_welcomeScreen, &WelcomeScreen::newFileRequested, this, [this]() {
+        hideWelcomeScreen();
+        onFileNew();
+    });
+    
+    connect(m_welcomeScreen, &WelcomeScreen::openFileRequested, this, [this]() {
+        QString file = QFileDialog::getOpenFileName(this, "Open File", QString(),
+            "C++ Files (*.cpp *.h *.hpp *.cc *.cxx);;All Files (*)");
+        if (!file.isEmpty()) {
+            hideWelcomeScreen();
+            m_editorTabs->openFile(file);
+            RecentProjectsManager::instance()->addRecentProject(file);
+        }
+    });
+    
+    connect(m_welcomeScreen, &WelcomeScreen::openFolderRequested, this, [this]() {
+        QString folder = QFileDialog::getExistingDirectory(this, "Open Folder");
+        if (!folder.isEmpty()) {
+            hideWelcomeScreen();
+            m_fileTree->openFolder(folder);
+            RecentProjectsManager::instance()->addRecentProject(folder);
+            setWindowTitle(QString("%1 - CppAtlas").arg(QFileInfo(folder).fileName()));
+        }
+    });
+    
+    connect(m_welcomeScreen, &WelcomeScreen::recentProjectSelected,
+            this, [this](const QString& path) {
+        hideWelcomeScreen();
+        QFileInfo info(path);
+        if (info.isDir()) {
+            m_fileTree->openFolder(path);
+            setWindowTitle(QString("%1 - CppAtlas").arg(info.fileName()));
+        } else {
+            m_editorTabs->openFile(path);
+        }
+        RecentProjectsManager::instance()->addRecentProject(path);
+    });
+    
+    connect(m_welcomeScreen, &WelcomeScreen::quizModeRequested, this, [this]() {
+        QMessageBox::information(this, "Quiz Mode",
+            "Quiz Mode will be available in a future update.\n\n"
+            "This will include:\n"
+            "- C++ knowledge assessments\n"
+            "- Interactive coding challenges\n"
+            "- Progress tracking");
+    });
+    
+    connect(m_welcomeScreen, &WelcomeScreen::continueWithoutProjectRequested,
+            this, [this]() {
+        hideWelcomeScreen();
+        m_editorTabs->newFile();
+    });
+}
+
+void MainWindow::showWelcomeScreen() {
+    m_centralStack->setCurrentWidget(m_welcomeScreen);
+    
+    // Hide IDE-specific docks
+    m_fileTreeDock->hide();
+    m_outputPanelDock->hide();
+}
+
+void MainWindow::hideWelcomeScreen() {
+    m_centralStack->setCurrentWidget(m_editorTabs);
+    
+    // Show IDE docks
+    m_fileTreeDock->show();
+    m_outputPanelDock->show();
+}
+
 void MainWindow::loadCompilers() {
     m_compilerCombo->clear();
     
@@ -524,6 +610,7 @@ void MainWindow::onFileOpen() {
     if (!filePath.isEmpty()) {
         m_editorTabs->openFile(filePath);
         m_fileManager->addRecentFile(filePath);
+        RecentProjectsManager::instance()->addRecentProject(filePath);
     }
 }
 
@@ -548,6 +635,7 @@ void MainWindow::onFileOpenFolder() {
     if (!folderPath.isEmpty()) {
         m_fileTree->openFolder(folderPath);
         m_statusLabel->setText("Opened folder: " + folderPath);
+        RecentProjectsManager::instance()->addRecentProject(folderPath);
     }
 }
 
