@@ -1,0 +1,12 @@
+#ifndef ${HEADER_GUARD}
+#define ${HEADER_GUARD}
+
+class ${CLASS_NAME} {
+public:
+    ${CLASS_NAME}();
+    ~${CLASS_NAME}();
+
+private:
+};
+
+#endif // ${HEADER_GUARD}

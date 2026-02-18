@@ -156,6 +156,22 @@ void WelcomeScreen::createQuickActionsArea(QWidget* actionsWidget) {
             this, &WelcomeScreen::openFolderRequested);
     layout->addWidget(m_openFolderBtn);
     
+    // Create Project button
+    m_createProjectBtn = new QPushButton("Create Project...", actionsWidget);
+    m_createProjectBtn->setObjectName("quickActionButton");
+    m_createProjectBtn->setMinimumHeight(40);
+    connect(m_createProjectBtn, &QPushButton::clicked,
+            this, &WelcomeScreen::createProjectRequested);
+    layout->addWidget(m_createProjectBtn);
+    
+    // Open Project button
+    m_openProjectBtn = new QPushButton("Open Project...", actionsWidget);
+    m_openProjectBtn->setObjectName("quickActionButton");
+    m_openProjectBtn->setMinimumHeight(40);
+    connect(m_openProjectBtn, &QPushButton::clicked,
+            this, &WelcomeScreen::openProjectRequested);
+    layout->addWidget(m_openProjectBtn);
+    
     layout->addStretch();
 }
 

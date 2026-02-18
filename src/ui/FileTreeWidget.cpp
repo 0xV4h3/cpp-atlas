@@ -7,6 +7,8 @@
 #include <QUrl>
 #include <QMessageBox>
 #include <QInputDialog>
+#include <QFile>
+#include <QTextStream>
 
 FileTreeWidget::FileTreeWidget(QWidget *parent)
     : QTreeView(parent)
@@ -44,14 +46,107 @@ void FileTreeWidget::setupModel() {
 void FileTreeWidget::setupContextMenu() {
     m_contextMenu = new QMenu(this);
     
-    m_newFileAction = m_contextMenu->addAction("New File...");
-    m_contextMenu->addSeparator();
+    // New submenu
+    QMenu* newMenu = m_contextMenu->addMenu("New");
+    QAction* newSourceAction = newMenu->addAction("Source File");
+    QAction* newHeaderAction = newMenu->addAction("Header File");
+    QAction* newClassAction = newMenu->addAction("Class...");
+    QAction* newFolderAction = newMenu->addAction("Folder");
+
+    connect(newSourceAction, &QAction::triggered, this, [this]() {
+        QString directory;
+        if (m_contextMenuIndex.isValid()) {
+            QString path = m_model->filePath(m_contextMenuIndex);
+            QFileInfo info(path);
+            directory = info.isDir() ? path : info.absolutePath();
+        } else {
+            directory = m_model->rootPath();
+        }
+        bool ok;
+        QString name = QInputDialog::getText(this, "New Source File",
+            "File name:", QLineEdit::Normal, "main.cpp", &ok);
+        if (ok && !name.isEmpty()) {
+            QString filePath = QDir(directory).filePath(name);
+            if (QFile::exists(filePath)) {
+                QMessageBox::warning(this, "Error", "File already exists.");
+                return;
+            }
+            QFile file(filePath);
+            if (file.open(QIODevice::WriteOnly | QIODevice::Text)) {
+                QTextStream stream(&file);
+                stream << "#include <iostream>\n\nint main() {\n    std::cout << \"Hello, CppAtlas!\" << std::endl;\n    return 0;\n}\n";
+                file.close();
+                emit newFileRequested(filePath);
+            }
+        }
+    });
+
+    connect(newHeaderAction, &QAction::triggered, this, [this]() {
+        QString directory;
+        if (m_contextMenuIndex.isValid()) {
+            QString path = m_model->filePath(m_contextMenuIndex);
+            QFileInfo info(path);
+            directory = info.isDir() ? path : info.absolutePath();
+        } else {
+            directory = m_model->rootPath();
+        }
+        bool ok;
+        QString name = QInputDialog::getText(this, "New Header File",
+            "File name:", QLineEdit::Normal, "header.hpp", &ok);
+        if (ok && !name.isEmpty()) {
+            QString filePath = QDir(directory).filePath(name);
+            if (QFile::exists(filePath)) {
+                QMessageBox::warning(this, "Error", "File already exists.");
+                return;
+            }
+            QString guard = name.toUpper().replace('.', '_').replace('-', '_');
+            QFile file(filePath);
+            if (file.open(QIODevice::WriteOnly | QIODevice::Text)) {
+                QTextStream stream(&file);
+                stream << "#ifndef " << guard << "\n#define " << guard
+                       << "\n\n// TODO: Add declarations\n\n#endif // " << guard << "\n";
+                file.close();
+                emit newFileRequested(filePath);
+            }
+        }
+    });
+
+    connect(newClassAction, &QAction::triggered, this, [this]() {
+        QString directory;
+        if (m_contextMenuIndex.isValid()) {
+            QString path = m_model->filePath(m_contextMenuIndex);
+            QFileInfo info(path);
+            directory = info.isDir() ? path : info.absolutePath();
+        } else {
+            directory = m_model->rootPath();
+        }
+        emit newFileRequested(directory);
+    });
+
+    connect(newFolderAction, &QAction::triggered, this, [this]() {
+        QString directory;
+        if (m_contextMenuIndex.isValid()) {
+            QString path = m_model->filePath(m_contextMenuIndex);
+            QFileInfo info(path);
+            directory = info.isDir() ? path : info.absolutePath();
+        } else {
+            directory = m_model->rootPath();
+        }
+        bool ok;
+        QString name = QInputDialog::getText(this, "New Folder",
+            "Folder name:", QLineEdit::Normal, "NewFolder", &ok);
+        if (ok && !name.isEmpty()) {
+            QDir(directory).mkdir(name);
+        }
+    });
+
+    m_renameAction = m_contextMenu->addAction("Rename");
+    m_renameAction->setShortcut(Qt::Key_F2);
     m_deleteAction = m_contextMenu->addAction("Delete");
-    m_renameAction = m_contextMenu->addAction("Rename...");
+    m_deleteAction->setShortcut(Qt::Key_Delete);
     m_contextMenu->addSeparator();
     m_openInExplorerAction = m_contextMenu->addAction("Open in File Explorer");
     
-    connect(m_newFileAction, &QAction::triggered, this, &FileTreeWidget::onNewFileAction);
     connect(m_deleteAction, &QAction::triggered, this, &FileTreeWidget::onDeleteAction);
     connect(m_renameAction, &QAction::triggered, this, &FileTreeWidget::onRenameAction);
     connect(m_openInExplorerAction, &QAction::triggered, this, &FileTreeWidget::onOpenInExplorerAction);
@@ -83,16 +178,12 @@ void FileTreeWidget::contextMenuEvent(QContextMenuEvent *event) {
     m_contextMenuIndex = indexAt(event->pos());
     
     if (m_contextMenuIndex.isValid()) {
-        QFileInfo info(m_model->filePath(m_contextMenuIndex));
-        
         // Enable/disable actions based on selection
-        m_newFileAction->setEnabled(info.isDir());
         m_deleteAction->setEnabled(true);
         m_renameAction->setEnabled(true);
         m_openInExplorerAction->setEnabled(true);
     } else {
         // Clicked on empty space
-        m_newFileAction->setEnabled(true);
         m_deleteAction->setEnabled(false);
         m_renameAction->setEnabled(false);
         m_openInExplorerAction->setEnabled(true);
@@ -140,13 +231,18 @@ void FileTreeWidget::onDeleteAction() {
     
     QMessageBox::StandardButton reply = QMessageBox::question(
         this,
-        "Confirm Delete",
+        "Delete",
         QString("Are you sure you want to delete '%1'?").arg(info.fileName()),
         QMessageBox::Yes | QMessageBox::No
     );
     
     if (reply == QMessageBox::Yes) {
-        emit deleteFileRequested(filePath);
+        if (info.isDir()) {
+            QDir(filePath).removeRecursively();
+        } else {
+            QFile::remove(filePath);
+        }
+        emit fileDeleted(filePath);
     }
 }
 
@@ -155,8 +251,19 @@ void FileTreeWidget::onRenameAction() {
         return;
     }
     
-    QString filePath = m_model->filePath(m_contextMenuIndex);
-    emit renameFileRequested(filePath);
+    QString oldPath = m_model->filePath(m_contextMenuIndex);
+    QFileInfo info(oldPath);
+    
+    bool ok;
+    QString newName = QInputDialog::getText(this, "Rename",
+        "New name:", QLineEdit::Normal, info.fileName(), &ok);
+    
+    if (ok && !newName.isEmpty()) {
+        QString newPath = info.dir().filePath(newName);
+        if (QFile::rename(oldPath, newPath)) {
+            emit fileRenamed(oldPath, newPath);
+        }
+    }
 }
 
 void FileTreeWidget::onOpenInExplorerAction() {

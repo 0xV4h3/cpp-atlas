@@ -21,6 +21,10 @@ signals:
     void openFolderRequested();
     void recentProjectSelected(const QString& projectPath);
     
+    // Project signals
+    void createProjectRequested();
+    void openProjectRequested();
+    
     // Quiz Mode signal (for future implementation)
     void quizModeRequested();
     
@@ -49,6 +53,8 @@ private:
     QPushButton* m_newFileBtn;
     QPushButton* m_openFileBtn;
     QPushButton* m_openFolderBtn;
+    QPushButton* m_createProjectBtn;
+    QPushButton* m_openProjectBtn;
     
     // Recent projects
     QListWidget* m_recentProjectsList;
