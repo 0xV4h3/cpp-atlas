@@ -5,6 +5,7 @@ set(TS_FILES ${CMAKE_SOURCE_DIR}/resources/cpp-atlas_hy_AM.ts)
 set(CORE_SOURCES
     ${CMAKE_CURRENT_SOURCE_DIR}/core/Project.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/core/FileManager.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/core/RecentProjectsManager.cpp
 )
 
 set(EDITOR_SOURCES
@@ -31,6 +32,7 @@ set(UI_SOURCES
     ${CMAKE_CURRENT_SOURCE_DIR}/ui/ThemeManager.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/ui/GotoLineDialog.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/ui/FindReplaceDialog.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/ui/WelcomeScreen.cpp
 )
 
 # Collect all sources

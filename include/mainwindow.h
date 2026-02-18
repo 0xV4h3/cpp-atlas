@@ -8,6 +8,7 @@
 #include <QProcess>
 #include <QPushButton>
 #include <QPoint>
+#include <QStackedWidget>
 
 QT_BEGIN_NAMESPACE
 namespace Ui {
@@ -21,6 +22,7 @@ class FileTreeWidget;
 class FileManager;
 class Project;
 class ICompiler;
+class WelcomeScreen;
 
 class MainWindow : public QMainWindow
 {
@@ -116,6 +118,10 @@ private:
     FileManager* m_fileManager;
     Project* m_project;
     
+    // Welcome screen
+    WelcomeScreen* m_welcomeScreen = nullptr;
+    QStackedWidget* m_centralStack = nullptr;
+    
     // Dock widgets
     QDockWidget* m_fileTreeDock;
     QDockWidget* m_outputPanelDock;
@@ -140,6 +146,9 @@ private:
     void setupDockWidgets();
     void setupStatusBar();
     void setupConnections();
+    void setupWelcomeScreen();
+    void showWelcomeScreen();
+    void hideWelcomeScreen();
     void loadCompilers();
     void updateStatusBar();
     void updateWindowTitle();
