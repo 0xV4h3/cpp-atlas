@@ -294,7 +294,7 @@ QString NewFileDialog::generateHeaderGuard(const QString& fileName) const {
     guard.replace('-', '_');
     guard.replace(' ', '_');
     // Add random suffix
-    quint32 suffix = QRandomGenerator::global()->generate() % 100000;
+    quint32 suffix = QRandomGenerator::global()->generate();
     guard += QString("_%1").arg(suffix);
     return guard;
 }
