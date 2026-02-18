@@ -223,6 +223,7 @@ void WelcomeScreen::loadRecentProjects() {
 }
 
 void WelcomeScreen::onRecentProjectClicked(QListWidgetItem* item) {
+    // Reserved for future single-click behavior (e.g., preview or details)
     Q_UNUSED(item);
 }
 
