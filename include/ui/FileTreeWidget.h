@@ -47,10 +47,12 @@ signals:
     void fileDeleted(const QString& filePath);
     void folderOpened(const QString& path);
     void folderClosed();
+    void fileCreated(const QString& filePath);
     
 protected:
     void contextMenuEvent(QContextMenuEvent *event) override;
     void mouseDoubleClickEvent(QMouseEvent *event) override;
+    void keyPressEvent(QKeyEvent *event) override;
     
 private slots:
     void onNewFileAction();

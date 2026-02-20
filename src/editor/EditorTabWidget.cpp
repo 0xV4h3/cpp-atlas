@@ -169,6 +169,28 @@ bool EditorTabWidget::closeAll() {
     return true;
 }
 
+void EditorTabWidget::closeFileTab(const QString& filePath) {
+    for (int i = 0; i < count(); ++i) {
+        CodeEditor* editor = editorAt(i);
+        if (editor && editor->filePath() == filePath) {
+            removeTab(i);
+            editor->deleteLater();
+            return;
+        }
+    }
+}
+
+void EditorTabWidget::updateFilePath(const QString& oldPath, const QString& newPath) {
+    for (int i = 0; i < count(); ++i) {
+        CodeEditor* editor = editorAt(i);
+        if (editor && editor->filePath() == oldPath) {
+            editor->setFilePath(newPath);
+            setTabText(i, shortFileName(newPath));
+            return;
+        }
+    }
+}
+
 void EditorTabWidget::onTabChanged(int index) {
     CodeEditor* editor = editorAt(index);
     emit editorChanged(editor);

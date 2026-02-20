@@ -5,8 +5,8 @@ class ${CLASS_NAME} {
 public:
     ${CLASS_NAME}();
     ~${CLASS_NAME}();
-
 private:
+    // Add member fields here
 };
 
 #endif // ${HEADER_GUARD}

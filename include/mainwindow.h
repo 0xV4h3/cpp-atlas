@@ -144,7 +144,13 @@ private:
     // Menus
     QMenu* m_buildMenu = nullptr;
     QMenu* m_editMenu = nullptr;
+    QMenu* m_viewMenu = nullptr;
     QAction* m_runAction = nullptr;
+    QAction* m_toggleFileTreeAction = nullptr;
+    QAction* m_toggleOutputAction = nullptr;
+    
+    // Main toolbar
+    QToolBar* m_mainToolbar = nullptr;
     
     void setupUi();
     void setupCustomTitleBar();
