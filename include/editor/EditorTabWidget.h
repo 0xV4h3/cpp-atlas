@@ -67,11 +67,23 @@ public:
      */
     bool closeAll();
     
+    /**
+     * @brief Close tab for a specific file path
+     * @param filePath File path to close
+     */
+    void closeFileTab(const QString& filePath);
+    
+    /**
+     * @brief Update file path for an open tab (e.g., after rename)
+     * @param oldPath Old file path
+     * @param newPath New file path
+     */
+    void updateFilePath(const QString& oldPath, const QString& newPath);
+    
 signals:
     void editorChanged(CodeEditor* editor);
     void fileOpened(const QString& filePath);
     void fileSaved(const QString& filePath);
-    void tabCloseRequested(int index);
     
 private slots:
     void onTabChanged(int index);

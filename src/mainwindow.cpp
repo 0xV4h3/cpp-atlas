@@ -267,19 +267,19 @@ void MainWindow::setupMenus() {
     
     m_editMenu->addSeparator();
     
-    QAction* findAction = m_editMenu->addAction("&Find...");
-    findAction->setShortcut(QKeySequence::Find);
-    connect(findAction, &QAction::triggered, this, &MainWindow::onEditFind);
+    m_findAction = m_editMenu->addAction("&Find...");
+    m_findAction->setShortcut(QKeySequence::Find);
+    connect(m_findAction, &QAction::triggered, this, &MainWindow::onEditFind);
     
-    QAction* replaceAction = m_editMenu->addAction("&Replace...");
-    replaceAction->setShortcut(QKeySequence::Replace);
-    connect(replaceAction, &QAction::triggered, this, &MainWindow::onEditReplace);
+    m_replaceAction = m_editMenu->addAction("&Replace...");
+    m_replaceAction->setShortcut(QKeySequence::Replace);
+    connect(m_replaceAction, &QAction::triggered, this, &MainWindow::onEditReplace);
     
     m_editMenu->addSeparator();
     
-    QAction* gotoLineAction = m_editMenu->addAction("&Go to Line...");
-    gotoLineAction->setShortcut(QKeySequence(Qt::CTRL | Qt::Key_G));
-    connect(gotoLineAction, &QAction::triggered, this, &MainWindow::onEditGotoLine);
+    m_gotoLineAction = m_editMenu->addAction("&Go to Line...");
+    m_gotoLineAction->setShortcut(QKeySequence(Qt::CTRL | Qt::Key_G));
+    connect(m_gotoLineAction, &QAction::triggered, this, &MainWindow::onEditGotoLine);
     
     // Build menu
     m_buildMenu = menuBar()->addMenu("&Build");
@@ -306,18 +306,18 @@ void MainWindow::setupMenus() {
     connect(cleanAction, &QAction::triggered, this, &MainWindow::onBuildClean);
     
     // View menu
-    QMenu* viewMenu = menuBar()->addMenu("&View");
+    m_viewMenu = menuBar()->addMenu("&View");
     
-    QAction* toggleFileTreeAction = viewMenu->addAction("Toggle &File Tree");
-    connect(toggleFileTreeAction, &QAction::triggered, this, &MainWindow::onViewToggleFileTree);
+    m_toggleFileTreeAction = m_viewMenu->addAction("Toggle &File Tree");
+    connect(m_toggleFileTreeAction, &QAction::triggered, this, &MainWindow::onViewToggleFileTree);
     
-    QAction* toggleOutputAction = viewMenu->addAction("Toggle &Output Panel");
-    connect(toggleOutputAction, &QAction::triggered, this, &MainWindow::onViewToggleOutputPanel);
+    m_toggleOutputAction = m_viewMenu->addAction("Toggle &Output Panel");
+    connect(m_toggleOutputAction, &QAction::triggered, this, &MainWindow::onViewToggleOutputPanel);
     
-    viewMenu->addSeparator();
+    m_viewMenu->addSeparator();
     
     // Theme submenu
-    QMenu* themeMenu = viewMenu->addMenu("&Theme");
+    QMenu* themeMenu = m_viewMenu->addMenu("&Theme");
     QActionGroup* themeGroup = new QActionGroup(this);
     
     QAction* darkThemeAction = themeMenu->addAction("Dark");
@@ -353,15 +353,15 @@ void MainWindow::setupMenus() {
         }
     });
     
-    viewMenu->addSeparator();
+    m_viewMenu->addSeparator();
     
-    QAction* fullscreenAction = viewMenu->addAction("&Fullscreen");
+    QAction* fullscreenAction = m_viewMenu->addAction("&Fullscreen");
     fullscreenAction->setShortcut(Qt::Key_F11);
     connect(fullscreenAction, &QAction::triggered, this, &MainWindow::onViewFullscreen);
     
-    viewMenu->addSeparator();
+    m_viewMenu->addSeparator();
     
-    QAction* showWelcomeAction = viewMenu->addAction("Show &Welcome Screen");
+    QAction* showWelcomeAction = m_viewMenu->addAction("Show &Welcome Screen");
     showWelcomeAction->setShortcut(QKeySequence("Ctrl+Shift+W"));
     connect(showWelcomeAction, &QAction::triggered, this, &MainWindow::showWelcomeScreen);
     
@@ -377,8 +377,8 @@ void MainWindow::setupMenus() {
 }
 
 void MainWindow::setupToolbar() {
-    QToolBar* toolbar = addToolBar("Main Toolbar");
-    toolbar->setMovable(false);
+    m_mainToolbar = addToolBar("Main Toolbar");
+    m_mainToolbar->setMovable(false);
     
     // New button with dropdown menu
     QToolButton* newButton = new QToolButton(this);
@@ -404,32 +404,32 @@ void MainWindow::setupToolbar() {
     connect(newProjectAction, &QAction::triggered, this, &MainWindow::onFileNewProject);
     newButton->setMenu(newMenu);
     connect(newButton, &QToolButton::clicked, this, &MainWindow::onFileNew);
-    toolbar->addWidget(newButton);
+    m_mainToolbar->addWidget(newButton);
     
-    toolbar->addAction("Open", this, &MainWindow::onFileOpen);
-    toolbar->addAction("Save", this, &MainWindow::onFileSave);
+    m_mainToolbar->addAction("Open", this, &MainWindow::onFileOpen);
+    m_mainToolbar->addAction("Save", this, &MainWindow::onFileSave);
     
-    toolbar->addSeparator();
+    m_mainToolbar->addSeparator();
     
     // Build, Run, Stop buttons
-    toolbar->addAction("Build", this, &MainWindow::onBuildCompile);
-    toolbar->addAction("Run", this, &MainWindow::onBuildRun);
-    toolbar->addAction("Stop", this, &MainWindow::onBuildStop);
+    m_mainToolbar->addAction("Build", this, &MainWindow::onBuildCompile);
+    m_mainToolbar->addAction("Run", this, &MainWindow::onBuildRun);
+    m_mainToolbar->addAction("Stop", this, &MainWindow::onBuildStop);
     
-    toolbar->addSeparator();
+    m_mainToolbar->addSeparator();
     
     // Compiler selection
-    toolbar->addWidget(new QLabel(" Compiler: "));
-    m_compilerCombo = new QComboBox(toolbar);
+    m_mainToolbar->addWidget(new QLabel(" Compiler: "));
+    m_compilerCombo = new QComboBox(m_mainToolbar);
     m_compilerCombo->setMinimumWidth(150);
-    toolbar->addWidget(m_compilerCombo);
+    m_mainToolbar->addWidget(m_compilerCombo);
     
     // Standard selection
-    toolbar->addWidget(new QLabel(" Standard: "));
-    m_standardCombo = new QComboBox(toolbar);
+    m_mainToolbar->addWidget(new QLabel(" Standard: "));
+    m_standardCombo = new QComboBox(m_mainToolbar);
     m_standardCombo->addItems({"c++11", "c++14", "c++17", "c++20", "c++23"});
     m_standardCombo->setCurrentText("c++17");
-    toolbar->addWidget(m_standardCombo);
+    m_mainToolbar->addWidget(m_standardCombo);
     
     connect(m_compilerCombo, QOverload<int>::of(&QComboBox::currentIndexChanged),
             this, &MainWindow::onCompilerChanged);
@@ -473,6 +473,18 @@ void MainWindow::setupConnections() {
             this, &MainWindow::onFileTreeDoubleClicked);
     connect(m_fileTree, &FileTreeWidget::newFileRequested,
             this, &MainWindow::onNewFileRequested);
+    connect(m_fileTree, &FileTreeWidget::fileCreated,
+            this, [this](const QString& filePath) {
+        m_editorTabs->openFile(filePath);
+    });
+    connect(m_fileTree, &FileTreeWidget::fileDeleted,
+            this, [this](const QString& filePath) {
+        m_editorTabs->closeFileTab(filePath);
+    });
+    connect(m_fileTree, &FileTreeWidget::fileRenamed,
+            this, [this](const QString& oldPath, const QString& newPath) {
+        m_editorTabs->updateFilePath(oldPath, newPath);
+    });
     
     // Problems widget signals
     connect(m_outputPanel->problems(), &ProblemsWidget::diagnosticClicked,
@@ -544,6 +556,11 @@ void MainWindow::setupWelcomeScreen() {
         hideWelcomeScreen();
         m_editorTabs->newFile();
     });
+    
+    connect(m_welcomeScreen, &WelcomeScreen::returnToProjectRequested,
+            this, [this]() {
+        hideWelcomeScreen();
+    });
 }
 
 void MainWindow::showWelcomeScreen() {
@@ -552,6 +569,10 @@ void MainWindow::showWelcomeScreen() {
     // Hide IDE-specific docks
     m_fileTreeDock->hide();
     m_outputPanelDock->hide();
+    
+    // Show "Return to Project" button if a project/folder is open or tabs exist
+    bool hasOpenProject = !m_fileTree->rootPath().isEmpty() || m_editorTabs->count() > 0;
+    m_welcomeScreen->setReturnToProjectVisible(hasOpenProject);
     
     updateMenuState(true);
 }
@@ -567,11 +588,36 @@ void MainWindow::hideWelcomeScreen() {
 }
 
 void MainWindow::updateMenuState(bool isWelcomeVisible) {
+    // Build menu - disable entirely in welcome screen
     if (m_buildMenu) {
         m_buildMenu->setEnabled(!isWelcomeVisible);
     }
     if (m_runAction) {
         m_runAction->setEnabled(!isWelcomeVisible);
+    }
+    
+    // Edit menu - disable Find, Replace, Go to Line in welcome screen
+    if (m_findAction) {
+        m_findAction->setEnabled(!isWelcomeVisible);
+    }
+    if (m_replaceAction) {
+        m_replaceAction->setEnabled(!isWelcomeVisible);
+    }
+    if (m_gotoLineAction) {
+        m_gotoLineAction->setEnabled(!isWelcomeVisible);
+    }
+    
+    // View menu - disable Toggle File Tree and Toggle Output Panel
+    if (m_toggleFileTreeAction) {
+        m_toggleFileTreeAction->setEnabled(!isWelcomeVisible);
+    }
+    if (m_toggleOutputAction) {
+        m_toggleOutputAction->setEnabled(!isWelcomeVisible);
+    }
+    
+    // Main toolbar - hide/show
+    if (m_mainToolbar) {
+        m_mainToolbar->setVisible(!isWelcomeVisible);
     }
 }
 

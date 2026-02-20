@@ -72,6 +72,14 @@ void WelcomeScreen::setupUI() {
     
     // === Footer ===
     QHBoxLayout* footerLayout = new QHBoxLayout();
+    
+    m_returnToProjectBtn = new QPushButton("Return to Project", this);
+    m_returnToProjectBtn->setObjectName("continueButton");
+    m_returnToProjectBtn->setVisible(false);
+    connect(m_returnToProjectBtn, &QPushButton::clicked,
+            this, &WelcomeScreen::returnToProjectRequested);
+    footerLayout->addWidget(m_returnToProjectBtn);
+    
     footerLayout->addStretch();
     
     QPushButton* continueBtn = new QPushButton("Continue without project", this);
@@ -253,6 +261,10 @@ void WelcomeScreen::onRecentProjectDoubleClicked(QListWidgetItem* item) {
 void WelcomeScreen::clearRecentProjects() {
     RecentProjectsManager::instance()->clearRecent();
     loadRecentProjects();
+}
+
+void WelcomeScreen::setReturnToProjectVisible(bool visible) {
+    m_returnToProjectBtn->setVisible(visible);
 }
 
 void WelcomeScreen::applyTheme() {

@@ -13,6 +13,12 @@ class WelcomeScreen : public QWidget
 public:
     explicit WelcomeScreen(QWidget *parent = nullptr);
     ~WelcomeScreen() = default;
+    
+    /**
+     * @brief Show/hide the Return to Project button
+     * @param visible true if a project is open
+     */
+    void setReturnToProjectVisible(bool visible);
 
 signals:
     // IDE Mode signals
@@ -30,6 +36,9 @@ signals:
     
     // Continue without project
     void continueWithoutProjectRequested();
+    
+    // Return to open project
+    void returnToProjectRequested();
 
 private slots:
     void onRecentProjectClicked(QListWidgetItem* item);
@@ -64,6 +73,9 @@ private:
     QLabel* m_logoLabel;
     QLabel* m_titleLabel;
     QLabel* m_subtitleLabel;
+    
+    // Return to project
+    QPushButton* m_returnToProjectBtn;
 };
 
 #endif // WELCOMESCREEN_H

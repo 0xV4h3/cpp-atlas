@@ -1,5 +1,6 @@
 #include "ui/FileTreeWidget.h"
 #include <QContextMenuEvent>
+#include <QKeyEvent>
 #include <QHeaderView>
 #include <QFileInfo>
 #include <QDir>
@@ -50,7 +51,7 @@ void FileTreeWidget::setupContextMenu() {
     QMenu* newMenu = m_contextMenu->addMenu("New");
     QAction* newSourceAction = newMenu->addAction("Source File");
     QAction* newHeaderAction = newMenu->addAction("Header File");
-    QAction* newClassAction = newMenu->addAction("Class...");
+    QAction* newClassAction = newMenu->addAction("Class");
     QAction* newFolderAction = newMenu->addAction("Folder");
 
     connect(newSourceAction, &QAction::triggered, this, [this]() {
@@ -76,7 +77,7 @@ void FileTreeWidget::setupContextMenu() {
                 QTextStream stream(&file);
                 stream << "#include <iostream>\n\nint main() {\n    std::cout << \"Hello, CppAtlas!\" << std::endl;\n    return 0;\n}\n";
                 file.close();
-                emit newFileRequested(filePath);
+                emit fileCreated(filePath);
             }
         }
     });
@@ -106,7 +107,7 @@ void FileTreeWidget::setupContextMenu() {
                 stream << "#ifndef " << guard << "\n#define " << guard
                        << "\n\n// TODO: Add declarations\n\n#endif // " << guard << "\n";
                 file.close();
-                emit newFileRequested(filePath);
+                emit fileCreated(filePath);
             }
         }
     });
@@ -120,7 +121,44 @@ void FileTreeWidget::setupContextMenu() {
         } else {
             directory = m_model->rootPath();
         }
-        emit newFileRequested(directory);
+        bool ok;
+        QString className = QInputDialog::getText(this, "New Class",
+            "Class name:", QLineEdit::Normal, "MyClass", &ok);
+        if (ok && !className.isEmpty()) {
+            QString hppPath = QDir(directory).filePath(className + ".hpp");
+            QString cppPath = QDir(directory).filePath(className + ".cpp");
+            if (QFile::exists(hppPath)) {
+                QMessageBox::warning(this, "Error", "File already exists: " + hppPath);
+                return;
+            }
+            if (QFile::exists(cppPath)) {
+                QMessageBox::warning(this, "Error", "File already exists: " + cppPath);
+                return;
+            }
+            // Create header
+            QString guard = (className + "_HPP").toUpper().replace('-', '_').replace(' ', '_');
+            QFile hppFile(hppPath);
+            if (hppFile.open(QIODevice::WriteOnly | QIODevice::Text)) {
+                QTextStream stream(&hppFile);
+                stream << "#ifndef " << guard << "\n#define " << guard
+                       << "\n\nclass " << className << " {\npublic:\n    "
+                       << className << "();\n    ~" << className
+                       << "();\nprivate:\n    // Add member fields here\n};\n\n#endif // "
+                       << guard << "\n";
+                hppFile.close();
+                emit fileCreated(hppPath);
+            }
+            // Create source
+            QFile cppFile(cppPath);
+            if (cppFile.open(QIODevice::WriteOnly | QIODevice::Text)) {
+                QTextStream stream(&cppFile);
+                stream << "#include \"" << className << ".hpp\"\n\n"
+                       << className << "::" << className << "() {}\n"
+                       << className << "::~" << className << "() {}\n";
+                cppFile.close();
+                emit fileCreated(cppPath);
+            }
+        }
     });
 
     connect(newFolderAction, &QAction::triggered, this, [this]() {
@@ -172,6 +210,21 @@ void FileTreeWidget::closeFolder() {
     setRootIndex(QModelIndex());
     setVisible(false);
     emit folderClosed();
+}
+
+void FileTreeWidget::keyPressEvent(QKeyEvent *event) {
+    QModelIndex index = currentIndex();
+    if (event->key() == Qt::Key_F2 && index.isValid()) {
+        m_contextMenuIndex = index;
+        onRenameAction();
+        return;
+    }
+    if (event->key() == Qt::Key_Delete && index.isValid()) {
+        m_contextMenuIndex = index;
+        onDeleteAction();
+        return;
+    }
+    QTreeView::keyPressEvent(event);
 }
 
 void FileTreeWidget::contextMenuEvent(QContextMenuEvent *event) {

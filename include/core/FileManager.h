@@ -37,6 +37,42 @@ public:
     QString getTemplate() const;
     
     /**
+     * @brief Load a template from Qt resources
+     * @param resourcePath Resource path (e.g. ":/templates/source.cpp.template")
+     * @return Template content, or empty string on failure
+     */
+    QString loadTemplate(const QString& resourcePath) const;
+    
+    /**
+     * @brief Generate a header guard string from a filename
+     * @param fileName Filename (e.g. "MyClass.hpp")
+     * @return Header guard string
+     */
+    QString generateHeaderGuard(const QString& fileName) const;
+    
+    /**
+     * @brief Create a source file from template
+     * @param filePath Destination file path
+     * @return true if successful
+     */
+    bool createSourceFile(const QString& filePath);
+    
+    /**
+     * @brief Create a header file from template
+     * @param filePath Destination file path
+     * @return true if successful
+     */
+    bool createHeaderFile(const QString& filePath);
+    
+    /**
+     * @brief Create a class (both .hpp and .cpp) from templates
+     * @param directory Directory for files
+     * @param className Class name
+     * @return List of created file paths
+     */
+    QStringList createClassFiles(const QString& directory, const QString& className);
+    
+    /**
      * @brief Add file to recent files list
      * @param filePath File path
      */
