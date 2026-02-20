@@ -3,12 +3,11 @@
 
 #include <QTabWidget>
 
-class BuildOutputWidget;
-class RunOutputWidget;
+class TerminalWidget;
 class ProblemsWidget;
 
 /**
- * @brief Container for output tabs (Build, Run, Problems)
+ * @brief Container for output tabs (Terminal, Problems)
  */
 class OutputPanel : public QTabWidget {
     Q_OBJECT
@@ -18,16 +17,10 @@ public:
     ~OutputPanel() override = default;
     
     /**
-     * @brief Get build output widget
-     * @return Pointer to build output widget
+     * @brief Get terminal widget
+     * @return Pointer to terminal widget
      */
-    BuildOutputWidget* buildOutput() const { return m_buildOutput; }
-    
-    /**
-     * @brief Get run output widget
-     * @return Pointer to run output widget
-     */
-    RunOutputWidget* runOutput() const { return m_runOutput; }
+    TerminalWidget* terminal() const { return m_terminal; }
     
     /**
      * @brief Get problems widget
@@ -36,14 +29,9 @@ public:
     ProblemsWidget* problems() const { return m_problems; }
     
     /**
-     * @brief Show build tab
+     * @brief Show terminal tab
      */
-    void showBuildTab();
-    
-    /**
-     * @brief Show run tab
-     */
-    void showRunTab();
+    void showTerminalTab();
     
     /**
      * @brief Show problems tab
@@ -51,8 +39,7 @@ public:
     void showProblemsTab();
     
 private:
-    BuildOutputWidget* m_buildOutput;
-    RunOutputWidget* m_runOutput;
+    TerminalWidget* m_terminal;
     ProblemsWidget* m_problems;
 };
 
