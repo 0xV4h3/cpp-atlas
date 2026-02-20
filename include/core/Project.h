@@ -4,6 +4,9 @@
 #include <QObject>
 #include <QString>
 #include <QStringList>
+#include <QDateTime>
+
+class QJsonObject;
 
 /**
  * @brief Represents a CppAtlas project/workspace
@@ -12,118 +15,103 @@ class Project : public QObject {
     Q_OBJECT
     
 public:
+    static const QString FILE_EXTENSION;
+    static const QString FORMAT_VERSION;
+    
+    enum class LoadResult {
+        Success,
+        FileNotFound,
+        InvalidFormat,
+        VersionMismatch,
+        PermissionDenied
+    };
+    
     explicit Project(QObject *parent = nullptr);
     ~Project() override = default;
     
-    /**
-     * @brief Load project from file
-     * @param filePath Path to .cppatlas project file
-     * @return true if successful
-     */
-    bool load(const QString& filePath);
+    // Core operations
+    LoadResult load(const QString& filePath);
+    bool save(const QString& filePath = QString());
+    bool isValid() const;
+    bool isModified() const;
     
-    /**
-     * @brief Save project to file
-     * @param filePath Path to .cppatlas project file
-     * @return true if successful
-     */
-    bool save(const QString& filePath);
-    
-    /**
-     * @brief Get project name
-     * @return Project name
-     */
+    // Project info
     QString name() const { return m_name; }
+    QString description() const { return m_description; }
+    QString projectFilePath() const { return m_projectFilePath; }
+    QString projectDirectory() const { return m_directory; }
+    QDateTime createdAt() const { return m_createdAt; }
+    QDateTime lastOpenedAt() const { return m_lastOpenedAt; }
     
-    /**
-     * @brief Set project name
-     * @param name Project name
-     */
-    void setName(const QString& name);
-    
-    /**
-     * @brief Get project directory
-     * @return Project directory path
-     */
+    // Backward compatibility
     QString directory() const { return m_directory; }
     
-    /**
-     * @brief Set project directory
-     * @param directory Project directory path
-     */
-    void setDirectory(const QString& directory);
-    
-    /**
-     * @brief Get list of open files
-     * @return List of file paths
-     */
-    QStringList openFiles() const { return m_openFiles; }
-    
-    /**
-     * @brief Set list of open files
-     * @param files List of file paths
-     */
-    void setOpenFiles(const QStringList& files);
-    
-    /**
-     * @brief Get active file
-     * @return Active file path
-     */
-    QString activeFile() const { return m_activeFile; }
-    
-    /**
-     * @brief Set active file
-     * @param file File path
-     */
-    void setActiveFile(const QString& file);
-    
-    /**
-     * @brief Get compiler ID
-     * @return Compiler ID
-     */
+    // Build configuration
     QString compilerId() const { return m_compilerId; }
-    
-    /**
-     * @brief Set compiler ID
-     * @param id Compiler ID
-     */
-    void setCompilerId(const QString& id);
-    
-    /**
-     * @brief Get C++ standard
-     * @return C++ standard string
-     */
     QString standard() const { return m_standard; }
-    
-    /**
-     * @brief Set C++ standard
-     * @param standard C++ standard string
-     */
-    void setStandard(const QString& standard);
-    
-    /**
-     * @brief Get compiler flags
-     * @return List of compiler flags
-     */
     QStringList compilerFlags() const { return m_compilerFlags; }
+    QStringList includeDirectories() const { return m_includeDirectories; }
+    QString outputDirectory() const { return m_outputDirectory; }
     
-    /**
-     * @brief Set compiler flags
-     * @param flags List of compiler flags
-     */
+    // Source management
+    QStringList sourceFiles() const { return m_sourceFiles; }
+    QStringList headerFiles() const { return m_headerFiles; }
+    void addSourceFile(const QString& path);
+    void removeSourceFile(const QString& path);
+    
+    // Session
+    QStringList openFiles() const { return m_openFiles; }
+    QString activeFile() const { return m_activeFile; }
+    QStringList expandedFolders() const { return m_expandedFolders; }
+    void saveSession(const QStringList& openFiles,
+                     const QString& activeFile,
+                     const QStringList& expandedFolders);
+    
+    // Setters with change tracking
+    void setName(const QString& name);
+    void setDescription(const QString& description);
+    void setDirectory(const QString& directory);
+    void setCompilerId(const QString& id);
+    void setStandard(const QString& standard);
     void setCompilerFlags(const QStringList& flags);
+    void setOpenFiles(const QStringList& files);
+    void setActiveFile(const QString& file);
     
 signals:
     void projectChanged();
+    void projectSaved();
+    void projectLoaded();
     
 private:
+    void updateLastOpened();
+    bool parseVersion1(const QJsonObject& root);
+    QJsonObject toJson() const;
+    
+    // Project info
     QString m_name;
+    QString m_description;
     QString m_directory;
-    QStringList m_openFiles;
-    QString m_activeFile;
+    QString m_projectFilePath;
+    QDateTime m_createdAt;
+    QDateTime m_lastOpenedAt;
+    
+    // Build configuration
     QString m_compilerId;
     QString m_standard = "c++17";
     QStringList m_compilerFlags;
+    QStringList m_includeDirectories;
+    QString m_outputDirectory = "build";
+    
+    // Source management
+    QStringList m_sourceFiles;
+    QStringList m_headerFiles;
+    
+    // Session
+    QStringList m_openFiles;
+    QString m_activeFile;
+    QStringList m_expandedFolders;
+    
+    bool m_modified = false;
 };
 
 #endif // PROJECT_H
