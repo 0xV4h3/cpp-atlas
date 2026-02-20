@@ -539,23 +539,7 @@ void MainWindow::setupWelcomeScreen() {
             if (result == Project::LoadResult::Success) {
                 auto project = ProjectManager::instance()->currentProject();
                 m_fileTree->openFolder(project->projectDirectory());
-                
-                for (const QString& file : project->openFiles()) {
-                    QString fullPath = QDir(project->projectDirectory()).absoluteFilePath(file);
-                    if (QFileInfo::exists(fullPath)) {
-                        m_editorTabs->openFile(fullPath);
-                    } else if (QFileInfo::exists(file)) {
-                        m_editorTabs->openFile(file);
-                    }
-                }
-                if (!project->activeFile().isEmpty()) {
-                    QString activePath = QDir(project->projectDirectory()).absoluteFilePath(project->activeFile());
-                    if (QFileInfo::exists(activePath)) {
-                        m_editorTabs->openFile(activePath);
-                    } else if (QFileInfo::exists(project->activeFile())) {
-                        m_editorTabs->openFile(project->activeFile());
-                    }
-                }
+                restoreProjectSession(project);
                 
                 hideWelcomeScreen();
                 m_statusLabel->setText("Project: " + project->name());
@@ -835,24 +819,7 @@ void MainWindow::onFileOpenProject() {
         if (result == Project::LoadResult::Success) {
             auto project = ProjectManager::instance()->currentProject();
             m_fileTree->openFolder(project->projectDirectory());
-            
-            // Restore session
-            for (const QString& file : project->openFiles()) {
-                QString fullPath = QDir(project->projectDirectory()).absoluteFilePath(file);
-                if (QFileInfo::exists(fullPath)) {
-                    m_editorTabs->openFile(fullPath);
-                } else if (QFileInfo::exists(file)) {
-                    m_editorTabs->openFile(file);
-                }
-            }
-            if (!project->activeFile().isEmpty()) {
-                QString activePath = QDir(project->projectDirectory()).absoluteFilePath(project->activeFile());
-                if (QFileInfo::exists(activePath)) {
-                    m_editorTabs->openFile(activePath);
-                } else if (QFileInfo::exists(project->activeFile())) {
-                    m_editorTabs->openFile(project->activeFile());
-                }
-            }
+            restoreProjectSession(project);
             
             hideWelcomeScreen();
             m_statusLabel->setText("Project: " + project->name());
@@ -1462,6 +1429,21 @@ void MainWindow::showProjectLoadError(Project::LoadResult result) {
     QMessageBox::warning(this, "Error", message);
 }
 
-void MainWindow::setupProjectConnections() {
-    // Placeholder for future project signal connections
+void MainWindow::restoreProjectSession(Project* project) {
+    for (const QString& file : project->openFiles()) {
+        QString fullPath = QDir(project->projectDirectory()).absoluteFilePath(file);
+        if (QFileInfo::exists(fullPath)) {
+            m_editorTabs->openFile(fullPath);
+        } else if (QFileInfo::exists(file)) {
+            m_editorTabs->openFile(file);
+        }
+    }
+    if (!project->activeFile().isEmpty()) {
+        QString activePath = QDir(project->projectDirectory()).absoluteFilePath(project->activeFile());
+        if (QFileInfo::exists(activePath)) {
+            m_editorTabs->openFile(activePath);
+        } else if (QFileInfo::exists(project->activeFile())) {
+            m_editorTabs->openFile(project->activeFile());
+        }
+    }
 }

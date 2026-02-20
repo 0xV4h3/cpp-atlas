@@ -176,7 +176,7 @@ private:
     void updateCustomTitleLabel(const QString& title);
     void saveCurrentSession();
     void showProjectLoadError(Project::LoadResult result);
-    void setupProjectConnections();
+    void restoreProjectSession(Project* project);
     
     QString getCurrentSourceFile();
     QString getExecutablePath(const QString& sourceFile);
