@@ -7,6 +7,9 @@
 #include <QGroupBox>
 #include <QFileInfo>
 #include <QFont>
+#include <QFile>
+#include <QJsonDocument>
+#include <QJsonObject>
 
 WelcomeScreen::WelcomeScreen(QWidget *parent)
     : QWidget(parent)
@@ -225,13 +228,34 @@ void WelcomeScreen::loadRecentProjects() {
     
     for (const QString& projectPath : recentProjects) {
         QFileInfo info(projectPath);
+        if (!info.exists()) continue;
         
         QListWidgetItem* item = new QListWidgetItem(m_recentProjectsList);
         
-        // Display: Project name + path
+        QString displayName;
+        
+        // Parse .cppatlas to get project name
+        if (info.suffix() == "cppatlas") {
+            QFile file(projectPath);
+            if (file.open(QIODevice::ReadOnly)) {
+                QJsonDocument doc = QJsonDocument::fromJson(file.readAll());
+                QString name = doc.object()["name"].toString();
+                if (!name.isEmpty()) {
+                    displayName = name;
+                } else {
+                    displayName = info.completeBaseName();
+                }
+                file.close();
+            } else {
+                displayName = info.completeBaseName();
+            }
+        } else {
+            displayName = info.fileName().isEmpty() ? info.absolutePath() : info.fileName();
+        }
+        
         QString displayText = QString("%1\n%2")
-            .arg(info.fileName().isEmpty() ? info.absolutePath() : info.fileName())
-            .arg(info.absolutePath());
+            .arg(displayName)
+            .arg(info.absoluteFilePath());
         
         item->setText(displayText);
         item->setData(Qt::UserRole, projectPath);
@@ -239,7 +263,7 @@ void WelcomeScreen::loadRecentProjects() {
     }
     
     // Show placeholder if empty
-    if (recentProjects.isEmpty()) {
+    if (m_recentProjectsList->count() == 0) {
         QListWidgetItem* item = new QListWidgetItem("No recent projects");
         item->setFlags(item->flags() & ~Qt::ItemIsEnabled);
         m_recentProjectsList->addItem(item);

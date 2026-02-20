@@ -11,8 +11,10 @@
 #include "ui/FindReplaceDialog.h"
 #include "ui/WelcomeScreen.h"
 #include "ui/NewFileDialog.h"
+#include "ui/NewProjectDialog.h"
 #include "core/FileManager.h"
 #include "core/Project.h"
+#include "core/ProjectManager.h"
 #include "core/RecentProjectsManager.h"
 #include "compiler/CompilerRegistry.h"
 #include "compiler/ICompiler.h"
@@ -530,15 +532,31 @@ void MainWindow::setupWelcomeScreen() {
     
     connect(m_welcomeScreen, &WelcomeScreen::recentProjectSelected,
             this, [this](const QString& path) {
-        hideWelcomeScreen();
         QFileInfo info(path);
-        if (info.isDir()) {
-            m_fileTree->openFolder(path);
-            setWindowTitle(QString("%1 - CppAtlas").arg(info.fileName()));
+        if (info.suffix() == "cppatlas") {
+            // Open as a project
+            auto result = ProjectManager::instance()->openProject(path);
+            if (result == Project::LoadResult::Success) {
+                auto project = ProjectManager::instance()->currentProject();
+                m_fileTree->openFolder(project->projectDirectory());
+                restoreProjectSession(project);
+                
+                hideWelcomeScreen();
+                m_statusLabel->setText("Project: " + project->name());
+                m_welcomeScreen->setReturnToProjectVisible(true);
+            } else {
+                showProjectLoadError(result);
+            }
         } else {
-            m_editorTabs->openFile(path);
+            hideWelcomeScreen();
+            if (info.isDir()) {
+                m_fileTree->openFolder(path);
+                setWindowTitle(QString("%1 - CppAtlas").arg(info.fileName()));
+            } else {
+                m_editorTabs->openFile(path);
+            }
+            RecentProjectsManager::instance()->addRecentProject(path);
         }
-        RecentProjectsManager::instance()->addRecentProject(path);
     });
     
     connect(m_welcomeScreen, &WelcomeScreen::quizModeRequested, this, [this]() {
@@ -563,6 +581,11 @@ void MainWindow::setupWelcomeScreen() {
 }
 
 void MainWindow::showWelcomeScreen() {
+    // Save current project session before showing welcome
+    if (ProjectManager::instance()->hasOpenProject()) {
+        saveCurrentSession();
+    }
+    
     m_centralStack->setCurrentWidget(m_welcomeScreen);
     
     // Hide IDE-specific docks
@@ -570,7 +593,8 @@ void MainWindow::showWelcomeScreen() {
     m_outputPanelDock->hide();
     
     // Show "Return to Project" button if a project/folder is open or tabs exist
-    bool hasOpenProject = !m_fileTree->rootPath().isEmpty() || m_editorTabs->count() > 0;
+    bool hasOpenProject = ProjectManager::instance()->hasOpenProject() ||
+                          !m_fileTree->rootPath().isEmpty() || m_editorTabs->count() > 0;
     m_welcomeScreen->setReturnToProjectVisible(hasOpenProject);
     
     updateMenuState(true);
@@ -685,7 +709,11 @@ void MainWindow::updateCustomTitleLabel(const QString& title) {
 }
 
 void MainWindow::closeEvent(QCloseEvent *event) {
+    // Save project session before closing
+    saveCurrentSession();
+    
     if (m_editorTabs->closeAll()) {
+        ProjectManager::instance()->closeCurrentProject();
         event->accept();
     } else {
         event->ignore();
@@ -709,8 +737,33 @@ void MainWindow::onFileNew() {
 }
 
 void MainWindow::onFileNewProject() {
-    QMessageBox::information(this, "New Project",
-        "Project creation will be available in a future update.");
+    NewProjectDialog dialog(this);
+    if (dialog.exec() == QDialog::Accepted) {
+        ProjectSettings settings;
+        settings.compilerId = dialog.selectedCompilerId();
+        settings.standard = dialog.selectedStandard();
+        settings.createMainCpp = dialog.createMainCpp();
+        settings.createCMakeLists = dialog.createCMakeLists();
+        settings.createProjectFolder = dialog.createProjectFolder();
+        
+        if (ProjectManager::instance()->createProject(
+                dialog.projectName(), dialog.projectLocation(), settings)) {
+            auto project = ProjectManager::instance()->currentProject();
+            m_fileTree->openFolder(project->projectDirectory());
+            
+            // Open main.cpp if created
+            if (settings.createMainCpp) {
+                QString mainPath = project->projectDirectory() + QDir::separator() + "src" + QDir::separator() + "main.cpp";
+                m_editorTabs->openFile(mainPath);
+            }
+            
+            hideWelcomeScreen();
+            m_statusLabel->setText("Project: " + project->name());
+            m_welcomeScreen->setReturnToProjectVisible(true);
+        } else {
+            QMessageBox::warning(this, "Error", "Failed to create project.");
+        }
+    }
 }
 
 void MainWindow::onFileOpen() {
@@ -762,11 +815,17 @@ void MainWindow::onFileOpenProject() {
     );
     
     if (!filePath.isEmpty()) {
-        if (m_project->load(filePath)) {
-            m_fileTree->openFolder(m_project->directory());
-            m_statusLabel->setText("Project loaded: " + m_project->name());
+        auto result = ProjectManager::instance()->openProject(filePath);
+        if (result == Project::LoadResult::Success) {
+            auto project = ProjectManager::instance()->currentProject();
+            m_fileTree->openFolder(project->projectDirectory());
+            restoreProjectSession(project);
+            
+            hideWelcomeScreen();
+            m_statusLabel->setText("Project: " + project->name());
+            m_welcomeScreen->setReturnToProjectVisible(true);
         } else {
-            QMessageBox::warning(this, "Error", "Failed to load project.");
+            showProjectLoadError(result);
         }
     }
 }
@@ -1322,4 +1381,69 @@ void MainWindow::showBuildError(const QString& message) {
     m_outputPanel->showTerminalTab();
     m_outputPanel->terminal()->appendText(message + "\n", QColor("#F44747"));
     m_statusLabel->setText("Build error");
+}
+
+void MainWindow::saveCurrentSession() {
+    if (!ProjectManager::instance()->hasOpenProject()) return;
+    
+    auto project = ProjectManager::instance()->currentProject();
+    
+    QStringList openFiles;
+    for (int i = 0; i < m_editorTabs->count(); ++i) {
+        CodeEditor* editor = m_editorTabs->editorAt(i);
+        if (editor && !editor->filePath().isEmpty()) {
+            openFiles.append(editor->filePath());
+        }
+    }
+    
+    QString activeFile;
+    if (m_editorTabs->currentEditor()) {
+        activeFile = m_editorTabs->currentEditor()->filePath();
+    }
+    
+    QStringList expandedFolders;
+    
+    project->saveSession(openFiles, activeFile, expandedFolders);
+    project->save();
+}
+
+void MainWindow::showProjectLoadError(Project::LoadResult result) {
+    QString message;
+    switch (result) {
+        case Project::LoadResult::FileNotFound:
+            message = "Project file not found.";
+            break;
+        case Project::LoadResult::InvalidFormat:
+            message = "Invalid project file format.";
+            break;
+        case Project::LoadResult::VersionMismatch:
+            message = "Unsupported project file version.";
+            break;
+        case Project::LoadResult::PermissionDenied:
+            message = "Permission denied when reading project file.";
+            break;
+        default:
+            message = "Failed to load project.";
+            break;
+    }
+    QMessageBox::warning(this, "Error", message);
+}
+
+void MainWindow::restoreProjectSession(Project* project) {
+    for (const QString& file : project->openFiles()) {
+        QString fullPath = QDir(project->projectDirectory()).absoluteFilePath(file);
+        if (QFileInfo::exists(fullPath)) {
+            m_editorTabs->openFile(fullPath);
+        } else if (QFileInfo::exists(file)) {
+            m_editorTabs->openFile(file);
+        }
+    }
+    if (!project->activeFile().isEmpty()) {
+        QString activePath = QDir(project->projectDirectory()).absoluteFilePath(project->activeFile());
+        if (QFileInfo::exists(activePath)) {
+            m_editorTabs->openFile(activePath);
+        } else if (QFileInfo::exists(project->activeFile())) {
+            m_editorTabs->openFile(project->activeFile());
+        }
+    }
 }

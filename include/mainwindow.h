@@ -9,6 +9,7 @@
 #include <QPushButton>
 #include <QPoint>
 #include <QStackedWidget>
+#include "core/Project.h"
 
 QT_BEGIN_NAMESPACE
 namespace Ui {
@@ -24,6 +25,7 @@ class Project;
 class ICompiler;
 class WelcomeScreen;
 class NewFileDialog;
+class NewProjectDialog;
 
 class MainWindow : public QMainWindow
 {
@@ -172,6 +174,9 @@ private:
     void updateStatusBar();
     void updateWindowTitle();
     void updateCustomTitleLabel(const QString& title);
+    void saveCurrentSession();
+    void showProjectLoadError(Project::LoadResult result);
+    void restoreProjectSession(Project* project);
     
     QString getCurrentSourceFile();
     QString getExecutablePath(const QString& sourceFile);

@@ -6,6 +6,7 @@ set(CORE_SOURCES
     ${CMAKE_CURRENT_SOURCE_DIR}/core/Project.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/core/FileManager.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/core/RecentProjectsManager.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/core/ProjectManager.cpp
 )
 
 set(EDITOR_SOURCES
@@ -33,6 +34,7 @@ set(UI_SOURCES
     ${CMAKE_CURRENT_SOURCE_DIR}/ui/FindReplaceDialog.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/ui/WelcomeScreen.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/ui/NewFileDialog.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/ui/NewProjectDialog.cpp
 )
 
 # Collect all sources
