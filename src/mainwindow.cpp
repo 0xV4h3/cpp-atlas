@@ -1139,27 +1139,53 @@ void MainWindow::onEditorChanged(CodeEditor* editor) {
 void MainWindow::onDiagnosticClicked(const QString& file, int line, int column) {
     Q_UNUSED(column);
     
-    // Open file if not already open
-    CodeEditor* editor = nullptr;
-    
-    // Check if file is already open
-    for (int i = 0; i < m_editorTabs->count(); ++i) {
-        CodeEditor* ed = m_editorTabs->editorAt(i);
-        if (ed && ed->filePath() == file) {
-            m_editorTabs->setCurrentIndex(i);
-            editor = ed;
-            break;
+    try {
+        if (file.isEmpty()) {
+            return;
         }
-    }
-    
-    // Open file if not found
-    if (!editor) {
-        editor = m_editorTabs->openFile(file);
-    }
-    
-    // Go to line
-    if (editor) {
-        editor->gotoLine(line);
+        
+        // Validate file exists
+        if (!QFileInfo::exists(file)) {
+            QMessageBox::warning(this, "File Not Found",
+                QString("The file does not exist:\n%1").arg(file));
+            return;
+        }
+        
+        if (!m_editorTabs) {
+            return;
+        }
+        
+        // Open file if not already open
+        CodeEditor* editor = nullptr;
+        
+        // Check if file is already open
+        for (int i = 0; i < m_editorTabs->count(); ++i) {
+            CodeEditor* ed = m_editorTabs->editorAt(i);
+            if (ed && ed->filePath() == file) {
+                m_editorTabs->setCurrentIndex(i);
+                editor = ed;
+                break;
+            }
+        }
+        
+        // Open file if not found
+        if (!editor) {
+            editor = m_editorTabs->openFile(file);
+        }
+        
+        if (!editor) {
+            QMessageBox::warning(this, "Cannot Open File",
+                QString("Failed to open file:\n%1").arg(file));
+            return;
+        }
+        
+        // Go to line (only if valid)
+        if (line > 0) {
+            editor->gotoLine(line);
+        }
+    } catch (...) {
+        // Prevent any crash from propagating
+        qWarning("Error handling diagnostic click for file: %s", qPrintable(file));
     }
 }
 

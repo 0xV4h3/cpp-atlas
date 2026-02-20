@@ -1,4 +1,5 @@
 #include "output/BuildOutputWidget.h"
+#include "ui/ThemeManager.h"
 #include <QHBoxLayout>
 #include <QTextCharFormat>
 #include <QTextCursor>
@@ -58,7 +59,8 @@ void BuildOutputWidget::appendText(const QString& text) {
     cursor.movePosition(QTextCursor::End);
     
     QTextCharFormat format;
-    format.setForeground(QColor("#D4D4D4"));
+    Theme theme = ThemeManager::instance()->currentTheme();
+    format.setForeground(theme.editorForeground);
     
     cursor.setCharFormat(format);
     cursor.insertText(text + "\n");

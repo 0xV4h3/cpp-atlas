@@ -269,6 +269,12 @@ void CodeEditor::applyTheme(const QString& themeName) {
     if (m_lexer) {
         m_lexer->setDefaultPaper(theme.editorBackground);
         m_lexer->setDefaultColor(theme.editorForeground);
+        
+        // Set paper (background) for all styles to prevent shadow/tint
+        for (int style = 0; style <= 128; ++style) {
+            m_lexer->setPaper(theme.editorBackground, style);
+        }
+        
         m_lexer->setColor(theme.syntaxKeyword, QsciLexerCPP::Keyword);
         m_lexer->setColor(theme.syntaxType, QsciLexerCPP::KeywordSet2);
         m_lexer->setColor(theme.syntaxString, QsciLexerCPP::DoubleQuotedString);

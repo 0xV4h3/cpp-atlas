@@ -97,24 +97,37 @@ void ProblemsWidget::onFilterChanged(int index) {
 void ProblemsWidget::onCellClicked(int row, int column) {
     Q_UNUSED(column);
     
-    if (row < 0 || row >= m_tableWidget->rowCount()) {
-        return;
-    }
-    
-    // Get file, line, column from the row's data
-    QTableWidgetItem* fileItem = m_tableWidget->item(row, 3);
-    QTableWidgetItem* posItem = m_tableWidget->item(row, 4);
-    
-    if (fileItem && posItem) {
-        QString file = fileItem->text();
+    try {
+        if (row < 0 || row >= m_tableWidget->rowCount()) {
+            return;
+        }
+        
+        // Get file, line, column from the row's data
+        QTableWidgetItem* fileItem = m_tableWidget->item(row, 3);
+        QTableWidgetItem* posItem = m_tableWidget->item(row, 4);
+        
+        if (!fileItem || !posItem) {
+            return;
+        }
+        
+        QString file = fileItem->toolTip();  // Full path stored in tooltip
+        if (file.isEmpty()) {
+            file = fileItem->text();
+        }
+        
         QString posText = posItem->text();  // Format: "line:col"
         
         QStringList parts = posText.split(':');
-        if (parts.size() == 2) {
-            int line = parts[0].toInt();
-            int column = parts[1].toInt();
-            emit diagnosticClicked(file, line, column);
+        if (parts.size() >= 2) {
+            bool lineOk = false, colOk = false;
+            int line = parts[0].toInt(&lineOk);
+            int col = parts[1].toInt(&colOk);
+            if (lineOk && line > 0) {
+                emit diagnosticClicked(file, line, colOk ? col : 0);
+            }
         }
+    } catch (...) {
+        // Silently handle any unexpected errors to prevent crashes
     }
 }
 

@@ -295,6 +295,13 @@ QDockWidget QTabBar::tab {
     qss += QString("QLabel { color: %1; }\n")
         .arg(theme.textPrimary.name());
     
+    // QGroupBox - ensure title text visibility (e.g., "Standard Input" label)
+    qss += QString("QGroupBox { color: %1; border: 1px solid %2; border-radius: 3px; margin-top: 1ex; padding-top: 10px; }\n")
+        .arg(theme.textPrimary.name())
+        .arg(theme.border.name());
+    qss += QString("QGroupBox::title { color: %1; subcontrol-origin: margin; left: 10px; padding: 0 3px; }\n")
+        .arg(theme.textPrimary.name());
+    
     // QTableView (problems)
     qss += QString("QTableView { background-color: %1; color: %2; border: none; gridline-color: %3; }\n")
         .arg(theme.panelBackground.name())
