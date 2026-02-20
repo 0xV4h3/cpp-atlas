@@ -1,5 +1,6 @@
 #include "editor/EditorTabWidget.h"
 #include "editor/CodeEditor.h"
+#include "ui/ThemeManager.h"
 #include <QFileDialog>
 #include <QMessageBox>
 #include <QFileInfo>
@@ -13,6 +14,9 @@ EditorTabWidget::EditorTabWidget(QWidget *parent)
     
     connect(this, &QTabWidget::currentChanged, this, &EditorTabWidget::onTabChanged);
     connect(this, &QTabWidget::tabCloseRequested, this, &EditorTabWidget::onTabCloseRequested);
+
+    connect(ThemeManager::instance(), &ThemeManager::themeChanged,
+            this, &EditorTabWidget::applyThemeToAllEditors);
 }
 
 CodeEditor* EditorTabWidget::newFile() {
@@ -229,4 +233,13 @@ void EditorTabWidget::updateTabTitle(CodeEditor* editor) {
 
 QString EditorTabWidget::shortFileName(const QString& filePath) const {
     return QFileInfo(filePath).fileName();
+}
+
+void EditorTabWidget::applyThemeToAllEditors(const QString& themeName) {
+    for (int i = 0; i < count(); ++i) {
+        CodeEditor* editor = editorAt(i);
+        if (editor) {
+            editor->applyTheme(themeName);
+        }
+    }
 }

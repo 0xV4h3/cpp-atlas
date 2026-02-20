@@ -1,4 +1,5 @@
 #include "output/BuildOutputWidget.h"
+#include "ui/ThemeManager.h"
 #include <QHBoxLayout>
 #include <QTextCharFormat>
 #include <QTextCursor>
@@ -10,6 +11,9 @@ BuildOutputWidget::BuildOutputWidget(QWidget *parent)
     : QWidget(parent)
 {
     setupUi();
+
+    connect(ThemeManager::instance(), &ThemeManager::themeChanged,
+            this, &BuildOutputWidget::onThemeChanged);
 }
 
 void BuildOutputWidget::setupUi() {
@@ -39,10 +43,11 @@ void BuildOutputWidget::setupUi() {
     font.setPointSize(9);
     m_textEdit->setFont(font);
     
-    // Set dark theme colors
+    // Set theme-aware colors
+    Theme theme = ThemeManager::instance()->currentTheme();
     QPalette p = m_textEdit->palette();
-    p.setColor(QPalette::Base, QColor("#1E1E1E"));
-    p.setColor(QPalette::Text, QColor("#D4D4D4"));
+    p.setColor(QPalette::Base, theme.panelBackground);
+    p.setColor(QPalette::Text, theme.textPrimary);
     m_textEdit->setPalette(p);
     
     mainLayout->addWidget(toolbar);
@@ -58,7 +63,8 @@ void BuildOutputWidget::appendText(const QString& text) {
     cursor.movePosition(QTextCursor::End);
     
     QTextCharFormat format;
-    format.setForeground(QColor("#D4D4D4"));
+    Theme theme = ThemeManager::instance()->currentTheme();
+    format.setForeground(theme.textPrimary);
     
     cursor.setCharFormat(format);
     cursor.insertText(text + "\n");
@@ -111,6 +117,20 @@ void BuildOutputWidget::onClearClicked() {
 void BuildOutputWidget::onCopyClicked() {
     QClipboard* clipboard = QApplication::clipboard();
     clipboard->setText(m_textEdit->toPlainText());
+}
+
+void BuildOutputWidget::onThemeChanged() {
+    Theme theme = ThemeManager::instance()->currentTheme();
+    QPalette p = m_textEdit->palette();
+    p.setColor(QPalette::Base, theme.panelBackground);
+    p.setColor(QPalette::Text, theme.textPrimary);
+    m_textEdit->setPalette(p);
+
+    QTextCursor cursor(m_textEdit->document());
+    cursor.select(QTextCursor::Document);
+    QTextCharFormat format;
+    format.setForeground(theme.textPrimary);
+    cursor.setCharFormat(format);
 }
 
 void BuildOutputWidget::parseAndHighlightLine(const QString& line) {

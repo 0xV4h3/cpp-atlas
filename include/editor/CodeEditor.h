@@ -95,6 +95,7 @@ signals:
     
 private slots:
     void onTextChanged();
+    void onThemeChanged(const QString& themeName);
     
 private:
     void setupEditor();

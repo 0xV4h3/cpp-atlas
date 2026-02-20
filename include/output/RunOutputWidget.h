@@ -66,6 +66,7 @@ private slots:
     void onProcessReadyReadStderr();
     void onProcessFinished(int exitCode, QProcess::ExitStatus exitStatus);
     void onProcessError(QProcess::ProcessError error);
+    void onThemeChanged();
     
 private:
     QPlainTextEdit* m_outputEdit;

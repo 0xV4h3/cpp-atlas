@@ -1,4 +1,5 @@
 #include "output/RunOutputWidget.h"
+#include "ui/ThemeManager.h"
 #include <QVBoxLayout>
 #include <QHBoxLayout>
 #include <QLabel>
@@ -8,6 +9,9 @@ RunOutputWidget::RunOutputWidget(QWidget *parent)
     : QWidget(parent), m_process(nullptr)
 {
     setupUi();
+
+    connect(ThemeManager::instance(), &ThemeManager::themeChanged,
+            this, &RunOutputWidget::onThemeChanged);
 }
 
 void RunOutputWidget::setupUi() {
@@ -43,9 +47,11 @@ void RunOutputWidget::setupUi() {
     font.setPointSize(9);
     m_outputEdit->setFont(font);
     
+    // Set theme-aware colors
+    Theme theme = ThemeManager::instance()->currentTheme();
     QPalette p = m_outputEdit->palette();
-    p.setColor(QPalette::Base, QColor("#1E1E1E"));
-    p.setColor(QPalette::Text, QColor("#D4D4D4"));
+    p.setColor(QPalette::Base, theme.panelBackground);
+    p.setColor(QPalette::Text, theme.textPrimary);
     m_outputEdit->setPalette(p);
     
     // Input area
@@ -226,7 +232,8 @@ void RunOutputWidget::appendStdout(const QString& text) {
     cursor.movePosition(QTextCursor::End);
     
     QTextCharFormat format;
-    format.setForeground(QColor("#D4D4D4"));
+    Theme theme = ThemeManager::instance()->currentTheme();
+    format.setForeground(theme.textPrimary);
     
     cursor.setCharFormat(format);
     cursor.insertText(text);
@@ -247,4 +254,18 @@ void RunOutputWidget::appendStderr(const QString& text) {
     
     m_outputEdit->setTextCursor(cursor);
     m_outputEdit->ensureCursorVisible();
+}
+
+void RunOutputWidget::onThemeChanged() {
+    Theme theme = ThemeManager::instance()->currentTheme();
+    QPalette p = m_outputEdit->palette();
+    p.setColor(QPalette::Base, theme.panelBackground);
+    p.setColor(QPalette::Text, theme.textPrimary);
+    m_outputEdit->setPalette(p);
+
+    QTextCursor cursor(m_outputEdit->document());
+    cursor.select(QTextCursor::Document);
+    QTextCharFormat format;
+    format.setForeground(theme.textPrimary);
+    cursor.setCharFormat(format);
 }

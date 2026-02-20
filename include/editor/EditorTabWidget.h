@@ -84,7 +84,14 @@ signals:
     void editorChanged(CodeEditor* editor);
     void fileOpened(const QString& filePath);
     void fileSaved(const QString& filePath);
-    
+
+public slots:
+    /**
+     * @brief Apply current theme to all open editors
+     * @param themeName Name of the theme
+     */
+    void applyThemeToAllEditors(const QString& themeName);
+
 private slots:
     void onTabChanged(int index);
     void onTabCloseRequested(int index);

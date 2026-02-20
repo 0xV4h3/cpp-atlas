@@ -16,6 +16,13 @@ CodeEditor::CodeEditor(QWidget *parent)
     setupBraceMatching();
     
     connect(this, &QsciScintilla::textChanged, this, &CodeEditor::onTextChanged);
+    connect(ThemeManager::instance(), &ThemeManager::themeChanged,
+            this, &CodeEditor::onThemeChanged);
+    applyTheme(ThemeManager::instance()->currentThemeName());
+}
+
+void CodeEditor::onThemeChanged(const QString& themeName) {
+    applyTheme(themeName);
 }
 
 void CodeEditor::setupEditor() {
@@ -37,14 +44,10 @@ void CodeEditor::setupEditor() {
     
     // Current line highlighting
     setCaretLineVisible(true);
-    setCaretLineBackgroundColor(QColor("#2A2A2A"));
     
     // Cursor settings (will be updated by theme)
     setCaretWidth(2);
-    
-    // Selection colors
-    setSelectionBackgroundColor(QColor("#264F78"));
-    
+
     // Whitespace visibility
     setWhitespaceVisibility(QsciScintilla::WsInvisible);
     
@@ -59,40 +62,26 @@ void CodeEditor::setupLexer() {
     // Set lexer font
     QFont font("Monospace", 10);
     m_lexer->setDefaultFont(font);
-    
-    // Apply dark theme colors to lexer
-    applyTheme("dark");
-    
-    setLexer(m_lexer);
 }
 
 void CodeEditor::setupMargins() {
     // Line numbers margin
     setMarginType(0, QsciScintilla::NumberMargin);
     setMarginWidth(0, "00000");
-    setMarginsForegroundColor(QColor("#858585"));
-    setMarginsBackgroundColor(QColor("#252526"));
     
     // Symbol margin for markers (errors, warnings, breakpoints)
     setMarginType(1, QsciScintilla::SymbolMargin);
     setMarginWidth(1, 16);
     setMarginSensitivity(1, true);
-    setMarginsBackgroundColor(QColor("#252526"));
     
     // Define marker symbols
     m_errorMarkerHandle = markerDefine(QsciScintilla::Circle);
-    setMarkerBackgroundColor(QColor("#F14C4C"), m_errorMarkerHandle);
-    setMarkerForegroundColor(QColor("#FFFFFF"), m_errorMarkerHandle);
-    
     m_warningMarkerHandle = markerDefine(QsciScintilla::Circle);
-    setMarkerBackgroundColor(QColor("#CCA700"), m_warningMarkerHandle);
-    setMarkerForegroundColor(QColor("#FFFFFF"), m_warningMarkerHandle);
 }
 
 void CodeEditor::setupFolding() {
     // Enable code folding
     setFolding(QsciScintilla::BoxedTreeFoldStyle);
-    setFoldMarginColors(QColor("#252526"), QColor("#252526"));
 }
 
 void CodeEditor::setupAutoCompletion() {
@@ -251,35 +240,68 @@ void CodeEditor::applyTheme(const QString& themeName) {
     } else if (themeName == "monokai") {
         theme = ThemeManager::monokaiTheme();
     } else {
-        theme = ThemeManager::darkTheme();  // default
+        theme = ThemeManager::darkTheme();
     }
-    
-    // Apply editor colors
-    setPaper(theme.editorBackground);
-    setColor(theme.editorForeground);
-    setCaretLineBackgroundColor(theme.editorCurrentLine);
-    setCaretWidth(2);
-    setCaretForegroundColor(theme.cursorColor);
-    setSelectionBackgroundColor(theme.accent);
-    setMarginsBackgroundColor(theme.sidebarBackground);
-    setMarginsForegroundColor(theme.textSecondary);
-    setFoldMarginColors(theme.sidebarBackground, theme.sidebarBackground);
-    
-    // Apply lexer colors
+
+    // Lexer colors
     if (m_lexer) {
         m_lexer->setDefaultPaper(theme.editorBackground);
         m_lexer->setDefaultColor(theme.editorForeground);
-        m_lexer->setColor(theme.syntaxKeyword, QsciLexerCPP::Keyword);
-        m_lexer->setColor(theme.syntaxType, QsciLexerCPP::KeywordSet2);
-        m_lexer->setColor(theme.syntaxString, QsciLexerCPP::DoubleQuotedString);
-        m_lexer->setColor(theme.syntaxString, QsciLexerCPP::SingleQuotedString);
-        m_lexer->setColor(theme.syntaxComment, QsciLexerCPP::Comment);
-        m_lexer->setColor(theme.syntaxComment, QsciLexerCPP::CommentLine);
-        m_lexer->setColor(theme.syntaxComment, QsciLexerCPP::CommentDoc);
+
+        for (int style = 0; style <= 128; ++style) {
+            m_lexer->setPaper(theme.editorBackground, style);
+            m_lexer->setColor(theme.editorForeground, style);
+        }
+
+        m_lexer->setColor(theme.syntaxKeyword,      QsciLexerCPP::Keyword);
+        m_lexer->setColor(theme.syntaxType,         QsciLexerCPP::KeywordSet2);
+        m_lexer->setColor(theme.syntaxString,       QsciLexerCPP::DoubleQuotedString);
+        m_lexer->setColor(theme.syntaxString,       QsciLexerCPP::SingleQuotedString);
+        m_lexer->setColor(theme.syntaxComment,      QsciLexerCPP::Comment);
+        m_lexer->setColor(theme.syntaxComment,      QsciLexerCPP::CommentLine);
+        m_lexer->setColor(theme.syntaxComment,      QsciLexerCPP::CommentDoc);
         m_lexer->setColor(theme.syntaxPreprocessor, QsciLexerCPP::PreProcessor);
-        m_lexer->setColor(theme.syntaxNumber, QsciLexerCPP::Number);
-        m_lexer->setColor(theme.syntaxFunction, QsciLexerCPP::Operator);
+        m_lexer->setColor(theme.syntaxNumber,       QsciLexerCPP::Number);
+        m_lexer->setColor(theme.syntaxFunction,     QsciLexerCPP::Operator);
+
+        QFont font("Monospace", 10);
+        m_lexer->setDefaultFont(font);
+        for (int style = 0; style <= 128; ++style) {
+            m_lexer->setFont(font, style);
+        }
     }
+
+    setLexer(m_lexer);
+
+    // Main editor area
+    setPaper(theme.editorBackground);
+    setColor(theme.editorForeground);
+
+    setCaretLineVisible(true);
+    setCaretLineBackgroundColor(theme.editorCurrentLine);
+    setCaretWidth(2);
+    setCaretForegroundColor(theme.cursorColor);
+
+    setSelectionBackgroundColor(theme.accent);
+    setSelectionForegroundColor(theme.editorForeground);
+
+    // Margins (line numbers)
+    setMarginsBackgroundColor(theme.sidebarBackground);
+    setMarginsForegroundColor(theme.textSecondary);
+
+    QFont marginFont("Monospace", 10);
+    setMarginsFont(marginFont);
+
+    // Fold margin
+    setFoldMarginColors(theme.sidebarBackground, theme.sidebarBackground);
+
+    // Error/warning marker colors
+    setMarkerBackgroundColor(theme.error,   m_errorMarkerHandle);
+    setMarkerForegroundColor(Qt::white,     m_errorMarkerHandle);
+    setMarkerBackgroundColor(theme.warning, m_warningMarkerHandle);
+    setMarkerForegroundColor(Qt::white,     m_warningMarkerHandle);
+
+    recolor();
 }
 
 void CodeEditor::onTextChanged() {
