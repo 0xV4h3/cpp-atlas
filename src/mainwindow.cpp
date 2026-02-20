@@ -267,19 +267,19 @@ void MainWindow::setupMenus() {
     
     m_editMenu->addSeparator();
     
-    QAction* findAction = m_editMenu->addAction("&Find...");
-    findAction->setShortcut(QKeySequence::Find);
-    connect(findAction, &QAction::triggered, this, &MainWindow::onEditFind);
+    m_findAction = m_editMenu->addAction("&Find...");
+    m_findAction->setShortcut(QKeySequence::Find);
+    connect(m_findAction, &QAction::triggered, this, &MainWindow::onEditFind);
     
-    QAction* replaceAction = m_editMenu->addAction("&Replace...");
-    replaceAction->setShortcut(QKeySequence::Replace);
-    connect(replaceAction, &QAction::triggered, this, &MainWindow::onEditReplace);
+    m_replaceAction = m_editMenu->addAction("&Replace...");
+    m_replaceAction->setShortcut(QKeySequence::Replace);
+    connect(m_replaceAction, &QAction::triggered, this, &MainWindow::onEditReplace);
     
     m_editMenu->addSeparator();
     
-    QAction* gotoLineAction = m_editMenu->addAction("&Go to Line...");
-    gotoLineAction->setShortcut(QKeySequence(Qt::CTRL | Qt::Key_G));
-    connect(gotoLineAction, &QAction::triggered, this, &MainWindow::onEditGotoLine);
+    m_gotoLineAction = m_editMenu->addAction("&Go to Line...");
+    m_gotoLineAction->setShortcut(QKeySequence(Qt::CTRL | Qt::Key_G));
+    connect(m_gotoLineAction, &QAction::triggered, this, &MainWindow::onEditGotoLine);
     
     // Build menu
     m_buildMenu = menuBar()->addMenu("&Build");
@@ -596,19 +596,15 @@ void MainWindow::updateMenuState(bool isWelcomeVisible) {
         m_runAction->setEnabled(!isWelcomeVisible);
     }
     
-    // Edit menu - disable all except undo, redo, cut, copy, paste
-    if (m_editMenu) {
-        QList<QAction*> editActions = m_editMenu->actions();
-        for (QAction* action : editActions) {
-            if (action->isSeparator()) continue;
-            QString text = action->text();
-            bool isBasicEdit = text.contains("Undo") || text.contains("Redo") ||
-                               text.contains("Cut") || text.contains("Copy") ||
-                               text.contains("Paste");
-            if (!isBasicEdit) {
-                action->setEnabled(!isWelcomeVisible);
-            }
-        }
+    // Edit menu - disable Find, Replace, Go to Line in welcome screen
+    if (m_findAction) {
+        m_findAction->setEnabled(!isWelcomeVisible);
+    }
+    if (m_replaceAction) {
+        m_replaceAction->setEnabled(!isWelcomeVisible);
+    }
+    if (m_gotoLineAction) {
+        m_gotoLineAction->setEnabled(!isWelcomeVisible);
     }
     
     // View menu - disable Toggle File Tree and Toggle Output Panel

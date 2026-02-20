@@ -149,6 +149,11 @@ private:
     QAction* m_toggleFileTreeAction = nullptr;
     QAction* m_toggleOutputAction = nullptr;
     
+    // Edit menu actions that should be disabled in welcome screen
+    QAction* m_findAction = nullptr;
+    QAction* m_replaceAction = nullptr;
+    QAction* m_gotoLineAction = nullptr;
+    
     // Main toolbar
     QToolBar* m_mainToolbar = nullptr;
     
