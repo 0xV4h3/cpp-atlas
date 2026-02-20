@@ -21,8 +21,7 @@ set(COMPILER_SOURCES
 
 set(OUTPUT_SOURCES
     ${CMAKE_CURRENT_SOURCE_DIR}/output/OutputPanel.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/output/BuildOutputWidget.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/output/RunOutputWidget.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/output/TerminalWidget.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/output/ProblemsWidget.cpp
 )
 

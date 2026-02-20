@@ -3,8 +3,7 @@
 #include "editor/EditorTabWidget.h"
 #include "editor/CodeEditor.h"
 #include "output/OutputPanel.h"
-#include "output/BuildOutputWidget.h"
-#include "output/RunOutputWidget.h"
+#include "output/TerminalWidget.h"
 #include "output/ProblemsWidget.h"
 #include "ui/FileTreeWidget.h"
 #include "ui/ThemeManager.h"
@@ -1011,9 +1010,9 @@ void MainWindow::onBuildCompile() {
     request.optimizationEnabled = false;
     request.optLevel = OptimizationLevel::O0;
     
-    // Clear previous output
-    m_outputPanel->buildOutput()->clear();
-    m_outputPanel->showBuildTab();
+    // Clear previous output and show terminal
+    m_outputPanel->terminal()->clear();
+    m_outputPanel->showTerminalTab();
     m_outputPanel->problems()->clear();
     
     m_statusLabel->setText("Building...");
@@ -1021,12 +1020,13 @@ void MainWindow::onBuildCompile() {
     // Compile
     CompileResult result = compiler->compile(request);
     
-    // Show output
+    // Show output in terminal
+    Theme theme = ThemeManager::instance()->currentTheme();
     if (!result.rawOutput.isEmpty()) {
-        m_outputPanel->buildOutput()->appendText(result.rawOutput);
+        m_outputPanel->terminal()->appendText(result.rawOutput, theme.textPrimary);
     }
     if (!result.rawError.isEmpty()) {
-        m_outputPanel->buildOutput()->appendError(result.rawError);
+        m_outputPanel->terminal()->appendText(result.rawError, QColor("#F48771"));
     }
     
     // Show diagnostics
@@ -1035,10 +1035,10 @@ void MainWindow::onBuildCompile() {
     if (result.success) {
         m_currentExecutable = result.outputFile;
         m_statusLabel->setText(QString("Build succeeded (%1 ms)").arg(result.compilationTimeMs));
-        m_outputPanel->buildOutput()->appendText("\nBuild succeeded!");
+        m_outputPanel->terminal()->appendText("\nBuild succeeded!\n", QColor("#4EC994"));
     } else {
         m_statusLabel->setText("Build failed");
-        m_outputPanel->buildOutput()->appendError("\nBuild failed!");
+        m_outputPanel->terminal()->appendText("\nBuild failed!\n", QColor("#F44747"));
         m_outputPanel->showProblemsTab();
     }
 }
@@ -1050,8 +1050,8 @@ void MainWindow::onBuildRun() {
         return;
     }
     
-    m_outputPanel->showRunTab();
-    m_outputPanel->runOutput()->runProgram(m_currentExecutable);
+    m_outputPanel->showTerminalTab();
+    m_outputPanel->terminal()->runCommand(m_currentExecutable);
     m_statusLabel->setText("Running...");
 }
 
@@ -1065,8 +1065,8 @@ void MainWindow::onBuildCompileAndRun() {
 }
 
 void MainWindow::onBuildStop() {
-    if (m_outputPanel->runOutput()->isRunning()) {
-        m_outputPanel->runOutput()->stopProgram();
+    if (m_outputPanel->terminal()->isRunning()) {
+        m_outputPanel->terminal()->stopProcess();
         m_statusLabel->setText("Program stopped");
     }
 }
@@ -1319,7 +1319,7 @@ QString MainWindow::getExecutablePath(const QString& sourceFile) {
 }
 
 void MainWindow::showBuildError(const QString& message) {
-    m_outputPanel->showBuildTab();
-    m_outputPanel->buildOutput()->appendError(message);
+    m_outputPanel->showTerminalTab();
+    m_outputPanel->terminal()->appendText(message + "\n", QColor("#F44747"));
     m_statusLabel->setText("Build error");
 }
