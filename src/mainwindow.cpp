@@ -11,6 +11,7 @@
 #include "ui/GotoLineDialog.h"
 #include "ui/FindReplaceDialog.h"
 #include "ui/WelcomeScreen.h"
+#include "ui/NewFileDialog.h"
 #include "core/FileManager.h"
 #include "core/Project.h"
 #include "core/RecentProjectsManager.h"
@@ -32,6 +33,7 @@
 #include <QMouseEvent>
 #include <QHBoxLayout>
 #include <QPushButton>
+#include <QToolButton>
 
 #ifdef Q_OS_WIN
 #include <windows.h>
@@ -199,9 +201,15 @@ void MainWindow::setupMenus() {
     // File menu
     QMenu* fileMenu = menuBar()->addMenu("&File");
     
-    QAction* newAction = fileMenu->addAction("&New");
+    QAction* newAction = fileMenu->addAction("New &File");
     newAction->setShortcut(QKeySequence::New);
     connect(newAction, &QAction::triggered, this, &MainWindow::onFileNew);
+    
+    QAction* newProjectAction = fileMenu->addAction("New &Project...");
+    newProjectAction->setShortcut(QKeySequence("Ctrl+Shift+N"));
+    connect(newProjectAction, &QAction::triggered, this, &MainWindow::onFileNewProject);
+    
+    fileMenu->addSeparator();
     
     QAction* openAction = fileMenu->addAction("&Open...");
     openAction->setShortcut(QKeySequence::Open);
@@ -219,11 +227,11 @@ void MainWindow::setupMenus() {
     
     fileMenu->addSeparator();
     
-    QAction* openFolderAction = fileMenu->addAction("Open &Folder...");
+    QAction* openFolderAction = fileMenu->addAction("Open F&older...");
     openFolderAction->setShortcut(QKeySequence("Ctrl+K"));
     connect(openFolderAction, &QAction::triggered, this, &MainWindow::onFileOpenFolder);
     
-    QAction* openProjectAction = fileMenu->addAction("Open &Project...");
+    QAction* openProjectAction = fileMenu->addAction("Open Pro&ject...");
     connect(openProjectAction, &QAction::triggered, this, &MainWindow::onFileOpenProject);
     
     fileMenu->addSeparator();
@@ -233,68 +241,68 @@ void MainWindow::setupMenus() {
     connect(exitAction, &QAction::triggered, this, &MainWindow::onFileExit);
     
     // Edit menu
-    QMenu* editMenu = menuBar()->addMenu("&Edit");
+    m_editMenu = menuBar()->addMenu("&Edit");
     
-    QAction* undoAction = editMenu->addAction("&Undo");
+    QAction* undoAction = m_editMenu->addAction("&Undo");
     undoAction->setShortcut(QKeySequence::Undo);
     connect(undoAction, &QAction::triggered, this, &MainWindow::onEditUndo);
     
-    QAction* redoAction = editMenu->addAction("&Redo");
+    QAction* redoAction = m_editMenu->addAction("&Redo");
     redoAction->setShortcut(QKeySequence::Redo);
     connect(redoAction, &QAction::triggered, this, &MainWindow::onEditRedo);
     
-    editMenu->addSeparator();
+    m_editMenu->addSeparator();
     
-    QAction* cutAction = editMenu->addAction("Cu&t");
+    QAction* cutAction = m_editMenu->addAction("Cu&t");
     cutAction->setShortcut(QKeySequence::Cut);
     connect(cutAction, &QAction::triggered, this, &MainWindow::onEditCut);
     
-    QAction* copyAction = editMenu->addAction("&Copy");
+    QAction* copyAction = m_editMenu->addAction("&Copy");
     copyAction->setShortcut(QKeySequence::Copy);
     connect(copyAction, &QAction::triggered, this, &MainWindow::onEditCopy);
     
-    QAction* pasteAction = editMenu->addAction("&Paste");
+    QAction* pasteAction = m_editMenu->addAction("&Paste");
     pasteAction->setShortcut(QKeySequence::Paste);
     connect(pasteAction, &QAction::triggered, this, &MainWindow::onEditPaste);
     
-    editMenu->addSeparator();
+    m_editMenu->addSeparator();
     
-    QAction* findAction = editMenu->addAction("&Find...");
+    QAction* findAction = m_editMenu->addAction("&Find...");
     findAction->setShortcut(QKeySequence::Find);
     connect(findAction, &QAction::triggered, this, &MainWindow::onEditFind);
     
-    QAction* replaceAction = editMenu->addAction("&Replace...");
+    QAction* replaceAction = m_editMenu->addAction("&Replace...");
     replaceAction->setShortcut(QKeySequence::Replace);
     connect(replaceAction, &QAction::triggered, this, &MainWindow::onEditReplace);
     
-    editMenu->addSeparator();
+    m_editMenu->addSeparator();
     
-    QAction* gotoLineAction = editMenu->addAction("&Go to Line...");
+    QAction* gotoLineAction = m_editMenu->addAction("&Go to Line...");
     gotoLineAction->setShortcut(QKeySequence(Qt::CTRL | Qt::Key_G));
     connect(gotoLineAction, &QAction::triggered, this, &MainWindow::onEditGotoLine);
     
     // Build menu
-    QMenu* buildMenu = menuBar()->addMenu("&Build");
+    m_buildMenu = menuBar()->addMenu("&Build");
     
-    QAction* compileAction = buildMenu->addAction("&Build");
+    QAction* compileAction = m_buildMenu->addAction("&Build");
     compileAction->setShortcut(Qt::Key_F7);
     connect(compileAction, &QAction::triggered, this, &MainWindow::onBuildCompile);
     
-    QAction* runAction = buildMenu->addAction("&Run");
-    runAction->setShortcut(Qt::Key_F5);
-    connect(runAction, &QAction::triggered, this, &MainWindow::onBuildRun);
+    m_runAction = m_buildMenu->addAction("&Run");
+    m_runAction->setShortcut(Qt::Key_F5);
+    connect(m_runAction, &QAction::triggered, this, &MainWindow::onBuildRun);
     
-    QAction* compileAndRunAction = buildMenu->addAction("Build && R&un");
+    QAction* compileAndRunAction = m_buildMenu->addAction("Build && R&un");
     compileAndRunAction->setShortcut(Qt::CTRL | Qt::Key_F5);
     connect(compileAndRunAction, &QAction::triggered, this, &MainWindow::onBuildCompileAndRun);
     
-    buildMenu->addSeparator();
+    m_buildMenu->addSeparator();
     
-    QAction* stopAction = buildMenu->addAction("&Stop");
+    QAction* stopAction = m_buildMenu->addAction("&Stop");
     stopAction->setShortcut(Qt::SHIFT | Qt::Key_F5);
     connect(stopAction, &QAction::triggered, this, &MainWindow::onBuildStop);
     
-    QAction* cleanAction = buildMenu->addAction("&Clean");
+    QAction* cleanAction = m_buildMenu->addAction("&Clean");
     connect(cleanAction, &QAction::triggered, this, &MainWindow::onBuildClean);
     
     // View menu
@@ -372,8 +380,32 @@ void MainWindow::setupToolbar() {
     QToolBar* toolbar = addToolBar("Main Toolbar");
     toolbar->setMovable(false);
     
-    // New, Open, Save buttons
-    toolbar->addAction("New", this, &MainWindow::onFileNew);
+    // New button with dropdown menu
+    QToolButton* newButton = new QToolButton(this);
+    newButton->setText("New");
+    newButton->setPopupMode(QToolButton::MenuButtonPopup);
+    QMenu* newMenu = new QMenu(newButton);
+    QAction* newFileAction = newMenu->addAction("New File...");
+    connect(newFileAction, &QAction::triggered, this, &MainWindow::onFileNew);
+    QAction* newFolderAction = newMenu->addAction("New Folder...");
+    connect(newFolderAction, &QAction::triggered, this, [this]() {
+        bool ok;
+        QString folderName = QInputDialog::getText(this, "New Folder",
+            "Folder name:", QLineEdit::Normal, "NewFolder", &ok);
+        if (ok && !folderName.isEmpty()) {
+            QString basePath = m_fileTree->rootPath();
+            if (basePath.isEmpty()) {
+                basePath = QDir::currentPath();
+            }
+            QDir(basePath).mkdir(folderName);
+        }
+    });
+    QAction* newProjectAction = newMenu->addAction("New Project...");
+    connect(newProjectAction, &QAction::triggered, this, &MainWindow::onFileNewProject);
+    newButton->setMenu(newMenu);
+    connect(newButton, &QToolButton::clicked, this, &MainWindow::onFileNew);
+    toolbar->addWidget(newButton);
+    
     toolbar->addAction("Open", this, &MainWindow::onFileOpen);
     toolbar->addAction("Save", this, &MainWindow::onFileSave);
     
@@ -477,6 +509,14 @@ void MainWindow::setupWelcomeScreen() {
         }
     });
     
+    connect(m_welcomeScreen, &WelcomeScreen::createProjectRequested, this, [this]() {
+        onFileNewProject();
+    });
+    
+    connect(m_welcomeScreen, &WelcomeScreen::openProjectRequested, this, [this]() {
+        onFileOpenProject();
+    });
+    
     connect(m_welcomeScreen, &WelcomeScreen::recentProjectSelected,
             this, [this](const QString& path) {
         hideWelcomeScreen();
@@ -512,6 +552,8 @@ void MainWindow::showWelcomeScreen() {
     // Hide IDE-specific docks
     m_fileTreeDock->hide();
     m_outputPanelDock->hide();
+    
+    updateMenuState(true);
 }
 
 void MainWindow::hideWelcomeScreen() {
@@ -520,6 +562,17 @@ void MainWindow::hideWelcomeScreen() {
     // Show IDE docks
     m_fileTreeDock->show();
     m_outputPanelDock->show();
+    
+    updateMenuState(false);
+}
+
+void MainWindow::updateMenuState(bool isWelcomeVisible) {
+    if (m_buildMenu) {
+        m_buildMenu->setEnabled(!isWelcomeVisible);
+    }
+    if (m_runAction) {
+        m_runAction->setEnabled(!isWelcomeVisible);
+    }
 }
 
 void MainWindow::loadCompilers() {
@@ -596,7 +649,23 @@ void MainWindow::closeEvent(QCloseEvent *event) {
 
 // File menu slots
 void MainWindow::onFileNew() {
-    m_editorTabs->newFile();
+    QString defaultDir = m_fileTree->rootPath();
+    if (defaultDir.isEmpty()) {
+        defaultDir = QDir::homePath();
+    }
+    
+    NewFileDialog dialog(defaultDir, this);
+    if (dialog.exec() == QDialog::Accepted) {
+        QStringList files = dialog.createdFiles();
+        for (const QString& file : files) {
+            m_editorTabs->openFile(file);
+        }
+    }
+}
+
+void MainWindow::onFileNewProject() {
+    QMessageBox::information(this, "New Project",
+        "Project creation will be available in a future update.");
 }
 
 void MainWindow::onFileOpen() {
@@ -998,28 +1067,11 @@ void MainWindow::onFileTreeDoubleClicked(const QString& filePath) {
 }
 
 void MainWindow::onNewFileRequested(const QString& directory) {
-    bool ok;
-    QString fileName = QInputDialog::getText(
-        this,
-        "New File",
-        "Enter file name:",
-        QLineEdit::Normal,
-        "main.cpp",
-        &ok
-    );
-    
-    if (ok && !fileName.isEmpty()) {
-        QString filePath = QDir(directory).filePath(fileName);
-        
-        if (QFile::exists(filePath)) {
-            QMessageBox::warning(this, "Error", "File already exists.");
-            return;
-        }
-        
-        if (m_fileManager->createNewFile(filePath)) {
-            m_editorTabs->openFile(filePath);
-        } else {
-            QMessageBox::warning(this, "Error", "Failed to create file.");
+    NewFileDialog dialog(directory, this);
+    if (dialog.exec() == QDialog::Accepted) {
+        QStringList files = dialog.createdFiles();
+        for (const QString& file : files) {
+            m_editorTabs->openFile(file);
         }
     }
 }

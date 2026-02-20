@@ -23,6 +23,7 @@ class FileManager;
 class Project;
 class ICompiler;
 class WelcomeScreen;
+class NewFileDialog;
 
 class MainWindow : public QMainWindow
 {
@@ -47,6 +48,7 @@ protected:
 private slots:
     // File menu
     void onFileNew();
+    void onFileNewProject();
     void onFileOpen();
     void onFileSave();
     void onFileSaveAs();
@@ -139,6 +141,11 @@ private:
     // Current compilation
     QString m_currentExecutable;
     
+    // Menus
+    QMenu* m_buildMenu = nullptr;
+    QMenu* m_editMenu = nullptr;
+    QAction* m_runAction = nullptr;
+    
     void setupUi();
     void setupCustomTitleBar();
     void setupMenus();
@@ -149,6 +156,7 @@ private:
     void setupWelcomeScreen();
     void showWelcomeScreen();
     void hideWelcomeScreen();
+    void updateMenuState(bool isWelcomeVisible);
     void loadCompilers();
     void updateStatusBar();
     void updateWindowTitle();

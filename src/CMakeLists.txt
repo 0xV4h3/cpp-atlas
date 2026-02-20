@@ -33,6 +33,7 @@ set(UI_SOURCES
     ${CMAKE_CURRENT_SOURCE_DIR}/ui/GotoLineDialog.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/ui/FindReplaceDialog.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/ui/WelcomeScreen.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/ui/NewFileDialog.cpp
 )
 
 # Collect all sources

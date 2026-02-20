@@ -43,6 +43,8 @@ signals:
     void newFileRequested(const QString& directory);
     void deleteFileRequested(const QString& filePath);
     void renameFileRequested(const QString& filePath);
+    void fileRenamed(const QString& oldPath, const QString& newPath);
+    void fileDeleted(const QString& filePath);
     void folderOpened(const QString& path);
     void folderClosed();
     
@@ -59,7 +61,6 @@ private slots:
 private:
     QFileSystemModel* m_model;
     QMenu* m_contextMenu;
-    QAction* m_newFileAction;
     QAction* m_deleteAction;
     QAction* m_renameAction;
     QAction* m_openInExplorerAction;
