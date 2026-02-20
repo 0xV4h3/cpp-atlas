@@ -127,7 +127,8 @@ void ProblemsWidget::onCellClicked(int row, int column) {
             }
         }
     } catch (...) {
-        // Silently handle any unexpected errors to prevent crashes
+        // Prevent crash from propagating
+        qWarning("Error handling cell click in ProblemsWidget");
     }
 }
 

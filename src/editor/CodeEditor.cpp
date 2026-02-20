@@ -271,6 +271,7 @@ void CodeEditor::applyTheme(const QString& themeName) {
         m_lexer->setDefaultColor(theme.editorForeground);
         
         // Set paper (background) for all styles to prevent shadow/tint
+        // QScintilla supports up to 128 style indices for lexers
         for (int style = 0; style <= 128; ++style) {
             m_lexer->setPaper(theme.editorBackground, style);
         }
