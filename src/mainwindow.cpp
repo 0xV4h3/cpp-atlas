@@ -570,8 +570,8 @@ void MainWindow::showWelcomeScreen() {
     m_fileTreeDock->hide();
     m_outputPanelDock->hide();
     
-    // Show "Return to Project" button if a project/folder is open or tabs exist
-    bool hasOpenProject = !m_fileTree->rootPath().isEmpty() || m_editorTabs->count() > 0;
+    // Show "Return to Project" button only when both a project folder is open and tabs exist
+    bool hasOpenProject = !m_fileTree->rootPath().isEmpty() && m_editorTabs->count() > 0;
     m_welcomeScreen->setReturnToProjectVisible(hasOpenProject);
     
     updateMenuState(true);

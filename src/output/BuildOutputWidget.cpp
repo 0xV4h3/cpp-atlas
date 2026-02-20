@@ -11,6 +11,10 @@ BuildOutputWidget::BuildOutputWidget(QWidget *parent)
     : QWidget(parent)
 {
     setupUi();
+    
+    // Respond to theme changes
+    connect(ThemeManager::instance(), &ThemeManager::themeChanged,
+            this, &BuildOutputWidget::onThemeChanged);
 }
 
 void BuildOutputWidget::setupUi() {
@@ -40,10 +44,11 @@ void BuildOutputWidget::setupUi() {
     font.setPointSize(9);
     m_textEdit->setFont(font);
     
-    // Set dark theme colors
+    // Set theme-aware colors
+    Theme theme = ThemeManager::instance()->currentTheme();
     QPalette p = m_textEdit->palette();
-    p.setColor(QPalette::Base, QColor("#1E1E1E"));
-    p.setColor(QPalette::Text, QColor("#D4D4D4"));
+    p.setColor(QPalette::Base, theme.editorBackground);
+    p.setColor(QPalette::Text, theme.editorForeground);
     m_textEdit->setPalette(p);
     
     mainLayout->addWidget(toolbar);
@@ -113,6 +118,14 @@ void BuildOutputWidget::onClearClicked() {
 void BuildOutputWidget::onCopyClicked() {
     QClipboard* clipboard = QApplication::clipboard();
     clipboard->setText(m_textEdit->toPlainText());
+}
+
+void BuildOutputWidget::onThemeChanged() {
+    Theme theme = ThemeManager::instance()->currentTheme();
+    QPalette p = m_textEdit->palette();
+    p.setColor(QPalette::Base, theme.editorBackground);
+    p.setColor(QPalette::Text, theme.editorForeground);
+    m_textEdit->setPalette(p);
 }
 
 void BuildOutputWidget::parseAndHighlightLine(const QString& line) {

@@ -16,6 +16,10 @@ CodeEditor::CodeEditor(QWidget *parent)
     setupBraceMatching();
     
     connect(this, &QsciScintilla::textChanged, this, &CodeEditor::onTextChanged);
+    
+    // Respond to theme changes
+    connect(ThemeManager::instance(), &ThemeManager::themeChanged,
+            this, &CodeEditor::applyTheme);
 }
 
 void CodeEditor::setupEditor() {
@@ -60,8 +64,8 @@ void CodeEditor::setupLexer() {
     QFont font("Monospace", 10);
     m_lexer->setDefaultFont(font);
     
-    // Apply dark theme colors to lexer
-    applyTheme("dark");
+    // Apply current theme colors to lexer
+    applyTheme(ThemeManager::instance()->currentThemeName());
     
     setLexer(m_lexer);
 }

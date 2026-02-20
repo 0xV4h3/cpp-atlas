@@ -110,7 +110,10 @@ void ProblemsWidget::onCellClicked(int row, int column) {
             return;
         }
         
-        QString file = fileItem->toolTip();  // Full path stored in tooltip
+        QString file = fileItem->data(Qt::UserRole).toString();  // Full path stored in UserRole
+        if (file.isEmpty()) {
+            file = fileItem->toolTip();
+        }
         if (file.isEmpty()) {
             file = fileItem->text();
         }
@@ -169,7 +172,8 @@ void ProblemsWidget::updateTable() {
         // File column
         QString fileName = QFileInfo(diag.file).fileName();
         QTableWidgetItem* fileItem = new QTableWidgetItem(fileName);
-        fileItem->setToolTip(diag.file);  // Full path in tooltip
+        fileItem->setData(Qt::UserRole, diag.file);  // Full path in UserRole
+        fileItem->setToolTip(diag.file);  // Full path in tooltip for display
         m_tableWidget->setItem(i, 3, fileItem);
         
         // Line:Column column

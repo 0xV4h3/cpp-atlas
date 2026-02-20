@@ -50,6 +50,7 @@ signals:
 private slots:
     void onClearClicked();
     void onCopyClicked();
+    void onThemeChanged();
     
 private:
     QPlainTextEdit* m_textEdit;
