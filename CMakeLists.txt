@@ -75,6 +75,78 @@ message(STATUS "  Library: ${QSCINTILLA_LIBRARY}")
 set(QSCINTILLA_INCLUDE_DIR ${QSCINTILLA_INCLUDE_DIR} CACHE PATH "QScintilla include directory")
 set(QSCINTILLA_LIBRARY ${QSCINTILLA_LIBRARY} CACHE FILEPATH "QScintilla library")
 
+# ============================================================
+# Google Benchmark (FetchContent)
+# Used as a compile-time library for user benchmark code.
+# NOT linked into the main CppAtlas binary directly.
+# ============================================================
+include(FetchContent)
+
+FetchContent_Declare(
+    googlebenchmark
+    GIT_REPOSITORY https://github.com/google/benchmark.git
+    GIT_TAG        v1.9.1
+    GIT_SHALLOW    TRUE
+)
+set(BENCHMARK_ENABLE_TESTING          OFF CACHE BOOL "" FORCE)
+set(BENCHMARK_ENABLE_GTEST_TESTS      OFF CACHE BOOL "" FORCE)
+set(BENCHMARK_INSTALL_DOCS            OFF CACHE BOOL "" FORCE)
+set(BENCHMARK_ENABLE_ASSEMBLY_TESTS   OFF CACHE BOOL "" FORCE)
+FetchContent_MakeAvailable(googlebenchmark)
+
+set(GOOGLE_BENCHMARK_INCLUDE_DIR
+    "${googlebenchmark_SOURCE_DIR}/include"
+    CACHE PATH "Google Benchmark include directory")
+set(GOOGLE_BENCHMARK_LIBRARY
+    benchmark
+    CACHE STRING "Google Benchmark library target")
+
+message(STATUS "Google Benchmark source: ${googlebenchmark_SOURCE_DIR}")
+
+# ============================================================
+# CppInsights — prebuilt binary detection
+# Building from source requires LLVM — impractical here.
+# ============================================================
+find_program(CPPINSIGHTS_EXECUTABLE
+    NAMES insights insights.exe
+    PATHS
+        "${CMAKE_SOURCE_DIR}/third_party/cppinsights/bin"
+        /usr/local/bin
+        /usr/bin
+        "$ENV{HOME}/.local/bin"
+    DOC "Path to cppinsights binary (https://github.com/andreasfertig/cppinsights)"
+)
+
+if(CPPINSIGHTS_EXECUTABLE)
+    message(STATUS "Found cppinsights: ${CPPINSIGHTS_EXECUTABLE}")
+else()
+    message(STATUS "cppinsights not found - feature will require manual setup via Tools > Settings")
+endif()
+
+# ============================================================
+# Qt Charts — optional, for BenchmarkChartWidget
+# Falls back to table-only view if unavailable.
+# ============================================================
+if(Qt6_FOUND)
+    find_package(Qt6 COMPONENTS Charts QUIET)
+    if(Qt6Charts_FOUND)
+        message(STATUS "Qt6 Charts found - chart visualizations enabled")
+        set(QT_CHARTS_AVAILABLE TRUE)
+    else()
+        message(STATUS "Qt6 Charts NOT found - install qt6-charts-dev for chart support")
+        set(QT_CHARTS_AVAILABLE FALSE)
+    endif()
+else()
+    find_package(Qt5 COMPONENTS Charts QUIET)
+    if(Qt5Charts_FOUND)
+        message(STATUS "Qt5 Charts found - chart visualizations enabled")
+        set(QT_CHARTS_AVAILABLE TRUE)
+    else()
+        message(STATUS "Qt5 Charts NOT found - install libqt5charts5-dev for chart support")
+        set(QT_CHARTS_AVAILABLE FALSE)
+    endif()
+endif()
+
 add_subdirectory(src)
 add_subdirectory(tests)
 enable_testing()

@@ -37,13 +37,18 @@ set(UI_SOURCES
     ${CMAKE_CURRENT_SOURCE_DIR}/ui/NewProjectDialog.cpp
 )
 
-# Collect all sources
+# Tools module - runners and configuration
+set(TOOLS_SOURCES
+    ${CMAKE_CURRENT_SOURCE_DIR}/tools/ToolsConfig.cpp
+)
+
 set(APP_SOURCES
     ${CORE_SOURCES}
     ${EDITOR_SOURCES}
     ${COMPILER_SOURCES}
     ${OUTPUT_SOURCES}
     ${UI_SOURCES}
+    ${TOOLS_SOURCES}
 )
 
 # Collect headers
@@ -73,11 +78,34 @@ target_include_directories(CppAtlasLib PUBLIC
     ${CMAKE_SOURCE_DIR}/include
     ${CMAKE_CURRENT_SOURCE_DIR}
     ${QSCINTILLA_INCLUDE_DIR}
+    ${GOOGLE_BENCHMARK_INCLUDE_DIR}
 )
 
-target_link_libraries(CppAtlasLib PUBLIC 
-    Qt${QT_VERSION_MAJOR}::Widgets
-    ${QSCINTILLA_LIBRARY}
+# Link Qt Charts if available
+if(QT_CHARTS_AVAILABLE)
+    target_compile_definitions(CppAtlasLib PUBLIC CPPATLAS_CHARTS_AVAILABLE)
+    target_link_libraries(CppAtlasLib PUBLIC
+        Qt${QT_VERSION_MAJOR}::Widgets
+        Qt${QT_VERSION_MAJOR}::Charts
+        ${QSCINTILLA_LIBRARY}
+    )
+else()
+    target_link_libraries(CppAtlasLib PUBLIC
+        Qt${QT_VERSION_MAJOR}::Widgets
+        ${QSCINTILLA_LIBRARY}
+    )
+endif()
+
+# CppInsights default path compile-time hint
+if(CPPINSIGHTS_EXECUTABLE)
+    target_compile_definitions(CppAtlasLib PRIVATE
+        CPPINSIGHTS_DEFAULT_PATH="${CPPINSIGHTS_EXECUTABLE}")
+endif()
+
+# Google Benchmark paths for ToolsConfig initialization
+target_compile_definitions(CppAtlasLib PRIVATE
+    GOOGLE_BENCHMARK_INCLUDE_DIR="${GOOGLE_BENCHMARK_INCLUDE_DIR}"
+    GOOGLE_BENCHMARK_LIB_TARGET="${GOOGLE_BENCHMARK_LIBRARY}"
 )
 
 # Main executable
