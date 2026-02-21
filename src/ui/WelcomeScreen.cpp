@@ -367,14 +367,13 @@ void WelcomeScreen::applyTheme() {
         #recentProjectsList::item {
             padding: 10px;
             border-bottom: 1px solid %6;
+            background-color: %5;
+            color: %3;
         }
-        
+
         #recentProjectsList::item:selected {
             background-color: %2;
-        }
-        
-        #recentProjectsList::item:hover:!selected {
-            background-color: %7;
+            color: %3;
         }
         
         #linkButton {
@@ -382,18 +381,32 @@ void WelcomeScreen::applyTheme() {
             color: %2;
             border: none;
             text-decoration: underline;
+            font-weight: bold;
+        }
+        #linkButton:hover,
+        #linkButton:focus {
+            color: %2;
+            opacity: 0.8;
         }
         
-        #continueButton {
-            background-color: transparent;
+        #continueButton, #continueButton:focus {
+            background-color: %2;
+            color: #fff;
+            border: none;
+            border-radius: 4px;
+            font-weight: bold;
+            padding: 8px 20px;
+        }
+
+        #continueButton:hover {
+            background-color: %8;
+            color: #fff;
+        }
+
+        #continueButton:disabled {
+            background-color: %5;
             color: %4;
             border: 1px solid %6;
-            padding: 8px 20px;
-            border-radius: 4px;
-        }
-        
-        #continueButton:hover {
-            background-color: %5;
         }
     )").arg(theme.windowBackground.name())     // %1
        .arg(theme.accent.name())               // %2
@@ -401,5 +414,7 @@ void WelcomeScreen::applyTheme() {
        .arg(theme.textSecondary.name())        // %4
        .arg(theme.panelBackground.name())      // %5
        .arg(theme.border.name())               // %6
-       .arg(theme.sidebarBackground.name()));  // %7
+       .arg(theme.sidebarBackground.name())    // %7
+       .arg(theme.accent.lighter(110).name())  // %8
+      );
 }
