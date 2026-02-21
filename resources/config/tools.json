@@ -1,0 +1,20 @@
+{
+  "tools": {
+    "cppinsights": {
+      "path": "",
+      "autoDetect": true,
+      "notes": "Download from https://github.com/andreasfertig/cppinsights/releases or install via package manager. Binary name: 'insights'."
+    },
+    "benchmark": {
+      "includeDir": "",
+      "library": "",
+      "autoDetect": true,
+      "notes": "Populated automatically by CMake FetchContent (google/benchmark v1.9.1). Override if using a system installation."
+    }
+  },
+  "benchmarkDefaults": {
+    "compiler": "gcc-system",
+    "standard": "c++17",
+    "optimizationLevel": "O2"
+  }
+}
