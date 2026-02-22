@@ -210,7 +210,7 @@ void WelcomeScreen::createRecentProjectsArea(QWidget* recentWidget) {
     // Projects list
     m_recentProjectsList = new QListWidget(recentWidget);
     m_recentProjectsList->setObjectName("recentProjectsList");
-    m_recentProjectsList->setAlternatingRowColors(true);
+    m_recentProjectsList->setAlternatingRowColors(false);
     m_recentProjectsList->setSpacing(2);
     
     connect(m_recentProjectsList, &QListWidget::itemClicked,
@@ -371,8 +371,13 @@ void WelcomeScreen::applyTheme() {
             color: %3;
         }
 
-        #recentProjectsList::item:selected {
+        #recentProjectsList::item:hover {
             background-color: %2;
+            border-radius: 4px;
+        }
+
+        #recentProjectsList::item:selected {
+            background-color: %8;
             color: %3;
         }
         
