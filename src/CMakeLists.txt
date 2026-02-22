@@ -37,6 +37,8 @@ set(UI_SOURCES
     ${CMAKE_CURRENT_SOURCE_DIR}/ui/NewProjectDialog.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/ui/InsightsWidget.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/ui/AssemblyWidget.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/ui/BenchmarkWidget.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/ui/BenchmarkChartWidget.cpp
 )
 
 # Tools module - runners and configuration
@@ -44,6 +46,7 @@ set(TOOLS_SOURCES
     ${CMAKE_CURRENT_SOURCE_DIR}/tools/ToolsConfig.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/tools/CppInsightsRunner.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/tools/AssemblyRunner.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/tools/BenchmarkRunner.cpp
 )
 
 set(APP_SOURCES

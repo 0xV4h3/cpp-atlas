@@ -2,6 +2,7 @@
     <qresource prefix="/">
         <file>config/compilers.json</file>
         <file>templates/main.cpp</file>
+        <file>templates/benchmark_template.cpp</file>
         <file>templates/source.cpp.template</file>
         <file>templates/header.hpp.template</file>
         <file>templates/class.hpp.template</file>
