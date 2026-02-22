@@ -26,6 +26,7 @@ class ICompiler;
 class WelcomeScreen;
 class NewFileDialog;
 class NewProjectDialog;
+class AssemblyWidget;
 
 class MainWindow : public QMainWindow
 {
@@ -121,6 +122,7 @@ private:
     FileTreeWidget* m_fileTree;
     FileManager* m_fileManager;
     Project* m_project;
+    AssemblyWidget* m_assemblyWidget = nullptr;
     
     // Welcome screen
     WelcomeScreen* m_welcomeScreen = nullptr;
@@ -129,6 +131,7 @@ private:
     // Dock widgets
     QDockWidget* m_fileTreeDock;
     QDockWidget* m_outputPanelDock;
+    QDockWidget* m_assemblyDock;
     
     // Toolbar widgets
     QComboBox* m_compilerCombo;
@@ -150,6 +153,7 @@ private:
     QAction* m_runAction = nullptr;
     QAction* m_toggleFileTreeAction = nullptr;
     QAction* m_toggleOutputAction = nullptr;
+    QAction* m_toggleAssemblyAction = nullptr;
     
     // Edit menu actions that should be disabled in welcome screen
     QAction* m_findAction = nullptr;

@@ -12,6 +12,7 @@
 #include "ui/WelcomeScreen.h"
 #include "ui/NewFileDialog.h"
 #include "ui/NewProjectDialog.h"
+#include "ui/AssemblyWidget.h"
 #include "core/FileManager.h"
 #include "core/Project.h"
 #include "core/ProjectManager.h"
@@ -314,6 +315,11 @@ void MainWindow::setupMenus() {
     
     m_toggleOutputAction = m_viewMenu->addAction("Toggle &Output Panel");
     connect(m_toggleOutputAction, &QAction::triggered, this, &MainWindow::onViewToggleOutputPanel);
+
+    m_toggleAssemblyAction = m_viewMenu->addAction("Toggle &Assembly View");
+    connect(m_toggleAssemblyAction, &QAction::triggered, this, [this]() {
+        m_assemblyDock->setVisible(!m_assemblyDock->isVisible());
+    });
     
     m_viewMenu->addSeparator();
     
@@ -450,6 +456,13 @@ void MainWindow::setupDockWidgets() {
     m_outputPanel = new OutputPanel(m_outputPanelDock);
     m_outputPanelDock->setWidget(m_outputPanel);
     addDockWidget(Qt::BottomDockWidgetArea, m_outputPanelDock);
+
+    // Assembly dock (right side)
+    m_assemblyDock = new QDockWidget("Assembly", this);
+    m_assemblyWidget = new AssemblyWidget(m_assemblyDock);
+    m_assemblyDock->setWidget(m_assemblyWidget);
+    addDockWidget(Qt::RightDockWidgetArea, m_assemblyDock);
+    m_assemblyDock->hide(); // hidden by default; user opens via View menu
 }
 
 void MainWindow::setupStatusBar() {
@@ -490,6 +503,13 @@ void MainWindow::setupConnections() {
     // Problems widget signals
     connect(m_outputPanel->problems(), &ProblemsWidget::diagnosticClicked,
             this, &MainWindow::onDiagnosticClicked);
+
+    // Assembly pane → navigate editor to the activated source line
+    connect(m_assemblyWidget, &AssemblyWidget::sourceLineActivated,
+            this, [this](int line) {
+        CodeEditor* ed = m_editorTabs->currentEditor();
+        if (ed) ed->gotoLine(line);
+    });
 }
 
 void MainWindow::setupWelcomeScreen() {
@@ -636,6 +656,9 @@ void MainWindow::updateMenuState(bool isWelcomeVisible) {
     }
     if (m_toggleOutputAction) {
         m_toggleOutputAction->setEnabled(!isWelcomeVisible);
+    }
+    if (m_toggleAssemblyAction) {
+        m_toggleAssemblyAction->setEnabled(!isWelcomeVisible);
     }
     
     // Main toolbar - hide/show
@@ -1191,6 +1214,11 @@ void MainWindow::onEditorChanged(CodeEditor* editor) {
                 this, &MainWindow::updateStatusBar, Qt::UniqueConnection);
         connect(editor, &CodeEditor::modificationChanged,
                 this, &MainWindow::updateWindowTitle, Qt::UniqueConnection);
+
+        // Keep Assembly pane in sync with the active editor
+        if (m_assemblyWidget) {
+            m_assemblyWidget->setSourceCode(editor->text(), editor->filePath());
+        }
     }
 }
 
