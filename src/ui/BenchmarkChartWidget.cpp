@@ -14,7 +14,12 @@
 #include <QtCharts/QChartView>
 #include <QtCharts/QLineSeries>
 #include <QtCharts/QValueAxis>
+
+// Qt5 only: QT_CHARTS_USE_NAMESPACE
+#if (QT_VERSION < QT_VERSION_CHECK(6, 0, 0))
 QT_CHARTS_USE_NAMESPACE
+#endif
+
 #endif
 
 // ── Construction ─────────────────────────────────────────────────────────────
