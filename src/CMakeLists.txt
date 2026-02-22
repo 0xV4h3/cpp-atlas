@@ -39,6 +39,7 @@ set(UI_SOURCES
     ${CMAKE_CURRENT_SOURCE_DIR}/ui/AssemblyWidget.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/ui/BenchmarkWidget.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/ui/BenchmarkChartWidget.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/ui/AnalysisPanel.cpp
 )
 
 # Tools module - runners and configuration

@@ -12,8 +12,7 @@
 #include "ui/WelcomeScreen.h"
 #include "ui/NewFileDialog.h"
 #include "ui/NewProjectDialog.h"
-#include "ui/AssemblyWidget.h"
-#include "ui/InsightsWidget.h"
+#include "ui/AnalysisPanel.h"
 #include "core/FileManager.h"
 #include "core/Project.h"
 #include "core/ProjectManager.h"
@@ -316,18 +315,6 @@ void MainWindow::setupMenus() {
     
     m_toggleOutputAction = m_viewMenu->addAction("Toggle &Output Panel");
     connect(m_toggleOutputAction, &QAction::triggered, this, &MainWindow::onViewToggleOutputPanel);
-
-    m_toggleAssemblyAction = m_viewMenu->addAction("Toggle &Assembly View");
-    connect(m_toggleAssemblyAction, &QAction::triggered, this, [this]() {
-        m_assemblyDock->setVisible(!m_assemblyDock->isVisible());
-    });
-
-    m_toggleInsightsAction = m_viewMenu->addAction("Toggle C++ &Insights");
-    connect(m_toggleInsightsAction, &QAction::triggered, this, [this]() {
-        const bool makeVisible = !m_insightsDock->isVisible();
-        m_insightsDock->setVisible(makeVisible);
-        if (makeVisible) m_insightsDock->raise();
-    });
     
     m_viewMenu->addSeparator();
     
@@ -388,6 +375,51 @@ void MainWindow::setupMenus() {
             "CppAtlas - C++ Learning IDE\n\n"
             "Version 0.1\n\n"
             "An educational Qt-based environment for learning C++.");
+    });
+
+    // Tools menu — Analysis Panel + tab shortcuts
+    QMenu* toolsMenu = menuBar()->addMenu(QStringLiteral("&Tools"));
+
+    m_toggleAnalysisAction = toolsMenu->addAction(
+        QStringLiteral("Toggle &Analysis Panel"));
+    m_toggleAnalysisAction->setShortcut(
+        QKeySequence(Qt::CTRL | Qt::SHIFT | Qt::Key_A));
+    connect(m_toggleAnalysisAction, &QAction::triggered, this, [this]() {
+        const bool visible = !m_analysisDock->isVisible();
+        m_analysisDock->setVisible(visible);
+        if (visible) m_analysisDock->raise();
+    });
+
+    toolsMenu->addSeparator();
+
+    QAction* showInsightsAction = toolsMenu->addAction(
+        QStringLiteral("C++ &Insights"));
+    showInsightsAction->setShortcut(
+        QKeySequence(Qt::CTRL | Qt::SHIFT | Qt::Key_I));
+    connect(showInsightsAction, &QAction::triggered, this, [this]() {
+        m_analysisDock->setVisible(true);
+        m_analysisPanel->setCurrentIndex(AnalysisPanel::TabInsights);
+        m_analysisDock->raise();
+    });
+
+    QAction* showAssemblyAction = toolsMenu->addAction(
+        QStringLiteral("&Assembly View"));
+    showAssemblyAction->setShortcut(
+        QKeySequence(Qt::CTRL | Qt::SHIFT | Qt::Key_S));
+    connect(showAssemblyAction, &QAction::triggered, this, [this]() {
+        m_analysisDock->setVisible(true);
+        m_analysisPanel->setCurrentIndex(AnalysisPanel::TabAssembly);
+        m_analysisDock->raise();
+    });
+
+    QAction* showBenchmarkAction = toolsMenu->addAction(
+        QStringLiteral("&Benchmark"));
+    showBenchmarkAction->setShortcut(
+        QKeySequence(Qt::CTRL | Qt::SHIFT | Qt::Key_B));
+    connect(showBenchmarkAction, &QAction::triggered, this, [this]() {
+        m_analysisDock->setVisible(true);
+        m_analysisPanel->setCurrentIndex(AnalysisPanel::TabBenchmark);
+        m_analysisDock->raise();
     });
 }
 
@@ -465,20 +497,12 @@ void MainWindow::setupDockWidgets() {
     m_outputPanelDock->setWidget(m_outputPanel);
     addDockWidget(Qt::BottomDockWidgetArea, m_outputPanelDock);
 
-    // Assembly dock (right side)
-    m_assemblyDock = new QDockWidget("Assembly", this);
-    m_assemblyWidget = new AssemblyWidget(m_assemblyDock);
-    m_assemblyDock->setWidget(m_assemblyWidget);
-    addDockWidget(Qt::RightDockWidgetArea, m_assemblyDock);
-    m_assemblyDock->hide(); // hidden by default; user opens via View menu
-
-    // C++ Insights dock (tabbed alongside Assembly, hidden by default)
-    m_insightsDock = new QDockWidget(QStringLiteral("C++ Insights"), this);
-    m_insightsWidget = new InsightsWidget(m_insightsDock);
-    m_insightsDock->setWidget(m_insightsWidget);
-    addDockWidget(Qt::RightDockWidgetArea, m_insightsDock);
-    tabifyDockWidget(m_assemblyDock, m_insightsDock);
-    m_insightsDock->hide();
+    // Analysis dock (right side — Insights | Assembly | Benchmark tabs)
+    m_analysisDock  = new QDockWidget(QStringLiteral("Analysis"), this);
+    m_analysisPanel = new AnalysisPanel(m_analysisDock);
+    m_analysisDock->setWidget(m_analysisPanel);
+    addDockWidget(Qt::RightDockWidgetArea, m_analysisDock);
+    m_analysisDock->hide(); // Hidden by default; open via Tools menu
 }
 
 void MainWindow::setupStatusBar() {
@@ -520,23 +544,22 @@ void MainWindow::setupConnections() {
     connect(m_outputPanel->problems(), &ProblemsWidget::diagnosticClicked,
             this, &MainWindow::onDiagnosticClicked);
 
-    // Assembly pane → navigate editor to the activated source line
-    connect(m_assemblyWidget, &AssemblyWidget::sourceLineActivated,
+    // Forward assembly line activation to editor navigation
+    connect(m_analysisPanel, &AnalysisPanel::sourceLineActivated,
             this, [this](int line) {
         CodeEditor* ed = m_editorTabs->currentEditor();
         if (ed) ed->gotoLine(line);
     });
 
-    // Keep AssemblyWidget in sync with MainWindow toolbar compiler/standard selections
+    // Keep AnalysisPanel in sync with MainWindow toolbar compiler/standard selections
     connect(m_compilerCombo, QOverload<int>::of(&QComboBox::currentIndexChanged),
             this, [this](int) {
-        if (m_assemblyWidget)
-            m_assemblyWidget->setCompilerId(m_compilerCombo->currentData().toString());
+        m_analysisPanel->setCompilerId(
+            m_compilerCombo->currentData().toString());
     });
     connect(m_standardCombo, QOverload<int>::of(&QComboBox::currentIndexChanged),
             this, [this](int) {
-        if (m_assemblyWidget)
-            m_assemblyWidget->setStandard(m_standardCombo->currentText());
+        m_analysisPanel->setStandard(m_standardCombo->currentText());
     });
 }
 
@@ -685,11 +708,8 @@ void MainWindow::updateMenuState(bool isWelcomeVisible) {
     if (m_toggleOutputAction) {
         m_toggleOutputAction->setEnabled(!isWelcomeVisible);
     }
-    if (m_toggleAssemblyAction) {
-        m_toggleAssemblyAction->setEnabled(!isWelcomeVisible);
-    }
-    if (m_toggleInsightsAction) {
-        m_toggleInsightsAction->setEnabled(!isWelcomeVisible);
+    if (m_toggleAnalysisAction) {
+        m_toggleAnalysisAction->setEnabled(!isWelcomeVisible);
     }
     
     // Main toolbar - hide/show
@@ -721,10 +741,11 @@ void MainWindow::loadCompilers() {
         m_compilerCombo->setCurrentIndex(index);
     }
 
-    // Sync initial compiler/standard to AssemblyWidget after registry is populated
-    if (m_assemblyWidget) {
-        m_assemblyWidget->setCompilerId(m_compilerCombo->currentData().toString());
-        m_assemblyWidget->setStandard(m_standardCombo->currentText());
+    // Sync initial compiler/standard to AnalysisPanel after registry is populated
+    if (m_analysisPanel) {
+        m_analysisPanel->setCompilerId(
+            m_compilerCombo->currentData().toString());
+        m_analysisPanel->setStandard(m_standardCombo->currentText());
     }
 }
 
@@ -1252,14 +1273,9 @@ void MainWindow::onEditorChanged(CodeEditor* editor) {
         connect(editor, &CodeEditor::modificationChanged,
                 this, &MainWindow::updateWindowTitle, Qt::UniqueConnection);
 
-        // Keep Assembly pane in sync with the active editor
-        if (m_assemblyWidget) {
-            m_assemblyWidget->setSourceCode(editor->text(), editor->filePath());
-        }
-        // Keep C++ Insights pane in sync with the active editor
-        if (m_insightsWidget) {
-            m_insightsWidget->setSourceCode(editor->text(), editor->filePath());
-        }
+        // Keep AnalysisPanel in sync with the active editor
+        if (m_analysisPanel)
+            m_analysisPanel->setSourceCode(editor->text(), editor->filePath());
     }
 }
 
