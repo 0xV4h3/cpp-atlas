@@ -36,12 +36,14 @@ set(UI_SOURCES
     ${CMAKE_CURRENT_SOURCE_DIR}/ui/NewFileDialog.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/ui/NewProjectDialog.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/ui/InsightsWidget.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/ui/AssemblyWidget.cpp
 )
 
 # Tools module - runners and configuration
 set(TOOLS_SOURCES
     ${CMAKE_CURRENT_SOURCE_DIR}/tools/ToolsConfig.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/tools/CppInsightsRunner.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/tools/AssemblyRunner.cpp
 )
 
 set(APP_SOURCES

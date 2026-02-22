@@ -2,6 +2,7 @@
 #include "tools/ToolsConfig.h"
 
 #include <QFileInfo>
+#include <QMap>
 #include <QStringList>
 
 CppInsightsRunner::CppInsightsRunner(QObject* parent)
