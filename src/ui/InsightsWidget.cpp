@@ -194,6 +194,8 @@ void InsightsWidget::applyThemeToEditor(QsciScintilla* editor, const QString& th
     editor->setCaretForegroundColor(theme.cursorColor);
     editor->setMarginsBackgroundColor(theme.sidebarBackground);
     editor->setMarginsForegroundColor(theme.textSecondary);
+    // FIX: set fold margin colors to match sidebar — prevents white strips
+    editor->setFoldMarginColors(theme.sidebarBackground, theme.sidebarBackground);
     editor->recolor();
 }
 

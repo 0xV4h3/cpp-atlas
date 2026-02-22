@@ -16,8 +16,7 @@ class QSplitter;
  * @brief Widget for the Assembly output tab.
  *
  * Layout:
- *   [Toolbar: compiler combo | standard combo | optimization combo |
- *             syntax combo | Run button | status label]
+ *   [Toolbar: optimization combo | syntax combo | Run button | status label]
  *   [QSplitter horizontal]
  *     Left:  source code mirror (read-only QsciScintilla, synced from editor)
  *     Right: assembly output   (read-only QsciScintilla, plain highlighting)
@@ -31,6 +30,7 @@ class QSplitter;
  *
  * Integration:
  *   • Call setSourceCode(code, filePath) when the active editor changes.
+ *   • Call setCompilerId() / setStandard() when the MainWindow toolbar changes.
  *   • Connect sourceLineActivated(int) to navigate the active CodeEditor.
  *   • Connects to ThemeManager::themeChanged for live theme updates.
  *   • Uses AssemblyRunner for async process execution.
@@ -55,6 +55,12 @@ public:
      */
     void highlightSourceLine(int sourceLine);
 
+    /** Called by MainWindow whenever the user changes the active compiler. */
+    void setCompilerId(const QString& compilerId);
+
+    /** Called by MainWindow whenever the user changes the C++ standard. */
+    void setStandard(const QString& standard);
+
 public slots:
     void runAssembly();
     void onThemeChanged(const QString& themeName);
@@ -73,18 +79,14 @@ private slots:
     void onProgressMessage(const QString& msg);
     void onLineMapReady(const QMap<int, int>& asmLineToSrcLine);
     void onAsmCursorPositionChanged(int line, int col);
-    void onCompilerComboChanged(int index);
 
 private:
     void setupUi();
     void setupLexer(QsciScintilla* editor, QsciLexerCPP* lexer);
     void applyThemeToEditor(QsciScintilla* editor, const QString& themeName);
-    void populateCompilerCombo();
     void clearHighlights();
 
     // Toolbar widgets
-    QComboBox*   m_compilerCombo;
-    QComboBox*   m_standardCombo;
     QComboBox*   m_optimizationCombo;
     QComboBox*   m_syntaxCombo;
     QPushButton* m_runButton;
@@ -106,6 +108,8 @@ private:
     // State
     QString         m_currentSourceCode;
     QString         m_currentFilePath;
+    QString         m_compilerId;                         // set via setCompilerId()
+    QString         m_standard = QStringLiteral("c++17"); // set via setStandard()
     QMap<int, int>  m_asmLineToSrcLine;  // asm line (1-based) → src line (1-based)
     QMap<int, int>  m_srcLineToFirstAsm; // src line → first asm line for it
 };

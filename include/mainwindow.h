@@ -27,6 +27,7 @@ class WelcomeScreen;
 class NewFileDialog;
 class NewProjectDialog;
 class AssemblyWidget;
+class InsightsWidget;
 
 class MainWindow : public QMainWindow
 {
@@ -123,6 +124,8 @@ private:
     FileManager* m_fileManager;
     Project* m_project;
     AssemblyWidget* m_assemblyWidget = nullptr;
+    QDockWidget*    m_insightsDock   = nullptr;
+    InsightsWidget* m_insightsWidget = nullptr;
     
     // Welcome screen
     WelcomeScreen* m_welcomeScreen = nullptr;
@@ -154,6 +157,7 @@ private:
     QAction* m_toggleFileTreeAction = nullptr;
     QAction* m_toggleOutputAction = nullptr;
     QAction* m_toggleAssemblyAction = nullptr;
+    QAction* m_toggleInsightsAction = nullptr;
     
     // Edit menu actions that should be disabled in welcome screen
     QAction* m_findAction = nullptr;

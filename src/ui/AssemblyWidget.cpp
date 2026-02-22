@@ -1,5 +1,4 @@
 #include "ui/AssemblyWidget.h"
-#include "compiler/CompilerRegistry.h"
 #include "ui/ThemeManager.h"
 
 #include <Qsci/qsciscintilla.h>
@@ -49,27 +48,7 @@ void AssemblyWidget::setupUi() {
     auto* tbLayout = new QHBoxLayout(toolbar);
     tbLayout->setContentsMargins(6, 4, 6, 4);
 
-    // Compiler selector
-    tbLayout->addWidget(new QLabel(QStringLiteral("Compiler:"), toolbar));
-    m_compilerCombo = new QComboBox(toolbar);
-    m_compilerCombo->setMinimumWidth(130);
-    populateCompilerCombo();
-    tbLayout->addWidget(m_compilerCombo);
-    connect(m_compilerCombo, QOverload<int>::of(&QComboBox::currentIndexChanged),
-            this, &AssemblyWidget::onCompilerComboChanged);
-
-    tbLayout->addSpacing(8);
-
-    // Standard selector
-    tbLayout->addWidget(new QLabel(QStringLiteral("Std:"), toolbar));
-    m_standardCombo = new QComboBox(toolbar);
-    m_standardCombo->addItems({ "c++11", "c++14", "c++17", "c++20", "c++23" });
-    m_standardCombo->setCurrentText(QStringLiteral("c++17"));
-    tbLayout->addWidget(m_standardCombo);
-
-    tbLayout->addSpacing(8);
-
-    // Optimisation selector
+    // Optimisation selector — assembly-specific, not duplicated in MainWindow
     tbLayout->addWidget(new QLabel(QStringLiteral("Opt:"), toolbar));
     m_optimizationCombo = new QComboBox(toolbar);
     m_optimizationCombo->addItems({ "O0", "O1", "O2", "O3", "Os" });
@@ -94,7 +73,7 @@ void AssemblyWidget::setupUi() {
 
     // Status label
     m_statusLabel = new QLabel(QStringLiteral("Ready"), toolbar);
-    m_statusLabel->setMinimumWidth(200);
+    m_statusLabel->setMinimumWidth(260);
     tbLayout->addWidget(m_statusLabel);
 
     mainLayout->addWidget(toolbar);
@@ -142,6 +121,15 @@ void AssemblyWidget::setupLexer(QsciScintilla* editor, QsciLexerCPP* lexer) {
 }
 
 // ── Public interface ──────────────────────────────────────────────────────────
+
+void AssemblyWidget::setCompilerId(const QString& id) {
+    m_compilerId = id;
+    if (m_runner) m_runner->setCompilerId(id);
+}
+
+void AssemblyWidget::setStandard(const QString& standard) {
+    m_standard = standard;
+}
 
 void AssemblyWidget::setSourceCode(const QString& code, const QString& filePath) {
     m_currentSourceCode = code;
@@ -201,12 +189,12 @@ void AssemblyWidget::runAssembly() {
 
     // Build flags
     QStringList flags;
-    flags << QStringLiteral("-std=") + m_standardCombo->currentText();
+    flags << QStringLiteral("-std=") + m_standard;
     flags << QStringLiteral("-") + m_optimizationCombo->currentText();
 
     // Configure runner
     m_runner->setIntelSyntax(m_syntaxCombo->currentText() == QStringLiteral("Intel"));
-    m_runner->setCompilerId(m_compilerCombo->currentData().toString());
+    m_runner->setCompilerId(m_compilerId);
 
     m_runButton->setEnabled(false);
     m_asmEditor->clear();
@@ -271,11 +259,6 @@ void AssemblyWidget::onAsmCursorPositionChanged(int line, int col) {
     }
 }
 
-void AssemblyWidget::onCompilerComboChanged(int index) {
-    Q_UNUSED(index);
-    m_runner->setCompilerId(m_compilerCombo->currentData().toString());
-}
-
 // ── Theme ─────────────────────────────────────────────────────────────────────
 
 void AssemblyWidget::applyThemeToEditor(QsciScintilla* editor, const QString& themeName) {
@@ -309,6 +292,8 @@ void AssemblyWidget::applyThemeToEditor(QsciScintilla* editor, const QString& th
     editor->setCaretForegroundColor(theme.cursorColor);
     editor->setMarginsBackgroundColor(theme.sidebarBackground);
     editor->setMarginsForegroundColor(theme.textSecondary);
+    // FIX: set fold margin colors to match sidebar — prevents white strips
+    editor->setFoldMarginColors(theme.sidebarBackground, theme.sidebarBackground);
 
     // Highlight marker colour (a semi-transparent accent)
     QColor highlightColour = theme.accent;
@@ -323,22 +308,6 @@ void AssemblyWidget::applyThemeToEditor(QsciScintilla* editor, const QString& th
 void AssemblyWidget::onThemeChanged(const QString& themeName) {
     applyThemeToEditor(m_sourceEditor, themeName);
     applyThemeToEditor(m_asmEditor,    themeName);
-}
-
-// ── Helpers ───────────────────────────────────────────────────────────────────
-
-void AssemblyWidget::populateCompilerCombo() {
-    m_compilerCombo->clear();
-    const auto compilers = CompilerRegistry::instance().getAvailableCompilers();
-    if (compilers.isEmpty()) {
-        m_compilerCombo->addItem(QStringLiteral("No compilers found"));
-        return;
-    }
-    for (const auto& c : compilers) {
-        m_compilerCombo->addItem(c->name(), c->id());
-    }
-    // Keep runner in sync with initial selection
-    m_runner->setCompilerId(m_compilerCombo->currentData().toString());
 }
 
 void AssemblyWidget::clearHighlights() {
