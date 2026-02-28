@@ -235,6 +235,11 @@ void MainWindow::setupMenus() {
     
     QAction* openProjectAction = fileMenu->addAction("Open Pro&ject...");
     connect(openProjectAction, &QAction::triggered, this, &MainWindow::onFileOpenProject);
+
+    fileMenu->addSeparator();
+    m_closeProjectAction = fileMenu->addAction(QStringLiteral("Close Project"));
+    m_closeProjectAction->setEnabled(false);
+    connect(m_closeProjectAction, &QAction::triggered, this, &MainWindow::onFileCloseProject);
     
     fileMenu->addSeparator();
     
@@ -544,6 +549,12 @@ void MainWindow::setupConnections() {
     connect(m_outputPanel->problems(), &ProblemsWidget::diagnosticClicked,
             this, &MainWindow::onDiagnosticClicked);
 
+    // Keep close project action in sync with project state
+    connect(ProjectManager::instance(), &ProjectManager::projectClosed,
+            this, [this]() {
+        if (m_closeProjectAction) m_closeProjectAction->setEnabled(false);
+    });
+
     // Forward assembly line activation to editor navigation
     connect(m_analysisPanel, &AnalysisPanel::sourceLineActivated,
             this, [this](int line) {
@@ -680,6 +691,7 @@ void MainWindow::hideWelcomeScreen() {
     m_outputPanelDock->show();
     if (m_analysisDockWasVisible) m_analysisDock->show();
     
+    if (m_closeProjectAction) m_closeProjectAction->setEnabled(true);
     updateMenuState(false);
 }
 
@@ -913,6 +925,17 @@ void MainWindow::onFileOpenProject() {
             showProjectLoadError(result);
         }
     }
+}
+
+void MainWindow::onFileCloseProject() {
+    if (!ProjectManager::instance()->hasOpenProject()) return;
+    saveCurrentSession();
+    if (!m_editorTabs->closeAll()) return; // user cancelled unsaved files
+    ProjectManager::instance()->closeCurrentProject();
+    m_fileTree->closeFolder();
+    m_closeProjectAction->setEnabled(false);
+    m_welcomeScreen->setReturnToProjectVisible(false);
+    showWelcomeScreen();
 }
 
 void MainWindow::onFileExit() {
