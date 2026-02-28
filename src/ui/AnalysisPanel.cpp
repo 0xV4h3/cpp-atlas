@@ -36,6 +36,7 @@ void AnalysisPanel::setCompilerId(const QString& id) {
 }
 
 void AnalysisPanel::setStandard(const QString& standard) {
+    m_insights->setStandard(standard);
     m_assembly->setStandard(standard);
     m_benchmark->setStandard(standard);
 }
