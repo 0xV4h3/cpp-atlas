@@ -39,8 +39,11 @@ void CodeEditor::setupEditor() {
     setAutoIndent(true);
     setBackspaceUnindents(true);
     
-    // Line wrapping
-    setWrapMode(QsciScintilla::WrapNone);
+    // Line wrapping — wrap at word boundaries so horizontal scrollbar is never needed
+    setWrapMode(QsciScintilla::WrapWord);
+
+    // Hide horizontal scrollbar entirely (Scintilla internal API)
+    SendScintilla(SCI_SETHSCROLLBAR, 0);
     
     // Current line highlighting
     setCaretLineVisible(true);

@@ -124,6 +124,8 @@ void AssemblyWidget::setupLexer(QsciScintilla* editor, QsciLexerCPP* lexer) {
     editor->setFolding(QsciScintilla::BoxedTreeFoldStyle);
     editor->setMarginType(0, QsciScintilla::NumberMargin);
     editor->setMarginWidth(0, QStringLiteral("00000"));
+    editor->setWrapMode(QsciScintilla::WrapWord);
+    editor->SendScintilla(QsciScintilla::SCI_SETHSCROLLBAR, 0);
 }
 
 // ── Public interface ──────────────────────────────────────────────────────────

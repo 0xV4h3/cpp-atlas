@@ -141,6 +141,8 @@ void BenchmarkWidget::setupCodeEditor() {
     m_codeEditor->setFolding(QsciScintilla::BoxedTreeFoldStyle);
     m_codeEditor->setMarginType(0, QsciScintilla::NumberMargin);
     m_codeEditor->setMarginWidth(0, QStringLiteral("00000"));
+    m_codeEditor->setWrapMode(QsciScintilla::WrapWord);
+    m_codeEditor->SendScintilla(QsciScintilla::SCI_SETHSCROLLBAR, 0);
 }
 
 void BenchmarkWidget::setupResultsTabs() {
