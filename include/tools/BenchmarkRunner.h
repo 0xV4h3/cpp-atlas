@@ -65,6 +65,9 @@ public:
     bool exportToJson(const QString& filePath) const;
     bool exportToCsv (const QString& filePath) const;
 
+    // ── Import ───────────────────────────────────────────────────
+    BenchmarkResult loadFromJson(const QString& filePath) const;
+
 signals:
     /**
      * Emitted with the full parsed result after successful execution.
