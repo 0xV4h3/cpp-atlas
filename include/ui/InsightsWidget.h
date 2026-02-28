@@ -56,6 +56,7 @@ private slots:
     void onInsightsFinished(bool success, const QString& output, const QString& error);
     void onInsightsStarted();
     void onProgressMessage(const QString& msg);
+    void stopProcess();
 
 private:
     void setupUi();
@@ -64,6 +65,7 @@ private:
 
     // Toolbar widgets
     QPushButton* m_runButton;
+    QPushButton* m_stopButton = nullptr;
     QLabel*      m_statusLabel;
 
     // Editor panes

@@ -72,6 +72,7 @@ private slots:
     void onCompilationFinished(bool success, const QString& error);
     void onProgressMessage(const QString& msg);
     void onCompareClicked();
+    void stopProcess();
 
 private:
     void setupUi();
@@ -84,6 +85,7 @@ private:
     // ── Toolbar ────────────────────────────────────────────────────
     QComboBox* m_optimizationCombo = nullptr;
     QPushButton* m_runButton = nullptr;
+    QPushButton* m_stopButton = nullptr;
     QPushButton* m_exportButton = nullptr;
     QPushButton* m_compareButton = nullptr;
     QLabel* m_statusLabel = nullptr;

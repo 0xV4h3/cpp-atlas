@@ -103,6 +103,12 @@ void BenchmarkWidget::setupToolbar(QWidget* parent, QHBoxLayout* tbLayout) {
         this, &BenchmarkWidget::runBenchmark);
     tbLayout->addWidget(m_runButton);
 
+    m_stopButton = new QPushButton(QStringLiteral("■ Stop"), parent);
+    m_stopButton->setEnabled(false);
+    connect(m_stopButton, &QPushButton::clicked,
+        this, &BenchmarkWidget::stopProcess);
+    tbLayout->addWidget(m_stopButton);
+
     m_exportButton = new QPushButton(QStringLiteral("Export..."), parent);
     m_exportButton->setEnabled(false);
     connect(m_exportButton, &QPushButton::clicked,
@@ -211,6 +217,7 @@ void BenchmarkWidget::runBenchmark() {
     flags << (QStringLiteral("-") + m_optimizationCombo->currentText());
 
     m_runButton->setEnabled(false);
+    m_stopButton->setEnabled(true);
     m_statusLabel->setText(QStringLiteral("Compiling..."));
     m_runner->run(tmpPath, flags);
 }
@@ -238,6 +245,7 @@ void BenchmarkWidget::onCompilationFinished(bool success,
     const QString& error) {
     if (!success) {
         m_runButton->setEnabled(true);
+        m_stopButton->setEnabled(false);
         m_statusLabel->setText(QStringLiteral("Compilation failed."));
         m_rawJsonView->setPlainText(
             QStringLiteral("// Compilation error:\n") + error);
@@ -254,6 +262,7 @@ void BenchmarkWidget::onProgressMessage(const QString& msg) {
 
 void BenchmarkWidget::onBenchmarkResultReady(const BenchmarkResult& result) {
     m_runButton->setEnabled(true);
+    m_stopButton->setEnabled(false);
     m_exportButton->setEnabled(true);
 
     updateResultsView(result);
@@ -352,4 +361,11 @@ void BenchmarkWidget::applyThemeToEditor(const QString& themeName) {
 void BenchmarkWidget::onThemeChanged(const QString& themeName) {
     applyThemeToEditor(themeName);
     m_chartWidget->onThemeChanged(themeName);
+}
+
+void BenchmarkWidget::stopProcess() {
+    m_runner->cancel();
+    m_runButton->setEnabled(true);
+    m_stopButton->setEnabled(false);
+    m_statusLabel->setText(QStringLiteral("Stopped."));
 }
