@@ -79,6 +79,7 @@ private slots:
     void onProgressMessage(const QString& msg);
     void onLineMapReady(const QMap<int, int>& asmLineToSrcLine);
     void onAsmCursorPositionChanged(int line, int col);
+    void stopProcess();
 
 private:
     void setupUi();
@@ -90,6 +91,7 @@ private:
     QComboBox*   m_optimizationCombo;
     QComboBox*   m_syntaxCombo;
     QPushButton* m_runButton;
+    QPushButton* m_stopButton = nullptr;
     QLabel*      m_statusLabel;
 
     // Editor panes

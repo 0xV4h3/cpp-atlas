@@ -71,6 +71,12 @@ void AssemblyWidget::setupUi() {
     connect(m_runButton, &QPushButton::clicked, this, &AssemblyWidget::runAssembly);
     tbLayout->addWidget(m_runButton);
 
+    // Stop button
+    m_stopButton = new QPushButton(QStringLiteral("■ Stop"), toolbar);
+    m_stopButton->setEnabled(false);
+    connect(m_stopButton, &QPushButton::clicked, this, &AssemblyWidget::stopProcess);
+    tbLayout->addWidget(m_stopButton);
+
     // Status label
     m_statusLabel = new QLabel(QStringLiteral("Ready"), toolbar);
     m_statusLabel->setMinimumWidth(260);
@@ -208,6 +214,8 @@ void AssemblyWidget::runAssembly() {
 
 void AssemblyWidget::onRunnerStarted() {
     m_statusLabel->setText(QStringLiteral("Generating assembly…"));
+    m_stopButton->setEnabled(true);
+    m_runButton->setEnabled(false);
 }
 
 void AssemblyWidget::onProgressMessage(const QString& msg) {
@@ -217,6 +225,7 @@ void AssemblyWidget::onProgressMessage(const QString& msg) {
 void AssemblyWidget::onRunnerFinished(bool success, const QString& output,
                                       const QString& error) {
     m_runButton->setEnabled(true);
+    m_stopButton->setEnabled(false);
 
     if (success) {
         m_asmEditor->setText(output);
@@ -313,4 +322,11 @@ void AssemblyWidget::onThemeChanged(const QString& themeName) {
 void AssemblyWidget::clearHighlights() {
     m_sourceEditor->markerDeleteAll(m_srcHighlightMarker);
     m_asmEditor->markerDeleteAll(m_asmHighlightMarker);
+}
+
+void AssemblyWidget::stopProcess() {
+    m_runner->cancel();
+    m_runButton->setEnabled(true);
+    m_stopButton->setEnabled(false);
+    m_statusLabel->setText(QStringLiteral("Stopped."));
 }

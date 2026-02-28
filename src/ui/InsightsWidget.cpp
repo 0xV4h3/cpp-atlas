@@ -48,6 +48,11 @@ void InsightsWidget::setupUi() {
     connect(m_runButton, &QPushButton::clicked, this, &InsightsWidget::runInsights);
     tbLayout->addWidget(m_runButton);
 
+    m_stopButton = new QPushButton(QStringLiteral("■ Stop Insights"), toolbar);
+    m_stopButton->setEnabled(false);
+    connect(m_stopButton, &QPushButton::clicked, this, &InsightsWidget::stopProcess);
+    tbLayout->addWidget(m_stopButton);
+
     m_statusLabel = new QLabel(QStringLiteral("Ready"), toolbar);
     m_statusLabel->setMinimumWidth(200);
     tbLayout->addWidget(m_statusLabel);
@@ -137,6 +142,8 @@ void InsightsWidget::runInsights() {
 
 void InsightsWidget::onInsightsStarted() {
     m_statusLabel->setText(QStringLiteral("Running C++ Insights..."));
+    m_stopButton->setEnabled(true);
+    m_runButton->setEnabled(false);
 }
 
 void InsightsWidget::onProgressMessage(const QString& msg) {
@@ -146,6 +153,7 @@ void InsightsWidget::onProgressMessage(const QString& msg) {
 void InsightsWidget::onInsightsFinished(bool success, const QString& output,
                                          const QString& error) {
     m_runButton->setEnabled(true);
+    m_stopButton->setEnabled(false);
 
     if (success) {
         m_outputEditor->setText(output);
@@ -198,4 +206,11 @@ void InsightsWidget::applyThemeToEditor(QsciScintilla* editor, const QString& th
 void InsightsWidget::onThemeChanged(const QString& themeName) {
     applyThemeToEditor(m_sourceEditor, themeName);
     applyThemeToEditor(m_outputEditor, themeName);
+}
+
+void InsightsWidget::stopProcess() {
+    m_runner->cancel();
+    m_runButton->setEnabled(true);
+    m_stopButton->setEnabled(false);
+    m_statusLabel->setText(QStringLiteral("Stopped."));
 }
