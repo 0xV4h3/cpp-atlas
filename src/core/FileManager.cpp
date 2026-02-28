@@ -102,7 +102,7 @@ QStringList FileManager::createClassFiles(const QString& directory, const QStrin
     // Header
     QString hppTmpl = loadTemplate(":/templates/class.hpp.template");
     if (hppTmpl.isEmpty()) {
-        return created;
+        hppTmpl = QStringLiteral("#ifndef ${HEADER_GUARD}\n#define ${HEADER_GUARD}\n\nclass ${CLASS_NAME} {\npublic:\n    ${CLASS_NAME}();\n    ~${CLASS_NAME}();\nprivate:\n    // Add member fields here\n};\n\n#endif // ${HEADER_GUARD}\n");
     }
     QString guard = generateHeaderGuard(className + ".hpp");
     hppTmpl.replace("${HEADER_GUARD}", guard);
@@ -119,7 +119,7 @@ QStringList FileManager::createClassFiles(const QString& directory, const QStrin
     // Source
     QString cppTmpl = loadTemplate(":/templates/class.cpp.template");
     if (cppTmpl.isEmpty()) {
-        return created;
+        cppTmpl = QStringLiteral("#include \"${CLASS_NAME}.hpp\"\n\n${CLASS_NAME}::${CLASS_NAME}() {}\n${CLASS_NAME}::~${CLASS_NAME}() {}\n");
     }
     cppTmpl.replace("${CLASS_NAME}", className);
     QFile cppFile(cppPath);
@@ -132,6 +132,38 @@ QStringList FileManager::createClassFiles(const QString& directory, const QStrin
     created << cppPath;
 
     return created;
+}
+
+bool FileManager::createCSourceFile(const QString& filePath) {
+    QString tmpl = loadTemplate(":/templates/source.c.template");
+    if (tmpl.isEmpty()) {
+        tmpl = QStringLiteral("#include <stdio.h>\n\nint main() {\n    printf(\"Hello, CppAtlas!\\n\");\n    return 0;\n}\n");
+    }
+    QFile file(filePath);
+    if (!file.open(QIODevice::WriteOnly | QIODevice::Text)) {
+        return false;
+    }
+    QTextStream out(&file);
+    out << tmpl;
+    file.close();
+    return true;
+}
+
+bool FileManager::createCHeaderFile(const QString& filePath) {
+    QString tmpl = loadTemplate(":/templates/header.h.template");
+    if (tmpl.isEmpty()) {
+        tmpl = QStringLiteral("#ifndef ${HEADER_GUARD}\n#define ${HEADER_GUARD}\n\n/* TODO: Add declarations */\n\n#endif /* ${HEADER_GUARD} */\n");
+    }
+    QString guard = generateHeaderGuard(QFileInfo(filePath).fileName());
+    tmpl.replace("${HEADER_GUARD}", guard);
+    QFile file(filePath);
+    if (!file.open(QIODevice::WriteOnly | QIODevice::Text)) {
+        return false;
+    }
+    QTextStream out(&file);
+    out << tmpl;
+    file.close();
+    return true;
 }
 
 void FileManager::addRecentFile(const QString& filePath) {

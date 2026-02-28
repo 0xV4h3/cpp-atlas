@@ -10,6 +10,7 @@
 #include <QFileInfo>
 #include <QTextStream>
 #include <QRandomGenerator>
+#include <QDebug>
 
 NewFileDialog::NewFileDialog(const QString& defaultDirectory, QWidget *parent)
     : QDialog(parent)
@@ -173,6 +174,10 @@ void NewFileDialog::onCreateClicked() {
             return;
         }
         QString tmpl = loadTemplate(":/templates/source.cpp.template");
+        if (tmpl.isEmpty()) {
+            qWarning() << "NewFileDialog: failed to load :/templates/source.cpp.template, using fallback";
+            tmpl = QStringLiteral("#include <iostream>\n\nint main() {\n    std::cout << \"Hello, CppAtlas!\" << std::endl;\n    return 0;\n}\n");
+        }
         if (!createFileFromTemplate(filePath, tmpl)) {
             QMessageBox::warning(this, "New File", "Failed to create file.");
             return;
@@ -187,6 +192,10 @@ void NewFileDialog::onCreateClicked() {
             return;
         }
         QString tmpl = loadTemplate(":/templates/header.hpp.template");
+        if (tmpl.isEmpty()) {
+            qWarning() << "NewFileDialog: failed to load :/templates/header.hpp.template, using fallback";
+            tmpl = QStringLiteral("#ifndef ${HEADER_GUARD}\n#define ${HEADER_GUARD}\n\n// TODO: Add declarations\n\n#endif // ${HEADER_GUARD}\n");
+        }
         QString guard = generateHeaderGuard(name + ".hpp");
         tmpl.replace("${HEADER_GUARD}", guard);
         if (!createFileFromTemplate(filePath, tmpl)) {
@@ -202,7 +211,11 @@ void NewFileDialog::onCreateClicked() {
             QMessageBox::warning(this, "New File", "File already exists: " + filePath);
             return;
         }
-        QString tmpl = loadTemplate(":/templates/header.hpp.template");
+        QString tmpl = loadTemplate(":/templates/header.h.template");
+        if (tmpl.isEmpty()) {
+            qWarning() << "NewFileDialog: failed to load :/templates/header.h.template, using fallback";
+            tmpl = QStringLiteral("#ifndef ${HEADER_GUARD}\n#define ${HEADER_GUARD}\n\n/* TODO: Add declarations */\n\n#endif /* ${HEADER_GUARD} */\n");
+        }
         QString guard = generateHeaderGuard(name + ".h");
         tmpl.replace("${HEADER_GUARD}", guard);
         if (!createFileFromTemplate(filePath, tmpl)) {
@@ -225,6 +238,10 @@ void NewFileDialog::onCreateClicked() {
         }
         // Header
         QString hppTmpl = loadTemplate(":/templates/class.hpp.template");
+        if (hppTmpl.isEmpty()) {
+            qWarning() << "NewFileDialog: failed to load :/templates/class.hpp.template, using fallback";
+            hppTmpl = QStringLiteral("#ifndef ${HEADER_GUARD}\n#define ${HEADER_GUARD}\n\nclass ${CLASS_NAME} {\npublic:\n    ${CLASS_NAME}();\n    ~${CLASS_NAME}();\nprivate:\n    // Add member fields here\n};\n\n#endif // ${HEADER_GUARD}\n");
+        }
         QString guard = generateHeaderGuard(name + ".hpp");
         hppTmpl.replace("${HEADER_GUARD}", guard);
         hppTmpl.replace("${CLASS_NAME}", name);
@@ -235,6 +252,10 @@ void NewFileDialog::onCreateClicked() {
         m_createdFiles << hppPath;
         // Source
         QString cppTmpl = loadTemplate(":/templates/class.cpp.template");
+        if (cppTmpl.isEmpty()) {
+            qWarning() << "NewFileDialog: failed to load :/templates/class.cpp.template, using fallback";
+            cppTmpl = QStringLiteral("#include \"${CLASS_NAME}.hpp\"\n\n${CLASS_NAME}::${CLASS_NAME}() {}\n${CLASS_NAME}::~${CLASS_NAME}() {}\n");
+        }
         cppTmpl.replace("${CLASS_NAME}", name);
         if (!createFileFromTemplate(cppPath, cppTmpl)) {
             QMessageBox::warning(this, "New File", "Failed to create source file.");
@@ -249,7 +270,11 @@ void NewFileDialog::onCreateClicked() {
             QMessageBox::warning(this, "New File", "File already exists: " + filePath);
             return;
         }
-        QString tmpl = loadTemplate(":/templates/source.cpp.template");
+        QString tmpl = loadTemplate(":/templates/source.c.template");
+        if (tmpl.isEmpty()) {
+            qWarning() << "NewFileDialog: failed to load :/templates/source.c.template, using fallback";
+            tmpl = QStringLiteral("#include <stdio.h>\n\nint main() {\n    printf(\"Hello, CppAtlas!\\n\");\n    return 0;\n}\n");
+        }
         if (!createFileFromTemplate(filePath, tmpl)) {
             QMessageBox::warning(this, "New File", "Failed to create file.");
             return;

@@ -7,6 +7,8 @@
         <file>templates/header.hpp.template</file>
         <file>templates/class.hpp.template</file>
         <file>templates/class.cpp.template</file>
+        <file>templates/source.c.template</file>
+        <file>templates/header.h.template</file>
         <file>icons/app-icon.png</file>
         <file>icons/app-icon.svg</file>
     </qresource>
