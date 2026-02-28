@@ -54,6 +54,9 @@ void CodeEditor::setupEditor() {
     // EOL mode
     setEolMode(QsciScintilla::EolUnix);
     setEolVisibility(false);
+
+    setVerticalScrollBarPolicy(Qt::ScrollBarAsNeeded);
+    setHorizontalScrollBarPolicy(Qt::ScrollBarAsNeeded);
 }
 
 void CodeEditor::setupLexer() {

@@ -86,6 +86,8 @@ void InsightsWidget::setupLexer(QsciScintilla* editor, QsciLexerCPP* lexer) {
     QFont font(QStringLiteral("Monospace"), 10);
     lexer->setDefaultFont(font);
     editor->setLexer(lexer);
+    editor->setVerticalScrollBarPolicy(Qt::ScrollBarAsNeeded);
+    editor->setHorizontalScrollBarPolicy(Qt::ScrollBarAsNeeded);
     editor->setTabWidth(4);
     editor->setIndentationsUseTabs(false);
     editor->setFolding(QsciScintilla::BoxedTreeFoldStyle);
