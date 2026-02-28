@@ -73,6 +73,20 @@ public:
     QStringList createClassFiles(const QString& directory, const QString& className);
     
     /**
+     * @brief Create a C source file from template
+     * @param filePath Destination file path
+     * @return true if successful
+     */
+    bool createCSourceFile(const QString& filePath);
+
+    /**
+     * @brief Create a C header file from template
+     * @param filePath Destination file path
+     * @return true if successful
+     */
+    bool createCHeaderFile(const QString& filePath);
+
+    /**
      * @brief Add file to recent files list
      * @param filePath File path
      */

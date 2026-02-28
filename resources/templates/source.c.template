@@ -1,0 +1,6 @@
+#include <stdio.h>
+
+int main() {
+    printf("Hello, CppAtlas!\n");
+    return 0;
+}
