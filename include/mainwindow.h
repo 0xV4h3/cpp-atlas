@@ -127,6 +127,7 @@ private:
     // Welcome screen
     WelcomeScreen* m_welcomeScreen = nullptr;
     QStackedWidget* m_centralStack = nullptr;
+    bool m_analysisDockWasVisible = false;
     
     // Dock widgets
     QDockWidget* m_fileTreeDock;
@@ -150,6 +151,7 @@ private:
     QMenu* m_buildMenu = nullptr;
     QMenu* m_editMenu = nullptr;
     QMenu* m_viewMenu = nullptr;
+    QMenu* m_toolsMenu = nullptr;
     QAction* m_runAction = nullptr;
     QAction* m_toggleFileTreeAction = nullptr;
     QAction* m_toggleOutputAction = nullptr;

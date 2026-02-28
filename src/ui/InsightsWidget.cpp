@@ -4,7 +4,6 @@
 #include <Qsci/qsciscintilla.h>
 #include <Qsci/qscilexercpp.h>
 
-#include <QComboBox>
 #include <QHBoxLayout>
 #include <QLabel>
 #include <QPushButton>
@@ -41,13 +40,6 @@ void InsightsWidget::setupUi() {
     auto* toolbar = new QWidget(this);
     auto* tbLayout = new QHBoxLayout(toolbar);
     tbLayout->setContentsMargins(6, 4, 6, 4);
-
-    tbLayout->addWidget(new QLabel(QStringLiteral("Standard:"), toolbar));
-
-    m_standardCombo = new QComboBox(toolbar);
-    m_standardCombo->addItems({ "c++11", "c++14", "c++17", "c++20", "c++23" });
-    m_standardCombo->setCurrentText(QStringLiteral("c++17"));
-    tbLayout->addWidget(m_standardCombo);
 
     tbLayout->addStretch();
 
@@ -104,6 +96,10 @@ void InsightsWidget::setSourceCode(const QString& code, const QString& filePath)
     m_statusLabel->setText(QStringLiteral("Ready — press Run Insights"));
 }
 
+void InsightsWidget::setStandard(const QString& standard) {
+    m_standard = standard;
+}
+
 void InsightsWidget::runInsights() {
     if (m_currentSourceCode.isEmpty()) {
         m_statusLabel->setText(QStringLiteral("No source code loaded."));
@@ -132,7 +128,7 @@ void InsightsWidget::runInsights() {
     tmpFile.close();
 
     QStringList flags;
-    flags << QStringLiteral("-std=") + m_standardCombo->currentText();
+    flags << QStringLiteral("-std=") + m_standard;
 
     m_runButton->setEnabled(false);
     m_outputEditor->clear();

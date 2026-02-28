@@ -6,7 +6,6 @@
 
 class QsciScintilla;
 class QsciLexerCPP;
-class QComboBox;
 class QPushButton;
 class QLabel;
 class QSplitter;
@@ -15,13 +14,14 @@ class QSplitter;
  * @brief Widget for the C++ Insights tab in AnalysisPanel.
  *
  * Layout:
- *   [Toolbar: compiler-standard combo | extra-flags | Run Insights button | status]
+ *   [Toolbar: Run Insights button | status]
  *   [QSplitter horizontal]
  *     Left:  source code mirror (read-only QsciScintilla, synced from editor)
  *     Right: transformed output (read-only QsciScintilla, C++ syntax highlighting)
  *
  * Integration:
  *   - Call setSourceCode(code, filePath) when the active editor changes.
+ *   - Call setStandard(standard) when the toolbar standard combo changes.
  *   - Connects to ThemeManager::themeChanged for live theme updates.
  *   - Uses CppInsightsRunner for async process execution.
  *
@@ -42,6 +42,12 @@ public:
      */
     void setSourceCode(const QString& code, const QString& filePath);
 
+    /**
+     * @brief Set the C++ standard used when invoking insights.
+     * Forwarded from AnalysisPanel::setStandard().
+     */
+    void setStandard(const QString& standard);
+
 public slots:
     void runInsights();
     void onThemeChanged(const QString& themeName);
@@ -57,7 +63,6 @@ private:
     void applyThemeToEditor(QsciScintilla* editor, const QString& themeName);
 
     // Toolbar widgets
-    QComboBox*   m_standardCombo;    // c++11 / c++14 / c++17 / c++20 / c++23
     QPushButton* m_runButton;
     QLabel*      m_statusLabel;
 
@@ -73,6 +78,7 @@ private:
     // State
     QString m_currentSourceCode;
     QString m_currentFilePath;
+    QString m_standard = QStringLiteral("c++17");
 };
 
 #endif // INSIGHTSWIDGET_H

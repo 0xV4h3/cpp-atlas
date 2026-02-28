@@ -378,9 +378,9 @@ void MainWindow::setupMenus() {
     });
 
     // Tools menu — Analysis Panel + tab shortcuts
-    QMenu* toolsMenu = menuBar()->addMenu(QStringLiteral("&Tools"));
+    m_toolsMenu = menuBar()->addMenu(QStringLiteral("&Tools"));
 
-    m_toggleAnalysisAction = toolsMenu->addAction(
+    m_toggleAnalysisAction = m_toolsMenu->addAction(
         QStringLiteral("Toggle &Analysis Panel"));
     m_toggleAnalysisAction->setShortcut(
         QKeySequence(Qt::CTRL | Qt::SHIFT | Qt::Key_A));
@@ -390,9 +390,9 @@ void MainWindow::setupMenus() {
         if (visible) m_analysisDock->raise();
     });
 
-    toolsMenu->addSeparator();
+    m_toolsMenu->addSeparator();
 
-    QAction* showInsightsAction = toolsMenu->addAction(
+    QAction* showInsightsAction = m_toolsMenu->addAction(
         QStringLiteral("C++ &Insights"));
     showInsightsAction->setShortcut(
         QKeySequence(Qt::CTRL | Qt::SHIFT | Qt::Key_I));
@@ -402,7 +402,7 @@ void MainWindow::setupMenus() {
         m_analysisDock->raise();
     });
 
-    QAction* showAssemblyAction = toolsMenu->addAction(
+    QAction* showAssemblyAction = m_toolsMenu->addAction(
         QStringLiteral("&Assembly View"));
     showAssemblyAction->setShortcut(
         QKeySequence(Qt::CTRL | Qt::SHIFT | Qt::Key_S));
@@ -412,7 +412,7 @@ void MainWindow::setupMenus() {
         m_analysisDock->raise();
     });
 
-    QAction* showBenchmarkAction = toolsMenu->addAction(
+    QAction* showBenchmarkAction = m_toolsMenu->addAction(
         QStringLiteral("&Benchmark"));
     showBenchmarkAction->setShortcut(
         QKeySequence(Qt::CTRL | Qt::SHIFT | Qt::Key_B));
@@ -662,6 +662,8 @@ void MainWindow::showWelcomeScreen() {
     // Hide IDE-specific docks
     m_fileTreeDock->hide();
     m_outputPanelDock->hide();
+    m_analysisDockWasVisible = m_analysisDock->isVisible();
+    m_analysisDock->hide();
     
     // Show "Return to Project" button if a project/folder is open or tabs exist
     bool hasOpenProject = ProjectManager::instance()->hasOpenProject() ||
@@ -677,6 +679,7 @@ void MainWindow::hideWelcomeScreen() {
     // Show IDE docks
     m_fileTreeDock->show();
     m_outputPanelDock->show();
+    if (m_analysisDockWasVisible) m_analysisDock->show();
     
     updateMenuState(false);
 }
@@ -708,8 +711,10 @@ void MainWindow::updateMenuState(bool isWelcomeVisible) {
     if (m_toggleOutputAction) {
         m_toggleOutputAction->setEnabled(!isWelcomeVisible);
     }
-    if (m_toggleAnalysisAction) {
-        m_toggleAnalysisAction->setEnabled(!isWelcomeVisible);
+    
+    // Tools menu - disable entirely in welcome screen
+    if (m_toolsMenu) {
+        m_toolsMenu->setEnabled(!isWelcomeVisible);
     }
     
     // Main toolbar - hide/show
