@@ -58,6 +58,7 @@ private slots:
     void onFileSaveAs();
     void onFileOpenFolder();
     void onFileOpenProject();
+    void onFileCloseProject();
     void onFileExit();
     
     // Edit menu
@@ -155,6 +156,7 @@ private:
     QMenu* m_editMenu = nullptr;
     QMenu* m_viewMenu = nullptr;
     QMenu* m_toolsMenu = nullptr;
+    QAction* m_closeProjectAction = nullptr;
     QAction* m_runAction = nullptr;
     QAction* m_toggleFileTreeAction = nullptr;
     QAction* m_toggleOutputAction = nullptr;
