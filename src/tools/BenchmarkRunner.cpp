@@ -264,8 +264,15 @@ bool BenchmarkRunner::exportToJson(const QString& filePath) const {
         obj[QStringLiteral("time_unit")]  = e.timeUnit;
         arr.append(obj);
     }
+    QJsonObject metadata;
+    metadata[QStringLiteral("compilerId")]        = m_lastResult.compilerId;
+    metadata[QStringLiteral("standard")]          = m_lastResult.standard;
+    metadata[QStringLiteral("optimizationLevel")] = m_lastResult.optimizationLevel;
+    metadata[QStringLiteral("source_file")]       = m_sourceFilePath;
+
     QJsonObject root;
     root[QStringLiteral("date")]       = m_lastResult.date;
+    root[QStringLiteral("metadata")]   = metadata;
     root[QStringLiteral("benchmarks")] = arr;
 
     QFile f(filePath);
@@ -287,4 +294,41 @@ bool BenchmarkRunner::exportToCsv(const QString& filePath) const {
             << e.timeUnit   << "\n";
     }
     return true;
+}
+
+BenchmarkResult BenchmarkRunner::loadFromJson(const QString& filePath) const {
+    QFile f(filePath);
+    if (!f.open(QIODevice::ReadOnly)) return {};
+    const QByteArray data = f.readAll();
+    f.close();
+
+    QJsonParseError err;
+    const QJsonDocument doc = QJsonDocument::fromJson(data, &err);
+    if (err.error != QJsonParseError::NoError || !doc.isObject()) return {};
+
+    const QJsonObject root = doc.object();
+    BenchmarkResult result;
+    result.success = true;
+    result.date    = root[QStringLiteral("date")].toString();
+
+    const QJsonObject meta = root[QStringLiteral("metadata")].toObject();
+    result.compilerId        = meta[QStringLiteral("compilerId")].toString();
+    result.standard          = meta[QStringLiteral("standard")].toString();
+    result.optimizationLevel = meta[QStringLiteral("optimizationLevel")].toString();
+    result.label = result.optimizationLevel.isEmpty()
+                   ? QFileInfo(filePath).fileName()
+                   : result.optimizationLevel;
+
+    for (const QJsonValue& v : root[QStringLiteral("benchmarks")].toArray()) {
+        const QJsonObject obj = v.toObject();
+        BenchmarkEntry entry;
+        entry.name       = obj[QStringLiteral("name")].toString();
+        entry.realTimeNs = obj[QStringLiteral("real_time")].toDouble();
+        entry.cpuTimeNs  = obj[QStringLiteral("cpu_time")].toDouble();
+        entry.iterations =
+            static_cast<qint64>(obj[QStringLiteral("iterations")].toDouble());
+        entry.timeUnit   = obj[QStringLiteral("time_unit")].toString();
+        result.benchmarks << entry;
+    }
+    return result;
 }

@@ -63,6 +63,9 @@ public slots:
     void exportResults();
     void loadTemplate();
     void onThemeChanged(const QString& themeName);
+    void openBenchmarkFile();
+    void saveBenchmarkFile();
+    void importResults();
 
 signals:
     void benchmarkCompleted(const BenchmarkResult& result);
@@ -84,6 +87,9 @@ private:
 
     // ── Toolbar ────────────────────────────────────────────────────
     QComboBox* m_optimizationCombo = nullptr;
+    QPushButton* m_openFileButton = nullptr;
+    QPushButton* m_saveFileButton = nullptr;
+    QPushButton* m_importButton = nullptr;
     QPushButton* m_runButton = nullptr;
     QPushButton* m_stopButton = nullptr;
     QPushButton* m_exportButton = nullptr;
@@ -105,6 +111,7 @@ private:
     // ── State ──────────────────────────────────────────────────────
     QString m_compilerId;
     QString m_standard = QStringLiteral("c++17");
+    QString m_currentBenchFilePath;
 
     static constexpr int MAX_COMPARE = 5;
     QList<BenchmarkResult> m_savedResults;

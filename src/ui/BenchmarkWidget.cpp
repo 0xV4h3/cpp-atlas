@@ -9,6 +9,7 @@
 #include <QDir>
 #include <QFile>
 #include <QFileDialog>
+#include <QFileInfo>
 #include <QHBoxLayout>
 #include <QHeaderView>
 #include <QLabel>
@@ -87,6 +88,22 @@ void BenchmarkWidget::setupToolbar(QWidget* parent, QHBoxLayout* tbLayout) {
 
     tbLayout->addStretch();
 
+    m_openFileButton = new QPushButton(QStringLiteral("Open..."), parent);
+    connect(m_openFileButton, &QPushButton::clicked,
+        this, &BenchmarkWidget::openBenchmarkFile);
+    tbLayout->addWidget(m_openFileButton);
+
+    m_saveFileButton = new QPushButton(QStringLiteral("Save"), parent);
+    m_saveFileButton->setEnabled(false);
+    connect(m_saveFileButton, &QPushButton::clicked,
+        this, &BenchmarkWidget::saveBenchmarkFile);
+    tbLayout->addWidget(m_saveFileButton);
+
+    m_importButton = new QPushButton(QStringLiteral("Import..."), parent);
+    connect(m_importButton, &QPushButton::clicked,
+        this, &BenchmarkWidget::importResults);
+    tbLayout->addWidget(m_importButton);
+
     // Run button — educational tooltip about DoNotOptimize
     m_runButton = new QPushButton(QStringLiteral("▶  Run"), parent);
     m_runButton->setToolTip(
@@ -143,6 +160,9 @@ void BenchmarkWidget::setupCodeEditor() {
     m_codeEditor->setMarginWidth(0, QStringLiteral("00000"));
     m_codeEditor->setWrapMode(QsciScintilla::WrapWord);
     m_codeEditor->SendScintilla(QsciScintilla::SCI_SETHSCROLLBAR, 0);
+
+    connect(m_codeEditor, &QsciScintilla::textChanged,
+        this, [this]() { if (m_saveFileButton) m_saveFileButton->setEnabled(true); });
 }
 
 void BenchmarkWidget::setupResultsTabs() {
@@ -326,6 +346,57 @@ void BenchmarkWidget::onCompareClicked() {
     if (m_savedResults.size() >= 2) {
         m_chartWidget->compareResults(m_savedResults);
         m_resultsTabs->setCurrentWidget(m_chartWidget);
+    }
+}
+
+// ── File Open / Save ──────────────────────────────────────────────────────────
+
+void BenchmarkWidget::openBenchmarkFile() {
+    const QString path = QFileDialog::getOpenFileName(
+        this, QStringLiteral("Open Benchmark File"),
+        QString(), QStringLiteral("C++ Files (*.cpp);;All Files (*)"));
+    if (path.isEmpty()) return;
+    QFile f(path);
+    if (!f.open(QIODevice::ReadOnly | QIODevice::Text)) return;
+    m_codeEditor->setText(QTextStream(&f).readAll());
+    m_currentBenchFilePath = path;
+    m_saveFileButton->setEnabled(false);
+}
+
+void BenchmarkWidget::saveBenchmarkFile() {
+    QString path = m_currentBenchFilePath;
+    if (path.isEmpty()) {
+        path = QFileDialog::getSaveFileName(
+            this, QStringLiteral("Save Benchmark File"),
+            QString(), QStringLiteral("C++ Files (*.cpp)"));
+        if (path.isEmpty()) return;
+        if (!path.endsWith(QStringLiteral(".cpp"), Qt::CaseInsensitive))
+            path += QStringLiteral(".cpp");
+        m_currentBenchFilePath = path;
+    }
+    QFile f(path);
+    if (!f.open(QIODevice::WriteOnly | QIODevice::Text)) return;
+    QTextStream(&f) << m_codeEditor->text();
+    m_saveFileButton->setEnabled(false);
+}
+
+// ── Import ────────────────────────────────────────────────────────────────────
+
+void BenchmarkWidget::importResults() {
+    const QString path = QFileDialog::getOpenFileName(
+        this, QStringLiteral("Import Benchmark Results"),
+        QString(), QStringLiteral("JSON (*.json)"));
+    if (path.isEmpty()) return;
+    BenchmarkResult result = m_runner->loadFromJson(path);
+    if (!result.benchmarks.isEmpty()) {
+        updateResultsView(result);
+        if (m_savedResults.size() >= MAX_COMPARE)
+            m_savedResults.removeFirst();
+        m_savedResults << result;
+        m_compareButton->setEnabled(m_savedResults.size() >= 2);
+        m_exportButton->setEnabled(true);
+        m_statusLabel->setText(
+            QStringLiteral("Imported: %1").arg(QFileInfo(path).fileName()));
     }
 }
 
