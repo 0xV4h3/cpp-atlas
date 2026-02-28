@@ -223,12 +223,17 @@ void BenchmarkWidget::runBenchmark() {
 }
 
 void BenchmarkWidget::exportResults() {
-    const QString path = QFileDialog::getSaveFileName(
+    QString path = QFileDialog::getSaveFileName(
         this,
         QStringLiteral("Export Benchmark Results"),
         QString(),
         QStringLiteral("JSON (*.json);;CSV (*.csv);;All Files (*)"));
     if (path.isEmpty()) return;
+
+    if (!path.endsWith(QStringLiteral(".csv"), Qt::CaseInsensitive) &&
+        !path.endsWith(QStringLiteral(".json"), Qt::CaseInsensitive)) {
+        path += QStringLiteral(".json");
+    }
 
     const bool ok = path.endsWith(QStringLiteral(".csv"), Qt::CaseInsensitive)
         ? m_runner->exportToCsv(path)
