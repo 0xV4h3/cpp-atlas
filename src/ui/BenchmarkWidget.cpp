@@ -135,14 +135,14 @@ void BenchmarkWidget::setupCodeEditor() {
     QFont font(QStringLiteral("Monospace"), 10);
     lexer->setDefaultFont(font);
     m_codeEditor->setLexer(lexer);
-    m_codeEditor->setVerticalScrollBarPolicy(Qt::ScrollBarAsNeeded);
-    m_codeEditor->setHorizontalScrollBarPolicy(Qt::ScrollBarAsNeeded);
     m_codeEditor->setTabWidth(4);
     m_codeEditor->setIndentationsUseTabs(false);
     m_codeEditor->setAutoIndent(true);
     m_codeEditor->setFolding(QsciScintilla::BoxedTreeFoldStyle);
     m_codeEditor->setMarginType(0, QsciScintilla::NumberMargin);
     m_codeEditor->setMarginWidth(0, QStringLiteral("00000"));
+    m_codeEditor->setWrapMode(QsciScintilla::WrapWord);
+    m_codeEditor->SendScintilla(QsciScintilla::SCI_SETHSCROLLBAR, 0);
 }
 
 void BenchmarkWidget::setupResultsTabs() {

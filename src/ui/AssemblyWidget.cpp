@@ -119,13 +119,13 @@ void AssemblyWidget::setupLexer(QsciScintilla* editor, QsciLexerCPP* lexer) {
     QFont font(QStringLiteral("Monospace"), 10);
     lexer->setDefaultFont(font);
     editor->setLexer(lexer);
-    editor->setVerticalScrollBarPolicy(Qt::ScrollBarAsNeeded);
-    editor->setHorizontalScrollBarPolicy(Qt::ScrollBarAsNeeded);
     editor->setTabWidth(4);
     editor->setIndentationsUseTabs(false);
     editor->setFolding(QsciScintilla::BoxedTreeFoldStyle);
     editor->setMarginType(0, QsciScintilla::NumberMargin);
     editor->setMarginWidth(0, QStringLiteral("00000"));
+    editor->setWrapMode(QsciScintilla::WrapWord);
+    editor->SendScintilla(QsciScintilla::SCI_SETHSCROLLBAR, 0);
 }
 
 // ── Public interface ──────────────────────────────────────────────────────────
