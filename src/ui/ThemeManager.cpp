@@ -511,7 +511,7 @@ Theme ThemeManager::oneMonokaiTheme() {
     theme.syntaxType        = QColor("#e5c07b");  // yellow
     theme.syntaxString      = QColor("#98c379");  // green
     theme.syntaxComment     = QColor("#5c6370");  // gray
-    theme.syntaxPreprocessor= QColor("#c678dd");  // purple
+    theme.syntaxPreprocessor= QColor("#e06c75");  // purple
     theme.syntaxNumber      = QColor("#d19a66");  // orange
     theme.syntaxFunction    = QColor("#61afef");  // blue
     theme.cursorColor       = QColor("#abb2bf");

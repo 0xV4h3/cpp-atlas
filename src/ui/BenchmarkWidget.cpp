@@ -332,11 +332,8 @@ void BenchmarkWidget::onCompareClicked() {
 // ── Theme ─────────────────────────────────────────────────────────────────────
 
 void BenchmarkWidget::applyThemeToEditor(const QString& themeName) {
-    Theme theme;
-    if (themeName == QStringLiteral("light"))   theme = ThemeManager::lightTheme();
-    else if (themeName == QStringLiteral("dracula")) theme = ThemeManager::draculaTheme();
-    else if (themeName == QStringLiteral("monokai")) theme = ThemeManager::monokaiTheme();
-    else                                             theme = ThemeManager::darkTheme();
+    Theme theme = ThemeManager::instance()->currentTheme();
+    Q_UNUSED(themeName);
 
     auto* lexer = qobject_cast<QsciLexerCPP*>(m_codeEditor->lexer());
     if (lexer) {
