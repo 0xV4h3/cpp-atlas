@@ -665,9 +665,8 @@ void MainWindow::showWelcomeScreen() {
     m_analysisDockWasVisible = m_analysisDock->isVisible();
     m_analysisDock->hide();
     
-    // Show "Return to Project" button if a project/folder is open or tabs exist
-    bool hasOpenProject = ProjectManager::instance()->hasOpenProject() ||
-                          !m_fileTree->rootPath().isEmpty() || m_editorTabs->count() > 0;
+    // Show "Return to Project" button if a project/folder is open
+    bool hasOpenProject = ProjectManager::instance()->hasOpenProject();
     m_welcomeScreen->setReturnToProjectVisible(hasOpenProject);
     
     updateMenuState(true);
