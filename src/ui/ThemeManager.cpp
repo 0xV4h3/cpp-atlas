@@ -21,6 +21,7 @@ void ThemeManager::loadThemes() {
     m_themes["light"] = lightTheme();
     m_themes["dracula"] = draculaTheme();
     m_themes["monokai"] = monokaiTheme();
+    m_themes["one-monokai"] = oneMonokaiTheme();
 }
 
 QStringList ThemeManager::availableThemes() const {
@@ -495,5 +496,42 @@ Theme ThemeManager::monokaiTheme() {
     theme.editorFontFamily = "Monospace";
     theme.editorFontSize = 10;
     
+    return theme;
+}
+
+Theme ThemeManager::oneMonokaiTheme() {
+    Theme theme;
+    theme.name        = "one-monokai";
+    theme.displayName = "One Monokai";
+
+    theme.editorBackground  = QColor("#282c34");
+    theme.editorForeground  = QColor("#abb2bf");
+    theme.editorCurrentLine = QColor("#2c313c");
+    theme.syntaxKeyword     = QColor("#c678dd");  // purple
+    theme.syntaxType        = QColor("#e5c07b");  // yellow
+    theme.syntaxString      = QColor("#98c379");  // green
+    theme.syntaxComment     = QColor("#5c6370");  // gray
+    theme.syntaxPreprocessor= QColor("#e06c75");  // purple
+    theme.syntaxNumber      = QColor("#d19a66");  // orange
+    theme.syntaxFunction    = QColor("#61afef");  // blue
+    theme.cursorColor       = QColor("#abb2bf");
+
+    theme.windowBackground  = QColor("#282c34");
+    theme.panelBackground   = QColor("#21252b");
+    theme.toolbarBackground = QColor("#1d2026");
+    theme.statusBarBackground = QColor("#4078f2");  // One Dark blue accent
+    theme.sidebarBackground = QColor("#21252b");
+    theme.tabActive         = QColor("#282c34");
+    theme.tabInactive       = QColor("#21252b");
+    theme.border            = QColor("#3a3f4b");
+    theme.textPrimary       = QColor("#abb2bf");
+    theme.textSecondary     = QColor("#636d83");
+    theme.accent            = QColor("#528bff");
+    theme.error             = QColor("#e06c75");
+    theme.warning           = QColor("#e5c07b");
+    theme.success           = QColor("#98c379");
+
+    theme.editorFontFamily  = "Monospace";
+    theme.editorFontSize    = 10;
     return theme;
 }

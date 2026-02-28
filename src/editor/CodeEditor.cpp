@@ -233,18 +233,8 @@ void CodeEditor::clearAllMarkers() {
 }
 
 void CodeEditor::applyTheme(const QString& themeName) {
-    Theme theme;
-    if (themeName == "dark") {
-        theme = ThemeManager::darkTheme();
-    } else if (themeName == "light") {
-        theme = ThemeManager::lightTheme();
-    } else if (themeName == "dracula") {
-        theme = ThemeManager::draculaTheme();
-    } else if (themeName == "monokai") {
-        theme = ThemeManager::monokaiTheme();
-    } else {
-        theme = ThemeManager::darkTheme();
-    }
+    Theme theme = ThemeManager::instance()->currentTheme();
+    Q_UNUSED(themeName);
 
     // Lexer colors
     if (m_lexer) {

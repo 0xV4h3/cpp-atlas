@@ -109,7 +109,13 @@ public:
      * @return Monokai theme
      */
     static Theme monokaiTheme();
-    
+
+    /**
+     * @brief Get One Monokai theme
+     * @return One Monokai theme
+     */
+    static Theme oneMonokaiTheme();
+
 signals:
     void themeChanged(const QString& themeName);
     

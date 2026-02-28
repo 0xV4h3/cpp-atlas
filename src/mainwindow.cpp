@@ -347,6 +347,11 @@ void MainWindow::setupMenus() {
     monokaiThemeAction->setCheckable(true);
     monokaiThemeAction->setData("monokai");
     themeGroup->addAction(monokaiThemeAction);
+
+    QAction* oneMonokaiThemeAction = themeMenu->addAction("One Monokai");
+    oneMonokaiThemeAction->setCheckable(true);
+    oneMonokaiThemeAction->setData("one-monokai");
+    themeGroup->addAction(oneMonokaiThemeAction);
     
     connect(themeGroup, &QActionGroup::triggered, this, [this](QAction* action) {
         QString themeName = action->data().toString();

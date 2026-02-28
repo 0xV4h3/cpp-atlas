@@ -169,12 +169,8 @@ void InsightsWidget::onInsightsFinished(bool success, const QString& output,
 }
 
 void InsightsWidget::applyThemeToEditor(QsciScintilla* editor, const QString& themeName) {
-    // Reuse the same theme logic as CodeEditor::applyTheme()
-    Theme theme;
-    if (themeName == QStringLiteral("light"))         theme = ThemeManager::lightTheme();
-    else if (themeName == QStringLiteral("dracula"))   theme = ThemeManager::draculaTheme();
-    else if (themeName == QStringLiteral("monokai"))   theme = ThemeManager::monokaiTheme();
-    else                                               theme = ThemeManager::darkTheme();
+    Theme theme = ThemeManager::instance()->currentTheme();
+    Q_UNUSED(themeName);
 
     auto* lexer = qobject_cast<QsciLexerCPP*>(editor->lexer());
     if (lexer) {
