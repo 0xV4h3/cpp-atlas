@@ -1,6 +1,7 @@
 #ifndef BENCHMARKWIDGET_H
 #define BENCHMARKWIDGET_H
 
+#include <QScopedPointer>
 #include <QWidget>
 #include "tools/BenchmarkRunner.h"
 #include "tools/BenchmarkResult.h"
@@ -12,6 +13,7 @@ class QLabel;
 class QTabWidget;
 class QTableWidget;
 class QPlainTextEdit;
+class QTemporaryFile;
 class BenchmarkChartWidget;
 
 /**
@@ -85,6 +87,14 @@ private:
     void updateResultsView(const BenchmarkResult& result);
     void applyThemeToEditor(const QString& themeName);
 
+    // Multi-tab editor helpers
+    QsciScintilla* currentBenchEditor() const;
+    QString        currentBenchFilePath() const;
+    void           addBenchTab(const QString& title, const QString& filePath,
+                               const QString& content);
+    bool           closeBenchTab(int index);
+    void           loadTemplateInCurrentTab();
+
     // ── Toolbar ────────────────────────────────────────────────────
     QComboBox* m_optimizationCombo = nullptr;
     QPushButton* m_openFileButton = nullptr;
@@ -96,12 +106,14 @@ private:
     QPushButton* m_compareButton = nullptr;
     QLabel* m_statusLabel = nullptr;
 
-    // ── Code editor ────────────────────────────────────────────────
-    QsciScintilla* m_codeEditor = nullptr;
+    // ── Code editor tabs ───────────────────────────────────────────
+    QTabWidget* m_editorTabs = nullptr;
+    int         m_newBenchCounter = 1;
 
     // ── Results ────────────────────────────────────────────────────
     QTabWidget* m_resultsTabs = nullptr;
     BenchmarkChartWidget* m_chartWidget = nullptr;
+    BenchmarkChartWidget* m_comparisonChartWidget = nullptr;
     QTableWidget* m_tableWidget = nullptr;
     QPlainTextEdit* m_rawJsonView = nullptr;
 
@@ -111,7 +123,7 @@ private:
     // ── State ──────────────────────────────────────────────────────
     QString m_compilerId;
     QString m_standard = QStringLiteral("c++17");
-    QString m_currentBenchFilePath;
+    QScopedPointer<QTemporaryFile> m_tempBenchSource;
 
     static constexpr int MAX_COMPARE = 5;
     QList<BenchmarkResult> m_savedResults;

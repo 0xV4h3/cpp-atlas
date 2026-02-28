@@ -38,6 +38,9 @@ struct BenchmarkResult {
 
     QList<BenchmarkEntry> benchmarks;
 
+    // Raw JSON string from --benchmark_format=json stdout
+    QString rawJson;
+
     // Metadata used by the Compare view
     QString compilerId;
     QString standard;

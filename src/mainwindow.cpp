@@ -1309,12 +1309,13 @@ void MainWindow::onEditorChanged(CodeEditor* editor) {
         if (m_analysisPanel)
             m_analysisPanel->setSourceCode(editor->text(), editor->filePath());
 
-        if (m_previousEditor != editor)
+        if (m_previousEditor && m_previousEditor != editor)
             disconnect(m_previousEditor, &QsciScintilla::textChanged,
                        this, &MainWindow::onActiveEditorTextChanged);
         m_previousEditor = editor;
         connect(editor, &QsciScintilla::textChanged,
-                this, &MainWindow::onActiveEditorTextChanged);
+                this, &MainWindow::onActiveEditorTextChanged,
+                Qt::UniqueConnection);
     }
 }
 

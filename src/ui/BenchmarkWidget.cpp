@@ -12,6 +12,9 @@
 #include <QFileInfo>
 #include <QHBoxLayout>
 #include <QHeaderView>
+#include <QJsonArray>
+#include <QJsonDocument>
+#include <QJsonObject>
 #include <QLabel>
 #include <QPlainTextEdit>
 #include <QPushButton>
@@ -19,6 +22,8 @@
 #include <QTabWidget>
 #include <QTableWidget>
 #include <QTableWidgetItem>
+#include <QTemporaryFile>
+#include <QTextStream>
 #include <QVBoxLayout>
 
 // ── Construction ─────────────────────────────────────────────────────────────
@@ -70,7 +75,7 @@ void BenchmarkWidget::setupUi() {
     // QSplitter: code editor (top 2/3) / results (bottom 1/3)
     auto* splitter = new QSplitter(Qt::Vertical, this);
     setupCodeEditor();
-    splitter->addWidget(m_codeEditor);
+    splitter->addWidget(m_editorTabs);
     setupResultsTabs();
     splitter->addWidget(m_resultsTabs);
     splitter->setStretchFactor(0, 2);
@@ -89,26 +94,33 @@ void BenchmarkWidget::setupToolbar(QWidget* parent, QHBoxLayout* tbLayout) {
     tbLayout->addStretch();
 
     m_openFileButton = new QPushButton(QStringLiteral("Open..."), parent);
+    m_openFileButton->setShortcut(QKeySequence(Qt::CTRL | Qt::SHIFT | Qt::Key_O));
+    m_openFileButton->setToolTip(QStringLiteral("Open benchmark file (Ctrl+Shift+O)"));
     connect(m_openFileButton, &QPushButton::clicked,
         this, &BenchmarkWidget::openBenchmarkFile);
     tbLayout->addWidget(m_openFileButton);
 
     m_saveFileButton = new QPushButton(QStringLiteral("Save"), parent);
     m_saveFileButton->setEnabled(false);
+    m_saveFileButton->setShortcut(QKeySequence(Qt::CTRL | Qt::SHIFT | Qt::Key_S));
+    m_saveFileButton->setToolTip(QStringLiteral("Save benchmark file (Ctrl+Shift+S)"));
     connect(m_saveFileButton, &QPushButton::clicked,
         this, &BenchmarkWidget::saveBenchmarkFile);
     tbLayout->addWidget(m_saveFileButton);
 
     m_importButton = new QPushButton(QStringLiteral("Import..."), parent);
+    m_importButton->setShortcut(QKeySequence(Qt::CTRL | Qt::SHIFT | Qt::Key_I));
+    m_importButton->setToolTip(QStringLiteral("Import results (Ctrl+Shift+I)"));
     connect(m_importButton, &QPushButton::clicked,
         this, &BenchmarkWidget::importResults);
     tbLayout->addWidget(m_importButton);
 
     // Run button — educational tooltip about DoNotOptimize
     m_runButton = new QPushButton(QStringLiteral("▶  Run"), parent);
+    m_runButton->setShortcut(QKeySequence(Qt::CTRL | Qt::Key_F9));
     m_runButton->setToolTip(
         QStringLiteral(
-            "Compile and run the benchmark.\n\n"
+            "Run Benchmark (Ctrl+F9)\n\n"
             "Educational tips:\n"
             "  benchmark::DoNotOptimize(val)  — prevents the compiler from\n"
             "    optimizing away the measured expression.\n"
@@ -122,19 +134,23 @@ void BenchmarkWidget::setupToolbar(QWidget* parent, QHBoxLayout* tbLayout) {
 
     m_stopButton = new QPushButton(QStringLiteral("■ Stop"), parent);
     m_stopButton->setEnabled(false);
+    m_stopButton->setShortcut(QKeySequence(Qt::CTRL | Qt::SHIFT | Qt::Key_F9));
     connect(m_stopButton, &QPushButton::clicked,
         this, &BenchmarkWidget::stopProcess);
     tbLayout->addWidget(m_stopButton);
 
     m_exportButton = new QPushButton(QStringLiteral("Export..."), parent);
     m_exportButton->setEnabled(false);
+    m_exportButton->setShortcut(QKeySequence(Qt::CTRL | Qt::SHIFT | Qt::Key_E));
+    m_exportButton->setToolTip(QStringLiteral("Export results (Ctrl+Shift+E)"));
     connect(m_exportButton, &QPushButton::clicked,
         this, &BenchmarkWidget::exportResults);
     tbLayout->addWidget(m_exportButton);
 
     m_compareButton = new QPushButton(QStringLiteral("Compare"), parent);
+    m_compareButton->setShortcut(QKeySequence(Qt::CTRL | Qt::SHIFT | Qt::Key_C));
     m_compareButton->setToolTip(
-        QStringLiteral("Show side-by-side chart of saved runs (max %1).")
+        QStringLiteral("Compare saved results (Ctrl+Shift+C) — max %1 runs.")
         .arg(MAX_COMPARE));
     m_compareButton->setEnabled(false);
     connect(m_compareButton, &QPushButton::clicked,
@@ -147,22 +163,108 @@ void BenchmarkWidget::setupToolbar(QWidget* parent, QHBoxLayout* tbLayout) {
 }
 
 void BenchmarkWidget::setupCodeEditor() {
-    m_codeEditor = new QsciScintilla(this);
-    auto* lexer = new QsciLexerCPP(m_codeEditor);
+    m_editorTabs = new QTabWidget(this);
+    m_editorTabs->setTabsClosable(true);
+    m_editorTabs->setMovable(true);
+
+    // "+" button to add a new benchmark tab
+    auto* addTabBtn = new QPushButton(QStringLiteral("+"), m_editorTabs);
+    addTabBtn->setFixedSize(24, 24);
+    addTabBtn->setToolTip(QStringLiteral("New benchmark file"));
+    m_editorTabs->setCornerWidget(addTabBtn, Qt::TopRightCorner);
+    connect(addTabBtn, &QPushButton::clicked, this, [this]() {
+        addBenchTab(
+            QStringLiteral("benchmark-%1.cpp").arg(m_newBenchCounter++),
+            QString(), QString());
+        loadTemplateInCurrentTab();
+    });
+
+    connect(m_editorTabs, &QTabWidget::tabCloseRequested,
+            this, &BenchmarkWidget::closeBenchTab);
+    connect(m_editorTabs, &QTabWidget::currentChanged,
+            this, [this](int) {
+        m_saveFileButton->setEnabled(!currentBenchFilePath().isEmpty());
+    });
+
+    // Create the first tab
+    addBenchTab(QStringLiteral("benchmark-1.cpp"), QString(), QString());
+    m_newBenchCounter = 2; // next "+" will create benchmark-2.cpp
+}
+
+QsciScintilla* BenchmarkWidget::currentBenchEditor() const {
+    return qobject_cast<QsciScintilla*>(m_editorTabs->currentWidget());
+}
+
+QString BenchmarkWidget::currentBenchFilePath() const {
+    int idx = m_editorTabs->currentIndex();
+    if (idx < 0) return QString();
+    return m_editorTabs->tabBar()->tabData(idx).toString();
+}
+
+void BenchmarkWidget::addBenchTab(const QString& title,
+                                   const QString& filePath,
+                                   const QString& content) {
+    auto* editor = new QsciScintilla(m_editorTabs);
+    auto* lexer  = new QsciLexerCPP(editor);
     QFont font(QStringLiteral("Monospace"), 10);
     lexer->setDefaultFont(font);
-    m_codeEditor->setLexer(lexer);
-    m_codeEditor->setTabWidth(4);
-    m_codeEditor->setIndentationsUseTabs(false);
-    m_codeEditor->setAutoIndent(true);
-    m_codeEditor->setFolding(QsciScintilla::BoxedTreeFoldStyle);
-    m_codeEditor->setMarginType(0, QsciScintilla::NumberMargin);
-    m_codeEditor->setMarginWidth(0, QStringLiteral("00000"));
-    m_codeEditor->setWrapMode(QsciScintilla::WrapWord);
-    m_codeEditor->SendScintilla(QsciScintilla::SCI_SETHSCROLLBAR, 0);
+    editor->setLexer(lexer);
+    editor->setTabWidth(4);
+    editor->setIndentationsUseTabs(false);
+    editor->setAutoIndent(true);
+    editor->setFolding(QsciScintilla::BoxedTreeFoldStyle);
+    editor->setMarginType(0, QsciScintilla::NumberMargin);
+    editor->setMarginWidth(0, QStringLiteral("00000"));
+    editor->setWrapMode(QsciScintilla::WrapWord);
+    editor->SendScintilla(QsciScintilla::SCI_SETHSCROLLBAR, 0);
 
-    connect(m_codeEditor, &QsciScintilla::textChanged,
-        this, [this]() { if (m_saveFileButton) m_saveFileButton->setEnabled(true); });
+    if (!content.isEmpty())
+        editor->setText(content);
+
+    int idx = m_editorTabs->addTab(editor, title);
+    m_editorTabs->setCurrentIndex(idx);
+    m_editorTabs->tabBar()->setTabData(idx, filePath);
+
+    connect(editor, &QsciScintilla::textChanged, this, [this, editor]() {
+        int i = m_editorTabs->indexOf(editor);
+        if (i >= 0) {
+            QString t = m_editorTabs->tabText(i);
+            if (!t.endsWith(QLatin1Char('*')))
+                m_editorTabs->setTabText(i, t + QLatin1Char('*'));
+        }
+        if (m_saveFileButton)
+            m_saveFileButton->setEnabled(true);
+    });
+
+    applyThemeToEditor(ThemeManager::instance()->currentThemeName());
+}
+
+bool BenchmarkWidget::closeBenchTab(int index) {
+    if (m_editorTabs->count() <= 1)
+        return false; // keep at least one tab
+    m_editorTabs->removeTab(index);
+    return true;
+}
+
+void BenchmarkWidget::loadTemplateInCurrentTab() {
+    auto* editor = currentBenchEditor();
+    if (!editor) return;
+    QFile tmpl(QStringLiteral(":/templates/benchmark_template.cpp"));
+    if (tmpl.open(QIODevice::ReadOnly | QIODevice::Text)) {
+        editor->setText(QString::fromUtf8(tmpl.readAll()));
+        return;
+    }
+    editor->setText(QStringLiteral(
+        "#include <benchmark/benchmark.h>\n\n"
+        "// TODO: replace with the code you want to measure.\n"
+        "static void BM_Example(benchmark::State& state) {\n"
+        "    for (auto _ : state) {\n"
+        "        int x = 42;\n"
+        "        benchmark::DoNotOptimize(x);\n"
+        "    }\n"
+        "}\n"
+        "BENCHMARK(BM_Example);\n\n"
+        "BENCHMARK_MAIN();\n"));
 }
 
 void BenchmarkWidget::setupResultsTabs() {
@@ -192,43 +294,47 @@ void BenchmarkWidget::setupResultsTabs() {
     QFont mono(QStringLiteral("Monospace"), 9);
     m_rawJsonView->setFont(mono);
     m_resultsTabs->addTab(m_rawJsonView, QStringLiteral("Raw JSON"));
+
+    // Comparison tab — dedicated to side-by-side multi-result chart
+    m_comparisonChartWidget = new BenchmarkChartWidget(m_resultsTabs);
+    m_resultsTabs->addTab(m_comparisonChartWidget, QStringLiteral("Comparison"));
+    m_resultsTabs->setTabEnabled(3, false); // disabled until Compare is clicked
 }
 
 // ── Template loading ──────────────────────────────────────────────────────────
 
 void BenchmarkWidget::loadTemplate() {
-    QFile tmpl(QStringLiteral(":/templates/benchmark_template.cpp"));
-    if (tmpl.open(QIODevice::ReadOnly | QIODevice::Text)) {
-        m_codeEditor->setText(QString::fromUtf8(tmpl.readAll()));
-        return;
-    }
-    // Inline fallback — always compiles; teaches DoNotOptimize
-    m_codeEditor->setText(QStringLiteral(
-        "#include <benchmark/benchmark.h>\n\n"
-        "// TODO: replace with the code you want to measure.\n"
-        "static void BM_Example(benchmark::State& state) {\n"
-        "    for (auto _ : state) {\n"
-        "        int x = 42;\n"
-        "        benchmark::DoNotOptimize(x);\n"
-        "    }\n"
-        "}\n"
-        "BENCHMARK(BM_Example);\n\n"
-        "BENCHMARK_MAIN();\n"));
+    loadTemplateInCurrentTab();
 }
 
 // ── Run / Export ──────────────────────────────────────────────────────────────
 
 void BenchmarkWidget::runBenchmark() {
-    // Write editor content to a temp .cpp file
-    const QString tmpPath =
-        QDir::tempPath() + QStringLiteral("/cppatlas_bench_input.cpp");
-    QFile f(tmpPath);
-    if (!f.open(QIODevice::WriteOnly | QIODevice::Text)) {
-        m_statusLabel->setText(QStringLiteral("Error: cannot write temp file."));
-        return;
+    auto* editor = currentBenchEditor();
+    if (!editor) return;
+
+    QString sourceToRun;
+    const QString filePath = currentBenchFilePath();
+
+    if (!filePath.isEmpty()) {
+        // Save editor content to the current file path
+        QFile f(filePath);
+        if (f.open(QIODevice::WriteOnly | QIODevice::Text))
+            QTextStream(&f) << editor->text();
+        sourceToRun = filePath;
+    } else {
+        // Use QTemporaryFile with auto-remove
+        m_tempBenchSource.reset(new QTemporaryFile(
+            QDir::tempPath() + QStringLiteral("/cppatlas_bench_XXXXXX.cpp")));
+        m_tempBenchSource->setAutoRemove(true);
+        if (!m_tempBenchSource->open()) {
+            m_statusLabel->setText(QStringLiteral("Error: cannot write temp file."));
+            return;
+        }
+        QTextStream(m_tempBenchSource.get()) << editor->text();
+        m_tempBenchSource->flush();
+        sourceToRun = m_tempBenchSource->fileName();
     }
-    f.write(m_codeEditor->text().toUtf8());
-    f.close();
 
     // Forward current compiler ID to runner
     m_runner->setCompilerId(m_compilerId);
@@ -241,7 +347,7 @@ void BenchmarkWidget::runBenchmark() {
     m_runButton->setEnabled(false);
     m_stopButton->setEnabled(true);
     m_statusLabel->setText(QStringLiteral("Compiling..."));
-    m_runner->run(tmpPath, flags);
+    m_runner->run(sourceToRun, flags);
 }
 
 void BenchmarkWidget::exportResults() {
@@ -271,6 +377,7 @@ void BenchmarkWidget::exportResults() {
 void BenchmarkWidget::onCompilationFinished(bool success,
     const QString& error) {
     if (!success) {
+        m_tempBenchSource.reset(); // cleanup on compile failure
         m_runButton->setEnabled(true);
         m_stopButton->setEnabled(false);
         m_statusLabel->setText(QStringLiteral("Compilation failed."));
@@ -288,6 +395,7 @@ void BenchmarkWidget::onProgressMessage(const QString& msg) {
 }
 
 void BenchmarkWidget::onBenchmarkResultReady(const BenchmarkResult& result) {
+    m_tempBenchSource.reset(); // cleanup temp source file
     m_runButton->setEnabled(true);
     m_stopButton->setEnabled(false);
     m_exportButton->setEnabled(true);
@@ -335,17 +443,43 @@ void BenchmarkWidget::updateResultsView(const BenchmarkResult& result) {
             new QTableWidgetItem(QString::number(e.iterations)));
     }
 
-    // Raw JSON tab header comment
-    m_rawJsonView->setPlainText(
-        QStringLiteral("// Benchmark completed: %1\n// %2 benchmark(s)\n")
+    // Raw JSON tab
+    QString rawContent;
+    rawContent += QStringLiteral("// Benchmark completed: %1\n// %2 benchmark(s)\n\n")
         .arg(result.date)
-        .arg(result.benchmarks.size()));
+        .arg(result.benchmarks.size());
+    if (!result.rawJson.isEmpty()) {
+        rawContent += result.rawJson;
+    } else {
+        QJsonArray arr;
+        for (const BenchmarkEntry& e : result.benchmarks) {
+            QJsonObject obj;
+            obj[QStringLiteral("name")]       = e.name;
+            obj[QStringLiteral("real_time")]  = e.realTimeNs;
+            obj[QStringLiteral("cpu_time")]   = e.cpuTimeNs;
+            obj[QStringLiteral("iterations")] = static_cast<qint64>(e.iterations);
+            obj[QStringLiteral("time_unit")]  = e.timeUnit;
+            arr.append(obj);
+        }
+        QJsonObject meta;
+        meta[QStringLiteral("compilerId")]        = result.compilerId;
+        meta[QStringLiteral("standard")]          = result.standard;
+        meta[QStringLiteral("optimizationLevel")] = result.optimizationLevel;
+        QJsonObject root;
+        root[QStringLiteral("date")]       = result.date;
+        root[QStringLiteral("metadata")]   = meta;
+        root[QStringLiteral("benchmarks")] = arr;
+        rawContent += QString::fromUtf8(
+            QJsonDocument(root).toJson(QJsonDocument::Indented));
+    }
+    m_rawJsonView->setPlainText(rawContent);
 }
 
 void BenchmarkWidget::onCompareClicked() {
     if (m_savedResults.size() >= 2) {
-        m_chartWidget->compareResults(m_savedResults);
-        m_resultsTabs->setCurrentWidget(m_chartWidget);
+        m_comparisonChartWidget->compareResults(m_savedResults);
+        m_resultsTabs->setTabEnabled(3, true);
+        m_resultsTabs->setCurrentIndex(3); // Switch to Comparison tab
     }
 }
 
@@ -358,13 +492,17 @@ void BenchmarkWidget::openBenchmarkFile() {
     if (path.isEmpty()) return;
     QFile f(path);
     if (!f.open(QIODevice::ReadOnly | QIODevice::Text)) return;
-    m_codeEditor->setText(QTextStream(&f).readAll());
-    m_currentBenchFilePath = path;
+    const QString content = QTextStream(&f).readAll();
+    addBenchTab(QFileInfo(path).fileName(), path, content);
     m_saveFileButton->setEnabled(false);
 }
 
 void BenchmarkWidget::saveBenchmarkFile() {
-    QString path = m_currentBenchFilePath;
+    auto* editor = currentBenchEditor();
+    if (!editor) return;
+
+    int idx = m_editorTabs->currentIndex();
+    QString path = m_editorTabs->tabBar()->tabData(idx).toString();
     if (path.isEmpty()) {
         path = QFileDialog::getSaveFileName(
             this, QStringLiteral("Save Benchmark File"),
@@ -372,11 +510,16 @@ void BenchmarkWidget::saveBenchmarkFile() {
         if (path.isEmpty()) return;
         if (!path.endsWith(QStringLiteral(".cpp"), Qt::CaseInsensitive))
             path += QStringLiteral(".cpp");
-        m_currentBenchFilePath = path;
+        m_editorTabs->tabBar()->setTabData(idx, path);
+        m_editorTabs->setTabText(idx, QFileInfo(path).fileName());
     }
     QFile f(path);
     if (!f.open(QIODevice::WriteOnly | QIODevice::Text)) return;
-    QTextStream(&f) << m_codeEditor->text();
+    QTextStream(&f) << editor->text();
+    // Remove the modification asterisk
+    QString title = m_editorTabs->tabText(idx);
+    if (title.endsWith(QLatin1Char('*')))
+        m_editorTabs->setTabText(idx, title.chopped(1));
     m_saveFileButton->setEnabled(false);
 }
 
@@ -406,40 +549,58 @@ void BenchmarkWidget::applyThemeToEditor(const QString& themeName) {
     Theme theme = ThemeManager::instance()->currentTheme();
     Q_UNUSED(themeName);
 
-    auto* lexer = qobject_cast<QsciLexerCPP*>(m_codeEditor->lexer());
-    if (lexer) {
-        lexer->setDefaultPaper(theme.editorBackground);
-        lexer->setDefaultColor(theme.editorForeground);
-        for (int s = 0; s <= 128; ++s) {
-            lexer->setPaper(theme.editorBackground, s);
-            lexer->setColor(theme.editorForeground, s);
+    for (int i = 0; i < m_editorTabs->count(); ++i) {
+        auto* editor = qobject_cast<QsciScintilla*>(m_editorTabs->widget(i));
+        if (!editor) continue;
+        auto* lexer = qobject_cast<QsciLexerCPP*>(editor->lexer());
+        if (lexer) {
+            lexer->setDefaultPaper(theme.editorBackground);
+            lexer->setDefaultColor(theme.editorForeground);
+            for (int s = 0; s <= 128; ++s) {
+                lexer->setPaper(theme.editorBackground, s);
+                lexer->setColor(theme.editorForeground, s);
+            }
+            lexer->setColor(theme.syntaxKeyword,      QsciLexerCPP::Keyword);
+            lexer->setColor(theme.syntaxType,         QsciLexerCPP::KeywordSet2);
+            lexer->setColor(theme.syntaxString,       QsciLexerCPP::DoubleQuotedString);
+            lexer->setColor(theme.syntaxString,       QsciLexerCPP::SingleQuotedString);
+            lexer->setColor(theme.syntaxComment,      QsciLexerCPP::Comment);
+            lexer->setColor(theme.syntaxComment,      QsciLexerCPP::CommentLine);
+            lexer->setColor(theme.syntaxComment,      QsciLexerCPP::CommentDoc);
+            lexer->setColor(theme.syntaxPreprocessor, QsciLexerCPP::PreProcessor);
+            lexer->setColor(theme.syntaxNumber,       QsciLexerCPP::Number);
+            lexer->setColor(theme.syntaxFunction,     QsciLexerCPP::Operator);
+            QFont font(QStringLiteral("Monospace"), 10);
+            lexer->setDefaultFont(font);
+            for (int s = 0; s <= 128; ++s)
+                lexer->setFont(font, s);
         }
-        lexer->setColor(theme.syntaxKeyword, QsciLexerCPP::Keyword);
-        lexer->setColor(theme.syntaxString, QsciLexerCPP::DoubleQuotedString);
-        lexer->setColor(theme.syntaxComment, QsciLexerCPP::Comment);
-        lexer->setColor(theme.syntaxComment, QsciLexerCPP::CommentLine);
-        lexer->setColor(theme.syntaxPreprocessor, QsciLexerCPP::PreProcessor);
-        lexer->setColor(theme.syntaxNumber, QsciLexerCPP::Number);
+        editor->setLexer(editor->lexer());
+        editor->setPaper(theme.editorBackground);
+        editor->setColor(theme.editorForeground);
+        editor->setCaretLineVisible(true);
+        editor->setCaretLineBackgroundColor(theme.editorCurrentLine);
+        editor->setCaretWidth(2);
+        editor->setCaretForegroundColor(theme.cursorColor);
+        editor->setSelectionBackgroundColor(theme.accent);
+        editor->setSelectionForegroundColor(theme.editorForeground);
+        editor->setMarginsBackgroundColor(theme.sidebarBackground);
+        editor->setMarginsForegroundColor(theme.textSecondary);
+        // Fix: ensure fold margin doesn't leak white stripe on theme change
+        editor->setFoldMarginColors(theme.sidebarBackground, theme.sidebarBackground);
+        editor->recolor();
     }
-    m_codeEditor->setPaper(theme.editorBackground);
-    m_codeEditor->setColor(theme.editorForeground);
-    m_codeEditor->setCaretLineVisible(true);
-    m_codeEditor->setCaretLineBackgroundColor(theme.editorCurrentLine);
-    m_codeEditor->setMarginsBackgroundColor(theme.sidebarBackground);
-    m_codeEditor->setMarginsForegroundColor(theme.textSecondary);
-    // Fix: ensure fold margin doesn't leak white stripe on theme change
-    m_codeEditor->setFoldMarginColors(theme.sidebarBackground,
-        theme.sidebarBackground);
-    m_codeEditor->recolor();
 }
 
 void BenchmarkWidget::onThemeChanged(const QString& themeName) {
     applyThemeToEditor(themeName);
     m_chartWidget->onThemeChanged(themeName);
+    m_comparisonChartWidget->onThemeChanged(themeName);
 }
 
 void BenchmarkWidget::stopProcess() {
     m_runner->cancel();
+    m_tempBenchSource.reset(); // cleanup temp source file on stop
     m_runButton->setEnabled(true);
     m_stopButton->setEnabled(false);
     m_statusLabel->setText(QStringLiteral("Stopped."));

@@ -11,6 +11,7 @@
 #include <QTextStream>
 #include <QVBoxLayout>
 #include <QDir>
+#include <QFile>
 #include <QUuid>
 
 InsightsWidget::InsightsWidget(QWidget* parent)
@@ -44,12 +45,15 @@ void InsightsWidget::setupUi() {
     tbLayout->addStretch();
 
     m_runButton = new QPushButton(QStringLiteral("▶  Run Insights"), toolbar);
-    m_runButton->setToolTip(QStringLiteral("Run C++ Insights on current file"));
+    m_runButton->setShortcut(QKeySequence(Qt::CTRL | Qt::Key_F9));
+    m_runButton->setToolTip(QStringLiteral("Run Insights (Ctrl+F9)"));
     connect(m_runButton, &QPushButton::clicked, this, &InsightsWidget::runInsights);
     tbLayout->addWidget(m_runButton);
 
     m_stopButton = new QPushButton(QStringLiteral("■ Stop Insights"), toolbar);
     m_stopButton->setEnabled(false);
+    m_stopButton->setShortcut(QKeySequence(Qt::CTRL | Qt::SHIFT | Qt::Key_F9));
+    m_stopButton->setToolTip(QStringLiteral("Stop (Ctrl+Shift+F9)"));
     connect(m_stopButton, &QPushButton::clicked, this, &InsightsWidget::stopProcess);
     tbLayout->addWidget(m_stopButton);
 
@@ -133,6 +137,7 @@ void InsightsWidget::runInsights() {
     QTextStream out(&tmpFile);
     out << m_currentSourceCode;
     tmpFile.close();
+    m_tempInsightsFile = tmpPath;
 
     QStringList flags;
     flags << QStringLiteral("-std=") + m_standard;
@@ -154,6 +159,10 @@ void InsightsWidget::onProgressMessage(const QString& msg) {
 
 void InsightsWidget::onInsightsFinished(bool success, const QString& output,
                                          const QString& error) {
+    if (!m_tempInsightsFile.isEmpty()) {
+        QFile::remove(m_tempInsightsFile);
+        m_tempInsightsFile.clear();
+    }
     m_runButton->setEnabled(true);
     m_stopButton->setEnabled(false);
 
@@ -186,14 +195,24 @@ void InsightsWidget::applyThemeToEditor(QsciScintilla* editor, const QString& th
         lexer->setColor(theme.syntaxString,       QsciLexerCPP::SingleQuotedString);
         lexer->setColor(theme.syntaxComment,      QsciLexerCPP::Comment);
         lexer->setColor(theme.syntaxComment,      QsciLexerCPP::CommentLine);
+        lexer->setColor(theme.syntaxComment,      QsciLexerCPP::CommentDoc);
         lexer->setColor(theme.syntaxPreprocessor, QsciLexerCPP::PreProcessor);
         lexer->setColor(theme.syntaxNumber,       QsciLexerCPP::Number);
+        lexer->setColor(theme.syntaxFunction,     QsciLexerCPP::Operator);
+        QFont font(QStringLiteral("Monospace"), 10);
+        lexer->setDefaultFont(font);
+        for (int style = 0; style <= 128; ++style)
+            lexer->setFont(font, style);
     }
+    editor->setLexer(editor->lexer());
     editor->setPaper(theme.editorBackground);
     editor->setColor(theme.editorForeground);
     editor->setCaretLineVisible(true);
     editor->setCaretLineBackgroundColor(theme.editorCurrentLine);
+    editor->setCaretWidth(2);
     editor->setCaretForegroundColor(theme.cursorColor);
+    editor->setSelectionBackgroundColor(theme.accent);
+    editor->setSelectionForegroundColor(theme.editorForeground);
     editor->setMarginsBackgroundColor(theme.sidebarBackground);
     editor->setMarginsForegroundColor(theme.textSecondary);
     // FIX: set fold margin colors to match sidebar — prevents white strips

@@ -67,13 +67,15 @@ void AssemblyWidget::setupUi() {
 
     // Run button
     m_runButton = new QPushButton(QStringLiteral("▶  Generate Assembly"), toolbar);
-    m_runButton->setToolTip(QStringLiteral("Compile current file to assembly"));
+    m_runButton->setShortcut(QKeySequence(Qt::CTRL | Qt::Key_F9));
+    m_runButton->setToolTip(QStringLiteral("Run Assembly (Ctrl+F9)"));
     connect(m_runButton, &QPushButton::clicked, this, &AssemblyWidget::runAssembly);
     tbLayout->addWidget(m_runButton);
 
     // Stop button
     m_stopButton = new QPushButton(QStringLiteral("■ Stop"), toolbar);
     m_stopButton->setEnabled(false);
+    m_stopButton->setShortcut(QKeySequence(Qt::CTRL | Qt::SHIFT | Qt::Key_F9));
     connect(m_stopButton, &QPushButton::clicked, this, &AssemblyWidget::stopProcess);
     tbLayout->addWidget(m_stopButton);
 
@@ -194,6 +196,7 @@ void AssemblyWidget::runAssembly() {
         out << m_currentSourceCode;
     }
     tmpFile.close();
+    m_tempAsmSourceFile = tmpPath;
 
     // Build flags
     QStringList flags;
@@ -226,6 +229,10 @@ void AssemblyWidget::onProgressMessage(const QString& msg) {
 
 void AssemblyWidget::onRunnerFinished(bool success, const QString& output,
                                       const QString& error) {
+    if (!m_tempAsmSourceFile.isEmpty()) {
+        QFile::remove(m_tempAsmSourceFile);
+        m_tempAsmSourceFile.clear();
+    }
     m_runButton->setEnabled(true);
     m_stopButton->setEnabled(false);
 
@@ -290,14 +297,24 @@ void AssemblyWidget::applyThemeToEditor(QsciScintilla* editor, const QString& th
         lexer->setColor(theme.syntaxString,       QsciLexerCPP::SingleQuotedString);
         lexer->setColor(theme.syntaxComment,      QsciLexerCPP::Comment);
         lexer->setColor(theme.syntaxComment,      QsciLexerCPP::CommentLine);
+        lexer->setColor(theme.syntaxComment,      QsciLexerCPP::CommentDoc);
         lexer->setColor(theme.syntaxPreprocessor, QsciLexerCPP::PreProcessor);
         lexer->setColor(theme.syntaxNumber,       QsciLexerCPP::Number);
+        lexer->setColor(theme.syntaxFunction,     QsciLexerCPP::Operator);
+        QFont font(QStringLiteral("Monospace"), 10);
+        lexer->setDefaultFont(font);
+        for (int style = 0; style <= 128; ++style)
+            lexer->setFont(font, style);
     }
+    editor->setLexer(editor->lexer());
     editor->setPaper(theme.editorBackground);
     editor->setColor(theme.editorForeground);
     editor->setCaretLineVisible(true);
     editor->setCaretLineBackgroundColor(theme.editorCurrentLine);
+    editor->setCaretWidth(2);
     editor->setCaretForegroundColor(theme.cursorColor);
+    editor->setSelectionBackgroundColor(theme.accent);
+    editor->setSelectionForegroundColor(theme.editorForeground);
     editor->setMarginsBackgroundColor(theme.sidebarBackground);
     editor->setMarginsForegroundColor(theme.textSecondary);
     // FIX: set fold margin colors to match sidebar — prevents white strips
