@@ -1281,6 +1281,12 @@ void MainWindow::onEditorChanged(CodeEditor* editor) {
         // Keep AnalysisPanel in sync with the active editor
         if (m_analysisPanel)
             m_analysisPanel->setSourceCode(editor->text(), editor->filePath());
+
+        connect(editor, &QsciScintilla::textChanged,
+                this, [this, editor]() {
+            if (m_analysisPanel)
+                m_analysisPanel->setSourceCode(editor->text(), editor->filePath());
+        }, Qt::UniqueConnection);
     }
 }
 
