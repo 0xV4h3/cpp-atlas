@@ -1282,11 +1282,19 @@ void MainWindow::onEditorChanged(CodeEditor* editor) {
         if (m_analysisPanel)
             m_analysisPanel->setSourceCode(editor->text(), editor->filePath());
 
+        if (m_previousEditor != editor)
+            disconnect(m_previousEditor, &QsciScintilla::textChanged,
+                       this, &MainWindow::onActiveEditorTextChanged);
+        m_previousEditor = editor;
         connect(editor, &QsciScintilla::textChanged,
-                this, [this, editor]() {
-            if (m_analysisPanel)
-                m_analysisPanel->setSourceCode(editor->text(), editor->filePath());
-        }, Qt::UniqueConnection);
+                this, &MainWindow::onActiveEditorTextChanged);
+    }
+}
+
+void MainWindow::onActiveEditorTextChanged() {
+    CodeEditor* editor = m_editorTabs->currentEditor();
+    if (editor && m_analysisPanel) {
+        m_analysisPanel->setSourceCode(editor->text(), editor->filePath());
     }
 }
 

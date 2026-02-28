@@ -27,6 +27,7 @@ class WelcomeScreen;
 class NewFileDialog;
 class NewProjectDialog;
 class AnalysisPanel;
+class CodeEditor;
 
 class MainWindow : public QMainWindow
 {
@@ -91,6 +92,7 @@ private slots:
     
     // Editor
     void onEditorChanged(class CodeEditor* editor);
+    void onActiveEditorTextChanged();
     
     // Problems
     void onDiagnosticClicked(const QString& file, int line, int column);
@@ -123,6 +125,7 @@ private:
     FileManager* m_fileManager;
     Project* m_project;
     AnalysisPanel* m_analysisPanel = nullptr;
+    CodeEditor* m_previousEditor = nullptr;
     
     // Welcome screen
     WelcomeScreen* m_welcomeScreen = nullptr;
