@@ -3,6 +3,7 @@
 
 #include <QScopedPointer>
 #include <QWidget>
+#include <QTemporaryFile>
 #include "tools/BenchmarkRunner.h"
 #include "tools/BenchmarkResult.h"
 
@@ -13,7 +14,6 @@ class QLabel;
 class QTabWidget;
 class QTableWidget;
 class QPlainTextEdit;
-class QTemporaryFile;
 class BenchmarkChartWidget;
 
 /**
