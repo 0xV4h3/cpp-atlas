@@ -35,6 +35,31 @@ void BenchmarkRunner::setCompilerId(const QString& id) { m_compilerId = id; }
 QString BenchmarkRunner::compilerId()              const { return m_compilerId; }
 BenchmarkResult BenchmarkRunner::lastResult()      const { return m_lastResult; }
 
+void BenchmarkRunner::setResultMetadata(const QString& compilerId,
+                                         const QString& standard,
+                                         const QString& optimizationLevel) {
+    m_lastResult.compilerId        = compilerId;
+    m_lastResult.standard          = standard;
+    m_lastResult.optimizationLevel = optimizationLevel;
+}
+
+QString BenchmarkRunner::extractStandardFromFlags(const QStringList& flags) {
+    for (const QString& f : flags) {
+        if (f.startsWith(QStringLiteral("-std=")))
+            return f.mid(5);
+    }
+    return QString();
+}
+
+QString BenchmarkRunner::extractOptFromFlags(const QStringList& flags) {
+    for (const QString& f : flags) {
+        if (f.startsWith(QLatin1Char('-')) && f.length() == 3 &&
+            (f[1] == QLatin1Char('O') || f[1] == QLatin1Char('o')))
+            return f.mid(1);
+    }
+    return QString();
+}
+
 // ── run() — Phase 1: compile ─────────────────────────────────────────────────
 
 void BenchmarkRunner::run(const QString& sourceFile, const QStringList& flags) {
@@ -184,6 +209,10 @@ void BenchmarkRunner::onRunFinished(int exitCode, QProcess::ExitStatus status) {
     const bool ok = (status == QProcess::NormalExit && exitCode == 0);
     if (ok) {
         m_lastResult = parseJsonOutput(jsonOut);
+        m_lastResult.rawJson           = jsonOut;
+        m_lastResult.compilerId        = m_compilerId;
+        m_lastResult.standard          = extractStandardFromFlags(m_compileFlags);
+        m_lastResult.optimizationLevel = extractOptFromFlags(m_compileFlags);
         m_lastResult.success = true;
         emit benchmarkResultReady(m_lastResult);
         emit finished(true, jsonOut, errText);

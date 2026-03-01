@@ -81,6 +81,7 @@ private:
     QString m_currentSourceCode;
     QString m_currentFilePath;
     QString m_standard = QStringLiteral("c++17");
+    QString m_tempInsightsFile;
 };
 
 #endif // INSIGHTSWIDGET_H

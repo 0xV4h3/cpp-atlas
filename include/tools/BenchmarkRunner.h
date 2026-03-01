@@ -58,6 +58,10 @@ public:
     void    setCompilerId(const QString& id);
     QString compilerId()  const;
 
+    void setResultMetadata(const QString& compilerId,
+                           const QString& standard,
+                           const QString& optimizationLevel);
+
     // ── Results ──────────────────────────────────────────────────
     BenchmarkResult lastResult() const;
 
@@ -90,6 +94,8 @@ private slots:
 private:
     void            startRun(const QString& binaryPath);
     BenchmarkResult parseJsonOutput(const QString& json) const;
+    static QString  extractStandardFromFlags(const QStringList& flags);
+    static QString  extractOptFromFlags(const QStringList& flags);
 
     QString  m_compilerId;
     QProcess* m_compileProcess = nullptr;

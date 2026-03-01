@@ -112,6 +112,7 @@ private:
     QString         m_currentFilePath;
     QString         m_compilerId;                         // set via setCompilerId()
     QString         m_standard = QStringLiteral("c++17"); // set via setStandard()
+    QString         m_tempAsmSourceFile;
     QMap<int, int>  m_asmLineToSrcLine;  // asm line (1-based) → src line (1-based)
     QMap<int, int>  m_srcLineToFirstAsm; // src line → first asm line for it
 };
