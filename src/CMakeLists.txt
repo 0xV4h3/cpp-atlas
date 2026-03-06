@@ -44,6 +44,8 @@ set(UI_SOURCES
     ${CMAKE_CURRENT_SOURCE_DIR}/ui/LoginDialog.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/ui/QuizModeWindow.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/ui/QuizSelectionWidget.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/ui/QuizSessionWidget.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/ui/QuizResultsWidget.cpp
 )
 
 # Tools module - runners and configuration
