@@ -1,6 +1,9 @@
 #include "ui/QuizModeWindow.h"
 #include "ui/QuizSelectionWidget.h"
+#include "ui/QuizSessionWidget.h"
+#include "ui/QuizResultsWidget.h"
 #include "ui/ThemeManager.h"
+#include "quiz/UserManager.h"
 
 #include <QVBoxLayout>
 #include <QHBoxLayout>
@@ -50,24 +53,33 @@ void QuizModeWindow::setupUi()
     m_selectionWidget = new QuizSelectionWidget(this);
     m_stack->addWidget(m_selectionWidget);
 
-    // Page 1 & 2: Placeholders for PR #4
-    QLabel* sessionPlaceholder = new QLabel("Quiz Session — Coming in PR #4", this);
-    sessionPlaceholder->setAlignment(Qt::AlignCenter);
-    sessionPlaceholder->setObjectName("placeholderLabel");
-    m_stack->addWidget(sessionPlaceholder);
+    // Page 1: Quiz Session
+    m_sessionWidget = new QuizSessionWidget(this);
+    m_stack->addWidget(m_sessionWidget);
 
-    QLabel* resultsPlaceholder = new QLabel("Quiz Results — Coming in PR #4", this);
-    resultsPlaceholder->setAlignment(Qt::AlignCenter);
-    resultsPlaceholder->setObjectName("placeholderLabel");
-    m_stack->addWidget(resultsPlaceholder);
+    // Page 2: Quiz Results
+    m_resultsWidget = new QuizResultsWidget(this);
+    m_stack->addWidget(m_resultsWidget);
+
+    // Wire session signals
+    connect(m_sessionWidget, &QuizSessionWidget::sessionCompleted,
+            this, &QuizModeWindow::onSessionCompleted);
+    connect(m_sessionWidget, &QuizSessionWidget::sessionAbandoned,
+            this, &QuizModeWindow::onSessionAbandoned);
+
+    // Wire results signals
+    connect(m_resultsWidget, &QuizResultsWidget::retryRequested,
+            this, &QuizModeWindow::onRetryRequested);
+    connect(m_resultsWidget, &QuizResultsWidget::backToSelectionRequested,
+            this, &QuizModeWindow::showSelectionScreen);
 
     mainLayout->addWidget(m_stack, 1);
 
     // Connect selection widget
     connect(m_selectionWidget, &QuizSelectionWidget::quizSelected,
             this, [this](int quizId) {
-        emit quizLaunchRequested(quizId, "practice");
-        // In PR #4: m_stack->setCurrentIndex(1); m_backBtn->setVisible(true);
+        const int userId = UserManager::instance().currentUser().id;
+        launchQuiz(quizId, "practice", true, userId);
     });
 }
 
@@ -161,4 +173,38 @@ void QuizModeWindow::applyTheme()
     .arg(t.accent.darker(140).name())  // %7
     .arg(t.error.name())               // %8
     );
+}
+void QuizModeWindow::launchQuiz(int quizId, const QString& mode,
+                                 bool shuffle, int userId)
+{
+    m_lastQuizId  = quizId;
+    m_lastMode    = mode;
+    m_lastShuffle = shuffle;
+    m_lastUserId  = userId;
+
+    m_stack->setCurrentIndex(1);
+    m_backBtn->setVisible(true);
+    m_sessionWidget->startQuiz(quizId, userId, mode, shuffle);
+}
+
+void QuizModeWindow::onSessionCompleted(const SessionResult& result)
+{
+    // Cache the question list from the engine for the review panel.
+    // QuizSessionWidget exposes the engine's last question list via
+    // a read-only accessor added below.
+    m_stack->setCurrentIndex(2);
+    m_backBtn->setVisible(false);
+    m_resultsWidget->showResults(result,
+                                  m_sessionWidget->lastQuestions(),
+                                  m_lastUserId);
+}
+
+void QuizModeWindow::onSessionAbandoned()
+{
+    showSelectionScreen();
+}
+
+void QuizModeWindow::onRetryRequested()
+{
+    launchQuiz(m_lastQuizId, m_lastMode, m_lastShuffle, m_lastUserId);
 }
