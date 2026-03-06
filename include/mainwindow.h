@@ -29,6 +29,7 @@ class NewProjectDialog;
 class AnalysisPanel;
 class CodeEditor;
 class LoginDialog;
+class QuizModeWindow;
 
 class MainWindow : public QMainWindow
 {
@@ -98,7 +99,11 @@ private slots:
     
     // Problems
     void onDiagnosticClicked(const QString& file, int line, int column);
-    
+
+    // Quiz mode
+    void onQuizModeRequested();
+    void onQuizModeExit();
+
 private:
     Ui::MainWindow *ui;
     
@@ -133,6 +138,7 @@ private:
     WelcomeScreen* m_welcomeScreen = nullptr;
     QStackedWidget* m_centralStack = nullptr;
     bool m_analysisDockWasVisible = false;
+    QuizModeWindow* m_quizModeWindow = nullptr;
 
     // Current user (set after login)
     QString m_currentUsername;
@@ -192,6 +198,8 @@ private:
     void saveCurrentSession();
     void showProjectLoadError(Project::LoadResult result);
     void restoreProjectSession(Project* project);
+    void showQuizModeWindow();
+    void hideQuizModeWindow();
     
     QString getCurrentSourceFile();
     QString getExecutablePath(const QString& sourceFile);
