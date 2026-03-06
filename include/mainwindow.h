@@ -28,6 +28,7 @@ class NewFileDialog;
 class NewProjectDialog;
 class AnalysisPanel;
 class CodeEditor;
+class LoginDialog;
 
 class MainWindow : public QMainWindow
 {
@@ -132,6 +133,9 @@ private:
     WelcomeScreen* m_welcomeScreen = nullptr;
     QStackedWidget* m_centralStack = nullptr;
     bool m_analysisDockWasVisible = false;
+
+    // Current user (set after login)
+    QString m_currentUsername;
     
     // Dock widgets
     QDockWidget* m_fileTreeDock;
@@ -192,6 +196,9 @@ private:
     QString getCurrentSourceFile();
     QString getExecutablePath(const QString& sourceFile);
     void showBuildError(const QString& message);
+    void saveUserSession();
+    void loadUserSession();
+    void updateTitleBarUser();
 };
 
 #endif // MAINWINDOW_H

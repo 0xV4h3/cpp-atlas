@@ -7,6 +7,7 @@ set(CORE_SOURCES
     ${CMAKE_CURRENT_SOURCE_DIR}/core/FileManager.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/core/RecentProjectsManager.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/core/ProjectManager.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/core/AppSettings.cpp
 )
 
 set(EDITOR_SOURCES
@@ -40,6 +41,7 @@ set(UI_SOURCES
     ${CMAKE_CURRENT_SOURCE_DIR}/ui/BenchmarkWidget.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/ui/BenchmarkChartWidget.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/ui/AnalysisPanel.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/ui/LoginDialog.cpp
 )
 
 # Tools module - runners and configuration
@@ -50,6 +52,12 @@ set(TOOLS_SOURCES
     ${CMAKE_CURRENT_SOURCE_DIR}/tools/BenchmarkRunner.cpp
 )
 
+# Quiz module — database, user management, engine
+set(QUIZ_SOURCES
+    ${CMAKE_CURRENT_SOURCE_DIR}/quiz/QuizDatabase.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/quiz/UserManager.cpp
+)
+
 set(APP_SOURCES
     ${CORE_SOURCES}
     ${EDITOR_SOURCES}
@@ -57,6 +65,7 @@ set(APP_SOURCES
     ${OUTPUT_SOURCES}
     ${UI_SOURCES}
     ${TOOLS_SOURCES}
+    ${QUIZ_SOURCES}
 )
 
 # Collect headers
@@ -95,11 +104,13 @@ if(QT_CHARTS_AVAILABLE)
     target_link_libraries(CppAtlasLib PUBLIC
         Qt${QT_VERSION_MAJOR}::Widgets
         Qt${QT_VERSION_MAJOR}::Charts
+        Qt${QT_VERSION_MAJOR}::Sql
         ${QSCINTILLA_LIBRARY}
     )
 else()
     target_link_libraries(CppAtlasLib PUBLIC
         Qt${QT_VERSION_MAJOR}::Widgets
+        Qt${QT_VERSION_MAJOR}::Sql
         ${QSCINTILLA_LIBRARY}
     )
 endif()
