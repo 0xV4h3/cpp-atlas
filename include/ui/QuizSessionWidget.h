@@ -6,6 +6,7 @@
 #include <QPushButton>
 #include <QProgressBar>
 #include <QButtonGroup>
+#include <QCheckBox>
 #include <QVBoxLayout>
 #include <QScrollArea>
 
@@ -51,6 +52,12 @@ public:
     void startQuiz(int quizId, int userId,
                    const QString& mode = "practice",
                    bool shuffle = true);
+
+    /**
+     * @brief Returns the question list from the most recently completed session.
+     * Used by QuizModeWindow to pass questions to QuizResultsWidget for review.
+     */
+    QList<QuestionDTO> lastQuestions() const { return m_engine ? m_engine->lastQuestions() : QList<QuestionDTO>{}; }
 
 signals:
     void sessionCompleted(const SessionResult& result);

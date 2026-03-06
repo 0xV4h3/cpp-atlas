@@ -113,6 +113,12 @@ public:
     int           currentScore() const;
     int           secondsRemainingForQuestion() const;
 
+    /**
+     * @brief Returns the question list from the most recently run session.
+     * Read-only; valid after sessionCompleted is emitted.
+     */
+    QList<QuestionDTO> lastQuestions() const { return m_questions; }
+
 signals:
     /** Emitted after each answer submission, before advancing. Index is 0-based. */
     void questionChanged(int newIndex, int total);
