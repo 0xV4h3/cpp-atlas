@@ -10,7 +10,6 @@
 QuizEngine::QuizEngine(QObject* parent)
     : QObject(parent)
     , m_questionTimer(new QTimer(this))
-    , m_elapsed(new QElapsedTimer())
 {
     m_questionTimer->setInterval(1000);  // 1 second tick
     connect(m_questionTimer, &QTimer::timeout, this, &QuizEngine::onTimerTick);
@@ -52,7 +51,7 @@ bool QuizEngine::startSession(int quizId, int userId,
     if (m_questions[0].timeLimitSec > 0)
         startQuestionTimer(m_questions[0].timeLimitSec);
 
-    m_elapsed->start();
+    m_elapsed.start();
     emit questionChanged(0, m_questions.size());
     return true;
 }
@@ -78,7 +77,7 @@ bool QuizEngine::startCustomSession(const QList<QuestionDTO>& questions,
     if (m_questions[0].timeLimitSec > 0)
         startQuestionTimer(m_questions[0].timeLimitSec);
 
-    m_elapsed->start();
+    m_elapsed.start();
     emit questionChanged(0, m_questions.size());
     return true;
 }
@@ -91,8 +90,8 @@ void QuizEngine::submitAnswer(const QString& answer)
 
     const QuestionDTO& q  = m_questions[m_currentIndex];
     const bool correct    = evaluateAnswer(q, answer);
-    const int  timeSpent  = m_elapsed->isValid()
-                            ? static_cast<int>(m_elapsed->elapsed() / 1000)
+    const int  timeSpent  = m_elapsed.isValid()
+                            ? static_cast<int>(m_elapsed.elapsed() / 1000)
                             : 0;
 
     AttemptRecord rec;
@@ -161,8 +160,8 @@ int QuizEngine::secondsRemainingForQuestion() const
 // ─────────────────────────────────────────────────────────────────────────────
 void QuizEngine::advanceToNext()
 {
-    m_totalTimeSec += m_elapsed->isValid()
-                      ? static_cast<int>(m_elapsed->elapsed() / 1000) : 0;
+    m_totalTimeSec += m_elapsed.isValid()
+                      ? static_cast<int>(m_elapsed.elapsed() / 1000) : 0;
 
     ++m_currentIndex;
     if (m_currentIndex >= m_questions.size()) {
@@ -174,7 +173,7 @@ void QuizEngine::advanceToNext()
     const int nextLimit = m_questions[m_currentIndex].timeLimitSec;
     if (nextLimit > 0) startQuestionTimer(nextLimit);
 
-    m_elapsed->restart();
+    m_elapsed.restart();
     emit questionChanged(m_currentIndex, m_questions.size());
 }
 

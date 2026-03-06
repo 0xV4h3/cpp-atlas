@@ -4,6 +4,7 @@
 #include <QObject>
 #include <QTimer>
 #include <QList>
+#include <QElapsedTimer>
 #include "quiz/QuizRepository.h"
 
 /**
@@ -153,7 +154,7 @@ private:
 
     QTimer* m_questionTimer    = nullptr;
     int     m_questionTimeSec  = 0;   ///< countdown value
-    QElapsedTimer* m_elapsed   = nullptr;
+    QElapsedTimer  m_elapsed;
 };
 
 #endif // QUIZENGINE_H
