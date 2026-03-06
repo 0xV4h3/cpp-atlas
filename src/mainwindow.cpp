@@ -13,6 +13,7 @@
 #include "ui/NewFileDialog.h"
 #include "ui/NewProjectDialog.h"
 #include "ui/AnalysisPanel.h"
+#include "ui/QuizModeWindow.h"
 #include "core/FileManager.h"
 #include "core/Project.h"
 #include "core/ProjectManager.h"
@@ -120,7 +121,16 @@ void MainWindow::setupUi() {
     // Create central widget - editor tabs
     m_editorTabs = new EditorTabWidget(this);
     m_centralStack->addWidget(m_editorTabs);
-    
+
+    // Quiz Mode window (created once, added to stack)
+    m_quizModeWindow = new QuizModeWindow(this);
+    m_centralStack->addWidget(m_quizModeWindow);
+    connect(m_quizModeWindow, &QuizModeWindow::exitRequested,
+            this, &MainWindow::onQuizModeExit);
+    // Update user display if already logged in
+    if (UserManager::instance().isLoggedIn())
+        m_quizModeWindow->setCurrentUser(UserManager::instance().currentUser());
+
     setCentralWidget(m_centralStack);
 }
 
@@ -660,17 +670,8 @@ void MainWindow::setupWelcomeScreen() {
         }
     });
     
-    connect(m_welcomeScreen, &WelcomeScreen::quizModeRequested, this, [this]() {
-        // Quiz Mode UI will be wired in PR #3 (feat/quiz-mode-window)
-        // For now, show user info confirming the system is ready
-        const auto user = UserManager::instance().currentUser();
-        QMessageBox::information(this, "Quiz Mode — Coming Soon",
-            QString("Quiz Engine initialized!\n\n"
-                    "Logged in as: %1 (%2)\n\n"
-                    "Full Quiz Mode UI will be available in the next update.\n"
-                    "The database and user system are ready.")
-            .arg(user.displayName, user.username));
-    });
+    connect(m_welcomeScreen, &WelcomeScreen::quizModeRequested,
+            this, &MainWindow::onQuizModeRequested);
     
     connect(m_welcomeScreen, &WelcomeScreen::continueWithoutProjectRequested,
             this, [this]() {
@@ -715,6 +716,37 @@ void MainWindow::hideWelcomeScreen() {
     
     if (m_closeProjectAction) m_closeProjectAction->setEnabled(true);
     updateMenuState(false);
+}
+
+void MainWindow::onQuizModeRequested()
+{
+    showQuizModeWindow();
+}
+
+void MainWindow::onQuizModeExit()
+{
+    hideQuizModeWindow();
+    showWelcomeScreen();
+}
+
+void MainWindow::showQuizModeWindow()
+{
+    m_centralStack->setCurrentWidget(m_quizModeWindow);
+    m_fileTreeDock->hide();
+    m_outputPanelDock->hide();
+    m_analysisDockWasVisible = m_analysisDock->isVisible();
+    m_analysisDock->hide();
+    updateMenuState(true);
+    updateCustomTitleLabel("CppAtlas — Quiz Mode");
+}
+
+void MainWindow::hideQuizModeWindow()
+{
+    // Restore docks to their pre-quiz-mode state so that showWelcomeScreen()
+    // captures the correct visibility when it re-saves m_analysisDockWasVisible.
+    m_fileTreeDock->show();
+    m_outputPanelDock->show();
+    if (m_analysisDockWasVisible) m_analysisDock->show();
 }
 
 void MainWindow::updateMenuState(bool isWelcomeVisible) {

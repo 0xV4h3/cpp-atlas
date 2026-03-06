@@ -42,6 +42,8 @@ set(UI_SOURCES
     ${CMAKE_CURRENT_SOURCE_DIR}/ui/BenchmarkChartWidget.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/ui/AnalysisPanel.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/ui/LoginDialog.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/ui/QuizModeWindow.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/ui/QuizSelectionWidget.cpp
 )
 
 # Tools module - runners and configuration
