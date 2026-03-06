@@ -6,6 +6,7 @@
 #include <QPushButton>
 #include <QProgressBar>
 #include <QButtonGroup>
+#include <QCheckBox>
 #include <QVBoxLayout>
 #include <QScrollArea>
 

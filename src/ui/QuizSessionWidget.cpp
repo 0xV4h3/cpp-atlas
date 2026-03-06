@@ -12,6 +12,9 @@
 #include <QButtonGroup>
 #include <QTimer>
 #include <QFont>
+#include <QStyle>
+#include <QJsonArray>
+#include <QJsonDocument>
 #include <QDebug>
 
 QuizSessionWidget::QuizSessionWidget(QWidget* parent)

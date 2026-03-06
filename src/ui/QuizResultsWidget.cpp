@@ -10,6 +10,7 @@
 #include <QUrl>
 #include <QtMath>
 #include <QScrollArea>
+#include <QScrollBar>
 #include <QDebug>
 
 // ─────────────────────────────────────────────────────────────────────────────
