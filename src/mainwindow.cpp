@@ -19,6 +19,8 @@
 #include "core/RecentProjectsManager.h"
 #include "compiler/CompilerRegistry.h"
 #include "compiler/ICompiler.h"
+#include "quiz/UserManager.h"
+#include "core/AppSettings.h"
 
 #include <QToolBar>
 #include <QMenuBar>
@@ -73,6 +75,12 @@ MainWindow::MainWindow(QWidget *parent)
     setupStatusBar();
     setupConnections();
     setupWelcomeScreen();
+    
+    // Store and reflect current logged-in user
+    if (UserManager::instance().isLoggedIn()) {
+        m_currentUsername = UserManager::instance().currentUser().username;
+        updateTitleBarUser();
+    }
     
     // Auto-scan for compilers
     CompilerRegistry::instance().autoScanCompilers();
@@ -582,6 +590,12 @@ void MainWindow::setupConnections() {
 void MainWindow::setupWelcomeScreen() {
     m_welcomeScreen = new WelcomeScreen(this);
     m_centralStack->addWidget(m_welcomeScreen);
+
+    // Show current user on welcome screen
+    if (UserManager::instance().isLoggedIn()) {
+        const auto u = UserManager::instance().currentUser();
+        m_welcomeScreen->setCurrentUser(u.displayName, u.username, u.isAdmin);
+    }
     
     // Connect Welcome Screen signals
     connect(m_welcomeScreen, &WelcomeScreen::newFileRequested, this, [this]() {
@@ -647,12 +661,15 @@ void MainWindow::setupWelcomeScreen() {
     });
     
     connect(m_welcomeScreen, &WelcomeScreen::quizModeRequested, this, [this]() {
-        QMessageBox::information(this, "Quiz Mode",
-            "Quiz Mode will be available in a future update.\n\n"
-            "This will include:\n"
-            "- C++ knowledge assessments\n"
-            "- Interactive coding challenges\n"
-            "- Progress tracking");
+        // Quiz Mode UI will be wired in PR #3 (feat/quiz-mode-window)
+        // For now, show user info confirming the system is ready
+        const auto user = UserManager::instance().currentUser();
+        QMessageBox::information(this, "Quiz Mode — Coming Soon",
+            QString("Quiz Engine initialized!\n\n"
+                    "Logged in as: %1 (%2)\n\n"
+                    "Full Quiz Mode UI will be available in the next update.\n"
+                    "The database and user system are ready.")
+            .arg(user.displayName, user.username));
     });
     
     connect(m_welcomeScreen, &WelcomeScreen::continueWithoutProjectRequested,
@@ -810,7 +827,41 @@ void MainWindow::updateCustomTitleLabel(const QString& title) {
     }
 }
 
+void MainWindow::updateTitleBarUser()
+{
+    if (!m_titleLabel) return;
+    const auto user = UserManager::instance().currentUser();
+    if (!user.username.isEmpty()) {
+        const QString adminBadge = user.isAdmin ? " 👑" : "";
+        m_titleLabel->setText(
+            QString("CppAtlas — %1%2").arg(user.displayName, adminBadge));
+    }
+}
+
+void MainWindow::saveUserSession()
+{
+    if (UserManager::instance().isLoggedIn()) {
+        AppSettings userSettings(UserManager::instance().currentUser().username);
+        userSettings.setWindowGeometry(saveGeometry());
+        userSettings.setWindowState(saveState());
+    }
+}
+
+void MainWindow::loadUserSession()
+{
+    if (UserManager::instance().isLoggedIn()) {
+        AppSettings userSettings(UserManager::instance().currentUser().username);
+        const QByteArray geometry = userSettings.windowGeometry();
+        const QByteArray state    = userSettings.windowState();
+        if (!geometry.isEmpty()) restoreGeometry(geometry);
+        if (!state.isEmpty())    restoreState(state);
+    }
+}
+
 void MainWindow::closeEvent(QCloseEvent *event) {
+    // Save per-user window geometry
+    saveUserSession();
+
     // Save project session before closing
     saveCurrentSession();
     

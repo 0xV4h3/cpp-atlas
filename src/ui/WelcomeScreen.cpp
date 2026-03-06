@@ -1,6 +1,7 @@
 #include "ui/WelcomeScreen.h"
 #include "core/RecentProjectsManager.h"
 #include "ui/ThemeManager.h"
+#include "quiz/UserManager.h"
 
 #include <QVBoxLayout>
 #include <QHBoxLayout>
@@ -52,6 +53,12 @@ void WelcomeScreen::setupUI() {
     headerLayout->addStretch();
     
     mainLayout->addLayout(headerLayout);
+
+    // User info bar
+    m_userInfoLabel = new QLabel(this);
+    m_userInfoLabel->setObjectName("userInfoBar");
+    m_userInfoLabel->setVisible(false);
+    mainLayout->addWidget(m_userInfoLabel);
     
     // === Mode Selection (IDE vs Quiz) ===
     createModeSelectionArea();
@@ -291,6 +298,17 @@ void WelcomeScreen::setReturnToProjectVisible(bool visible) {
     m_returnToProjectBtn->setVisible(visible);
 }
 
+void WelcomeScreen::setCurrentUser(const QString& displayName,
+                                    const QString& username,
+                                    bool isAdmin)
+{
+    if (!m_userInfoLabel) return;
+    const QString badge = isAdmin ? " 👑 Admin" : "";
+    m_userInfoLabel->setText(
+        QString("👤  %1  (@%2)%3").arg(displayName, username, badge));
+    m_userInfoLabel->setVisible(true);
+}
+
 void WelcomeScreen::applyTheme() {
     Theme theme = ThemeManager::instance()->currentTheme();
     
@@ -412,6 +430,14 @@ void WelcomeScreen::applyTheme() {
             background-color: %5;
             color: %4;
             border: 1px solid %6;
+        }
+
+        #userInfoBar {
+            color: %4;
+            font-size: 12px;
+            padding: 4px 0px;
+            border-bottom: 1px solid %6;
+            margin-bottom: 4px;
         }
     )").arg(theme.windowBackground.name())     // %1
        .arg(theme.accent.name())               // %2
