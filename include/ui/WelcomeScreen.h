@@ -20,6 +20,16 @@ public:
      */
     void setReturnToProjectVisible(bool visible);
 
+    /**
+     * @brief Update the displayed current user info on the welcome screen.
+     * @param displayName The user's display name
+     * @param username The user's username
+     * @param isAdmin true if user is admin
+     */
+    void setCurrentUser(const QString& displayName,
+                        const QString& username,
+                        bool isAdmin);
+
 signals:
     // IDE Mode signals
     void newFileRequested();
@@ -76,6 +86,9 @@ private:
     
     // Return to project
     QPushButton* m_returnToProjectBtn;
+
+    // Current user info display
+    QLabel* m_userInfoLabel = nullptr;
 };
 
 #endif // WELCOMESCREEN_H

@@ -9,7 +9,7 @@ set(CMAKE_AUTOUIC ON)
 set(CMAKE_AUTORCC ON)
 
 # Try Qt6 first, fall back to Qt5 if not available
-find_package(Qt6 COMPONENTS Widgets Test QUIET)
+find_package(Qt6 COMPONENTS Widgets Test Sql QUIET)
 if(Qt6_FOUND)
     message(STATUS "Using Qt6")
     set(QT_VERSION_MAJOR 6)
@@ -37,7 +37,7 @@ if(Qt6_FOUND)
     )
 else()
     message(STATUS "Qt6 not found, falling back to Qt5")
-    find_package(Qt5 REQUIRED COMPONENTS Widgets Test)
+    find_package(Qt5 REQUIRED COMPONENTS Widgets Test Sql)
     set(QT_VERSION_MAJOR 5)
     # QScintilla for Qt5
     find_path(QSCINTILLA_INCLUDE_DIR Qsci/qsciscintilla.h
