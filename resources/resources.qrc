@@ -11,8 +11,6 @@
         <file>templates/header.h.template</file>
         <file>icons/app-icon.png</file>
         <file>icons/app-icon.svg</file>
-    </qresource>
-    <qresource prefix="/db">
         <file>db/schema.sql</file>
         <file>db/seed_data.sql</file>
     </qresource>
