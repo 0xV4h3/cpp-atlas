@@ -172,12 +172,18 @@ public:
     bool markRecommendationRead(int recommendationId) const;
     bool clearRecommendationsForUser(int userId) const;
 
-    // ── Custom Tests ─────────────────────────────────────────────────────────
+    // ── Custom Tests ───────────────────────────────────────────────────────────
     int  createCustomTest(int userId,
                           const QString& title,
                           const QString& description) const;
     bool addQuestionToCustomTest(int testId, int questionId, int orderIndex) const;
     bool removeCustomTest(int testId) const;
+
+    /** All custom tests owned by a user, with question count populated. */
+    QList<QuizDTO> customTestsForUser(int userId) const;
+
+    /** All questions belonging to a custom test, ordered by order_index. */
+    QList<QuestionDTO> questionsForCustomTest(int testId) const;
 
 private:
     QuestionDTO      loadQuestionWithOptions(int questionId) const;

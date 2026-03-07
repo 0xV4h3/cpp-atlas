@@ -57,6 +57,21 @@ void QuizSessionWidget::startQuiz(int quizId, int userId,
     m_engine->startSession(quizId, userId, mode, shuffle);
 }
 
+void QuizSessionWidget::startCustomSession(const QList<QuestionDTO>& questions,
+                                            int userId,
+                                            const QString& mode)
+{
+    m_currentMode      = mode;
+    m_selectedOptionId = -1;
+    m_awaitingNext     = false;
+
+    m_hintLabel->setVisible(false);
+    m_feedbackLabel->setVisible(false);
+    m_timerLabel->setVisible(false);
+
+    m_engine->startCustomSession(questions, userId, mode);
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
 // UI Setup
 // ─────────────────────────────────────────────────────────────────────────────

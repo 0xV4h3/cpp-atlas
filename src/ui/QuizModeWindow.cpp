@@ -3,6 +3,7 @@
 #include "ui/QuizSessionWidget.h"
 #include "ui/QuizResultsWidget.h"
 #include "ui/UserProfileWidget.h"
+#include "ui/CustomTestBuilderWidget.h"
 #include "ui/ThemeManager.h"
 #include "quiz/UserManager.h"
 
@@ -73,6 +74,24 @@ void QuizModeWindow::setupUi()
         showSelectionScreen();
     });
 
+    // Page 4: Custom Test Builder
+    m_builderWidget = new CustomTestBuilderWidget(this);
+    m_stack->addWidget(m_builderWidget);
+
+    // Wire builder signals
+    connect(m_builderWidget, &CustomTestBuilderWidget::backRequested,
+            this, &QuizModeWindow::showSelectionScreen);
+    connect(m_builderWidget, &CustomTestBuilderWidget::launchCustomTest,
+            this, [this](const QList<QuestionDTO>& questions) {
+        const int userId = UserManager::instance().currentUser().id;
+        m_lastQuestions = questions;
+        m_lastUserId    = userId;
+        m_lastMode      = "practice";
+        m_sessionWidget->startCustomSession(questions, userId, "practice");
+        m_stack->setCurrentIndex(1);
+        m_backBtn->setVisible(true);
+    });
+
     // Wire session signals
     connect(m_sessionWidget, &QuizSessionWidget::sessionCompleted,
             this, &QuizModeWindow::onSessionCompleted);
@@ -125,6 +144,13 @@ void QuizModeWindow::setupHeader()
     connect(m_profileBtn, &QPushButton::clicked,
             this, &QuizModeWindow::onProfileClicked);
     layout->addWidget(m_profileBtn);
+
+    // Custom Test Builder button
+    m_builderBtn = new QPushButton("🔧  Custom Test", m_header);
+    m_builderBtn->setObjectName("quizNavButton");
+    connect(m_builderBtn, &QPushButton::clicked,
+            this, &QuizModeWindow::onBuilderClicked);
+    layout->addWidget(m_builderBtn);
 
     // User display
     m_userLabel = new QLabel(m_header);
@@ -239,4 +265,16 @@ void QuizModeWindow::showProfilePage()
 void QuizModeWindow::onProfileClicked()
 {
     showProfilePage();
+}
+
+void QuizModeWindow::showBuilderPage()
+{
+    m_builderWidget->refresh();
+    m_stack->setCurrentIndex(4);
+    m_backBtn->setVisible(true);
+}
+
+void QuizModeWindow::onBuilderClicked()
+{
+    showBuilderPage();
 }

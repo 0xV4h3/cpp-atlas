@@ -13,6 +13,7 @@ class QuizSelectionWidget;
 class QuizSessionWidget;
 class QuizResultsWidget;
 class UserProfileWidget;
+class CustomTestBuilderWidget;
 
 /**
  * @brief Main container widget for Quiz Mode.
@@ -24,6 +25,8 @@ class UserProfileWidget;
  *   0 — QuizSelectionWidget  (browse quizzes, launch)
  *   1 — QuizSessionWidget    (active quiz — added in PR #4)
  *   2 — QuizResultsWidget    (results + review — added in PR #4)
+ *   3 — UserProfileWidget    (profile dashboard — added in PR #5)
+ *   4 — CustomTestBuilderWidget (custom test builder — added in PR #6)
  *
  * The back button always returns to QuizSelectionWidget (page 0).
  * The "Exit Quiz Mode" button emits exitRequested() → MainWindow shows WelcomeScreen.
@@ -45,6 +48,9 @@ public:
     /** Show the user profile page (Page 3). */
     void showProfilePage();
 
+    /** Show the custom test builder page (Page 4). */
+    void showBuilderPage();
+
     /** Launch a quiz session on Page 1. Called after user confirms quiz start. */
     void launchQuiz(int quizId, const QString& mode, bool shuffle, int userId);
 
@@ -62,6 +68,7 @@ private slots:
     void onSessionAbandoned();
     void onRetryRequested();
     void onProfileClicked();
+    void onBuilderClicked();
 
 private:
     void setupUi();
@@ -71,7 +78,8 @@ private:
     QuizSelectionWidget* m_selectionWidget= nullptr;
     QuizSessionWidget*   m_sessionWidget  = nullptr;
     QuizResultsWidget*   m_resultsWidget  = nullptr;
-    UserProfileWidget*   m_profileWidget  = nullptr;
+    UserProfileWidget*       m_profileWidget  = nullptr;
+    CustomTestBuilderWidget* m_builderWidget  = nullptr;
 
     // Cached for retry
     int     m_lastQuizId  = -1;
@@ -87,6 +95,7 @@ private:
     QPushButton* m_exitBtn    = nullptr;
     QPushButton* m_backBtn    = nullptr;
     QPushButton* m_profileBtn = nullptr;
+    QPushButton* m_builderBtn = nullptr;
 };
 
 #endif // QUIZMODEWINDOW_H
