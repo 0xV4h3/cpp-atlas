@@ -1,5 +1,5 @@
 #include "ui/UserProfileWidget.h"
-#include "ui/QuizResultsWidget.h"   // RadarChartWidget
+#include "ui/QuizResultsWidget.h"
 #include "ui/ThemeManager.h"
 
 #include <QVBoxLayout>
@@ -14,6 +14,7 @@
 #include <QScrollBar>
 #include <QSqlQuery>
 #include <QSqlDatabase>
+#include <QDate>
 #include "quiz/QuizDatabase.h"
 
 // ─────────────────────────────────────────────────────────────────────────────
