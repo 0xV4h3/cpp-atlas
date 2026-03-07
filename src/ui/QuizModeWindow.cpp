@@ -2,6 +2,7 @@
 #include "ui/QuizSelectionWidget.h"
 #include "ui/QuizSessionWidget.h"
 #include "ui/QuizResultsWidget.h"
+#include "ui/UserProfileWidget.h"
 #include "ui/ThemeManager.h"
 #include "quiz/UserManager.h"
 
@@ -61,6 +62,17 @@ void QuizModeWindow::setupUi()
     m_resultsWidget = new QuizResultsWidget(this);
     m_stack->addWidget(m_resultsWidget);
 
+    // Page 3: User Profile Dashboard
+    m_profileWidget = new UserProfileWidget(this);
+    m_stack->addWidget(m_profileWidget);
+
+    // Wire profile signals
+    connect(m_profileWidget, &UserProfileWidget::startQuizFromRecommendation,
+            this, [this](int /*topicId*/) {
+        // Future: filter quizzes by topic; for now go to selection
+        showSelectionScreen();
+    });
+
     // Wire session signals
     connect(m_sessionWidget, &QuizSessionWidget::sessionCompleted,
             this, &QuizModeWindow::onSessionCompleted);
@@ -106,6 +118,13 @@ void QuizModeWindow::setupHeader()
     layout->addWidget(m_titleLabel);
 
     layout->addStretch();
+
+    // Profile button
+    m_profileBtn = new QPushButton("👤  Profile", m_header);
+    m_profileBtn->setObjectName("quizNavButton");
+    connect(m_profileBtn, &QPushButton::clicked,
+            this, &QuizModeWindow::onProfileClicked);
+    layout->addWidget(m_profileBtn);
 
     // User display
     m_userLabel = new QLabel(m_header);
@@ -207,4 +226,17 @@ void QuizModeWindow::onSessionAbandoned()
 void QuizModeWindow::onRetryRequested()
 {
     launchQuiz(m_lastQuizId, m_lastMode, m_lastShuffle, m_lastUserId);
+}
+
+void QuizModeWindow::showProfilePage()
+{
+    const int userId = UserManager::instance().currentUser().id;
+    m_profileWidget->refresh(userId);
+    m_stack->setCurrentIndex(3);
+    m_backBtn->setVisible(true);
+}
+
+void QuizModeWindow::onProfileClicked()
+{
+    showProfilePage();
 }

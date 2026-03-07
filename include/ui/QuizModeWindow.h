@@ -12,6 +12,7 @@
 class QuizSelectionWidget;
 class QuizSessionWidget;
 class QuizResultsWidget;
+class UserProfileWidget;
 
 /**
  * @brief Main container widget for Quiz Mode.
@@ -41,6 +42,9 @@ public:
     /** Navigate back to the selection screen (e.g. after a session ends). */
     void showSelectionScreen();
 
+    /** Show the user profile page (Page 3). */
+    void showProfilePage();
+
     /** Launch a quiz session on Page 1. Called after user confirms quiz start. */
     void launchQuiz(int quizId, const QString& mode, bool shuffle, int userId);
 
@@ -57,6 +61,7 @@ private slots:
     void onSessionCompleted(const SessionResult& result);
     void onSessionAbandoned();
     void onRetryRequested();
+    void onProfileClicked();
 
 private:
     void setupUi();
@@ -66,6 +71,7 @@ private:
     QuizSelectionWidget* m_selectionWidget= nullptr;
     QuizSessionWidget*   m_sessionWidget  = nullptr;
     QuizResultsWidget*   m_resultsWidget  = nullptr;
+    UserProfileWidget*   m_profileWidget  = nullptr;
 
     // Cached for retry
     int     m_lastQuizId  = -1;
@@ -80,6 +86,7 @@ private:
     QLabel*     m_userLabel   = nullptr;
     QPushButton* m_exitBtn    = nullptr;
     QPushButton* m_backBtn    = nullptr;
+    QPushButton* m_profileBtn = nullptr;
 };
 
 #endif // QUIZMODEWINDOW_H
