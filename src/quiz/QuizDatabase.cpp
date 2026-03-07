@@ -127,7 +127,12 @@ bool QuizDatabase::needsSeed() const
 
 bool QuizDatabase::applySeed()
 {
-    return runSqlFile(":/db/seed_data.sql");
+    QSqlDatabase db = QSqlDatabase::database(CONNECTION_NAME);
+    db.transaction();
+    const bool ok = runSqlFile(":/db/seed_data.sql");
+    if (ok) db.commit();
+    else    db.rollback();
+    return ok;
 }
 
 bool QuizDatabase::runSqlFile(const QString& resourcePath)
@@ -138,52 +143,75 @@ bool QuizDatabase::runSqlFile(const QString& resourcePath)
                                 QString(), QSqlError::ConnectionError);
         return false;
     }
-
-    QTextStream stream(&file);
-    const QString content = stream.readAll();
+    const QString sql = QTextStream(&file).readAll();
     file.close();
 
     QSqlDatabase db = QSqlDatabase::database(CONNECTION_NAME);
 
-    // Split on semicolons, skip empty and comment-only statements
-    const QStringList statements = content.split(';', Qt::SkipEmptyParts);
+    // ── SQL-aware split: respects single-quoted strings and -- comments ───────
+    // Rule: ';' is a statement terminator ONLY when outside a quoted string.
+    // Single-quoted strings: '...' — the only literal type in SQLite.
+    // Escaped apostrophe inside string: '' (two single quotes) — NOT end of string.
+    // Line comments: -- until newline — ';' inside is ignored.
+    QStringList stmts;
+    QString     cur;
+    bool        inStr     = false;  // inside '...'
+    bool        inComment = false;  // inside -- comment
 
-    db.transaction();
-    for (const QString& rawStmt : statements) {
-        // Strip comments and whitespace
-        QString stmt = rawStmt;
+    for (int i = 0, n = sql.size(); i < n; ++i) {
+        const QChar c = sql[i];
 
-        // Remove single-line SQL comments (-- ...)
-        QStringList lines = stmt.split('\n');
-        QStringList cleanLines;
-        for (const QString& line : lines) {
-            const QString trimmed = line.trimmed();
-            if (!trimmed.startsWith("--") && !trimmed.isEmpty()) {
-                cleanLines << line;
-            }
+        if (c == '\n') {
+            inComment = false;          // newline ends line comment
+            cur += c;
+            continue;
         }
-        stmt = cleanLines.join('\n').trimmed();
+        if (inComment) { cur += c; continue; }
 
-        if (stmt.isEmpty()) continue;
+        if (!inStr) {
+            if (c == '-' && i+1 < n && sql[i+1] == '-') {
+                inComment = true;
+                cur += c;
+                continue;
+            }
+            if (c == '\'') { inStr = true;  cur += c; continue; }
+            if (c == ';')  {
+                const QString s = cur.trimmed();
+                if (!s.isEmpty()) stmts << s;
+                cur.clear();
+                continue;
+            }
+        } else {
+            // Inside string: '' = escaped quote (stay in string), else end string
+            if (c == '\'' && i+1 < n && sql[i+1] == '\'') {
+                cur += c; cur += sql[++i]; // consume both, stay inStr
+                continue;
+            }
+            if (c == '\'') { inStr = false; cur += c; continue; }
+        }
+        cur += c;
+    }
+    if (const QString s = cur.trimmed(); !s.isEmpty()) stmts << s;
+
+    // ── Execute ───────────────────────────────────────────────────────────────
+    for (const QString& stmt : stmts) {
+        // Skip pure-comment blocks that survived (start with --)
+        // Trim leading whitespace+comments line by line
+        QString clean;
+        for (const QString& line : stmt.split('\n')) {
+            const QString t = line.trimmed();
+            if (!t.startsWith("--")) clean += line + '\n';
+        }
+        clean = clean.trimmed();
+        if (clean.isEmpty()) continue;
 
         QSqlQuery q(db);
-        if (!q.exec(stmt)) {
-            // Log but don't fail on "already exists" errors (IF NOT EXISTS handles most)
-            QSqlError err = q.lastError();
-            if (err.nativeErrorCode() != "1") { // 1 = generic, often "table already exists"
-                qWarning() << "[QuizDatabase] SQL warning in" << resourcePath
-                           << ":" << err.text()
-                           << "\nStatement:" << stmt.left(120);
-            }
+        if (!q.exec(clean)) {
+            qWarning() << "[QuizDatabase] Warning in" << resourcePath
+                       << ":" << q.lastError().text()
+                       << "\n  Statement:" << clean.left(120);
         }
     }
-
-    if (!db.commit()) {
-        m_lastError = db.lastError();
-        db.rollback();
-        return false;
-    }
-
     return true;
 }
 
