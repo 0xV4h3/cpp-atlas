@@ -561,4 +561,21 @@ void QuizResultsWidget::applyTheme()
     .arg(t.accent.lighter(115).name())       // %16 (retry hover)
     );
     m_radarChart->update();
+
+    // Force scroll area and viewport to use window background
+    if (m_scrollArea) {
+        m_scrollArea->setStyleSheet(
+            QString("QScrollArea { background-color: %1; border: none; }"
+                    "QScrollArea > QWidget > QWidget { background-color: %1; }")
+            .arg(t.windowBackground.name())
+        );
+        if (m_scrollArea->viewport())
+            m_scrollArea->viewport()->setStyleSheet(
+                QString("background-color: %1;").arg(t.windowBackground.name())
+            );
+    }
+    if (m_contentWidget)
+        m_contentWidget->setStyleSheet(
+            QString("QWidget { background-color: %1; }").arg(t.windowBackground.name())
+        );
 }

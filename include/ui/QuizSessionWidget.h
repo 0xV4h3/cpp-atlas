@@ -53,6 +53,11 @@ public:
                    const QString& mode = "practice",
                    bool shuffle = true);
 
+    /** Start a session with a pre-built custom question list. */
+    void startCustomSession(const QList<QuestionDTO>& questions,
+                            int userId,
+                            const QString& mode = "practice");
+
     /**
      * @brief Returns the question list from the most recently completed session.
      * Used by QuizModeWindow to pass questions to QuizResultsWidget for review.

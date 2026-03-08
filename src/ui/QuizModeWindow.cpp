@@ -3,6 +3,7 @@
 #include "ui/QuizSessionWidget.h"
 #include "ui/QuizResultsWidget.h"
 #include "ui/UserProfileWidget.h"
+#include "ui/CustomTestBuilderWidget.h"
 #include "ui/ThemeManager.h"
 #include "quiz/UserManager.h"
 
@@ -30,8 +31,39 @@ void QuizModeWindow::setCurrentUser(const UserRecord& user)
 
 void QuizModeWindow::showSelectionScreen()
 {
+    m_pageHistory.clear();
     m_stack->setCurrentIndex(0);
     m_backBtn->setVisible(false);
+}
+
+void QuizModeWindow::navigateTo(int pageIndex, const QString& backLabel)
+{
+    const int current = m_stack->currentIndex();
+    if (current != 0) {
+        if (m_pageHistory.isEmpty() || m_pageHistory.top() != current)
+            m_pageHistory.push(current);
+    }
+    m_stack->setCurrentIndex(pageIndex);
+    m_backBtn->setText(backLabel);
+    m_backBtn->setVisible(pageIndex != 0);
+}
+
+void QuizModeWindow::navigateBack()
+{
+    if (m_pageHistory.isEmpty()) {
+        showSelectionScreen();
+        return;
+    }
+    const int prev = m_pageHistory.pop();
+    m_stack->setCurrentIndex(prev);
+    if (prev == 0) {
+        m_backBtn->setVisible(false);
+    } else {
+        m_backBtn->setVisible(true);
+        const QString label = (!m_pageHistory.isEmpty() && m_pageHistory.top() == 4)
+                              ? "← My Tests" : "← Back";
+        m_backBtn->setText(label);
+    }
 }
 
 void QuizModeWindow::onExitClicked()
@@ -73,6 +105,34 @@ void QuizModeWindow::setupUi()
         showSelectionScreen();
     });
 
+    // Page 4: Custom Test Builder
+    m_builderWidget = new CustomTestBuilderWidget(this);
+    m_stack->addWidget(m_builderWidget);
+
+    // Wire builder signals
+    connect(m_builderWidget, &CustomTestBuilderWidget::backRequested,
+            this, &QuizModeWindow::navigateBack);
+    connect(m_builderWidget, &CustomTestBuilderWidget::launchCustomTest,
+            this, [this](const QList<QuestionDTO>& questions) {
+        const int userId = UserManager::instance().currentUser().id;
+        m_lastQuestions = questions;
+        m_lastUserId    = userId;
+        m_lastMode      = "practice";
+        m_sessionWidget->startCustomSession(questions, userId, "practice");
+        navigateTo(1, "← Back");
+    });
+    // Update back button label when builder switches between My Tests / Builder sub-page
+    connect(m_builderWidget, &CustomTestBuilderWidget::subPageChanged,
+            this, [this](int sub) {
+        if (sub == 1) {
+            m_backBtn->setText("← My Tests");
+            m_backBtn->setVisible(true);
+        } else {
+            m_backBtn->setText("← Back");
+            m_backBtn->setVisible(true);  // still on Page 4
+        }
+    });
+
     // Wire session signals
     connect(m_sessionWidget, &QuizSessionWidget::sessionCompleted,
             this, &QuizModeWindow::onSessionCompleted);
@@ -109,7 +169,7 @@ void QuizModeWindow::setupHeader()
     m_backBtn = new QPushButton("← Back", m_header);
     m_backBtn->setObjectName("quizNavButton");
     m_backBtn->setVisible(false);
-    connect(m_backBtn, &QPushButton::clicked, this, &QuizModeWindow::showSelectionScreen);
+    connect(m_backBtn, &QPushButton::clicked, this, &QuizModeWindow::navigateBack);
     layout->addWidget(m_backBtn);
 
     // Title
@@ -125,6 +185,13 @@ void QuizModeWindow::setupHeader()
     connect(m_profileBtn, &QPushButton::clicked,
             this, &QuizModeWindow::onProfileClicked);
     layout->addWidget(m_profileBtn);
+
+    // Custom Test Builder button
+    m_builderBtn = new QPushButton("🔧  Custom Test", m_header);
+    m_builderBtn->setObjectName("quizNavButton");
+    connect(m_builderBtn, &QPushButton::clicked,
+            this, &QuizModeWindow::onBuilderClicked);
+    layout->addWidget(m_builderBtn);
 
     // User display
     m_userLabel = new QLabel(m_header);
@@ -201,18 +268,15 @@ void QuizModeWindow::launchQuiz(int quizId, const QString& mode,
     m_lastShuffle = shuffle;
     m_lastUserId  = userId;
 
-    m_stack->setCurrentIndex(1);
-    m_backBtn->setVisible(true);
+    navigateTo(1, "← Back");
     m_sessionWidget->startQuiz(quizId, userId, mode, shuffle);
 }
 
 void QuizModeWindow::onSessionCompleted(const SessionResult& result)
 {
-    // Cache the question list from the engine for the review panel.
-    // QuizSessionWidget exposes the engine's last question list via
-    // a read-only accessor added below.
     m_stack->setCurrentIndex(2);
     m_backBtn->setVisible(false);
+    m_pageHistory.clear();
     m_resultsWidget->showResults(result,
                                   m_sessionWidget->lastQuestions(),
                                   m_lastUserId);
@@ -232,11 +296,21 @@ void QuizModeWindow::showProfilePage()
 {
     const int userId = UserManager::instance().currentUser().id;
     m_profileWidget->refresh(userId);
-    m_stack->setCurrentIndex(3);
-    m_backBtn->setVisible(true);
+    navigateTo(3, "← Back");
 }
 
 void QuizModeWindow::onProfileClicked()
 {
     showProfilePage();
+}
+
+void QuizModeWindow::showBuilderPage()
+{
+    m_builderWidget->refresh();
+    navigateTo(4, "← Back");
+}
+
+void QuizModeWindow::onBuilderClicked()
+{
+    showBuilderPage();
 }

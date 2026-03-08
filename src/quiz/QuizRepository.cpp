@@ -244,9 +244,14 @@ QList<QuizDTO> QuizRepository::allActiveQuizzes() const
 {
     QList<QuizDTO> list;
     QSqlQuery q(db());
-    q.exec("SELECT q.*, "
-           "(SELECT COUNT(*) FROM questions WHERE quiz_id = q.id AND is_active = 1) AS qcount "
-           "FROM quizzes q WHERE q.is_active = 1 ORDER BY q.difficulty, q.id");
+    q.exec(
+        "SELECT qz.*, COUNT(qu.id) AS qcount "
+        "FROM quizzes qz "
+        "LEFT JOIN questions qu ON qu.quiz_id = qz.id AND qu.is_active = 1 "
+        "WHERE qz.is_active = 1 "
+        "GROUP BY qz.id "
+        "ORDER BY qz.difficulty, qz.id"
+    );
     while (q.next()) {
         QuizDTO qz = quizFromQuery(q);
         qz.questionCount = q.value("qcount").toInt();
@@ -268,9 +273,30 @@ QList<QuizDTO> QuizRepository::quizzesByTopic(int topicId) const
 {
     QList<QuizDTO> list;
     QSqlQuery q(db());
-    q.prepare("SELECT * FROM quizzes WHERE topic_id = :tid AND is_active = 1");
+    q.prepare(
+        "SELECT qz.*, COUNT(qu.id) AS qcount "
+        "FROM quizzes qz "
+        "LEFT JOIN questions qu ON qu.quiz_id = qz.id AND qu.is_active = 1 "
+        "WHERE qz.topic_id = :tid AND qz.is_active = 1 "
+        "GROUP BY qz.id "
+        "ORDER BY qz.difficulty"
+    );
     q.bindValue(":tid", topicId);
-    if (q.exec()) while (q.next()) list << quizFromQuery(q);
+    if (!q.exec()) return list;
+    while (q.next()) {
+        QuizDTO qz = quizFromQuery(q);
+        qz.questionCount = q.value("qcount").toInt();
+        qz.tags = [&]() -> QStringList {
+            QStringList t;
+            QSqlQuery tq(db());
+            tq.prepare("SELECT tg.name FROM tags tg "
+                       "JOIN quiz_tags qt ON qt.tag_id = tg.id WHERE qt.quiz_id = :id");
+            tq.bindValue(":id", qz.id);
+            if (tq.exec()) while (tq.next()) t << tq.value(0).toString();
+            return t;
+        }();
+        list << qz;
+    }
     return list;
 }
 
@@ -634,4 +660,55 @@ bool QuizRepository::removeCustomTest(int testId) const
     q.prepare("DELETE FROM custom_tests WHERE id = :id");
     q.bindValue(":id", testId);
     return q.exec();
+}
+QList<QuizDTO> QuizRepository::customTestsForUser(int userId) const
+{
+    QList<QuizDTO> list;
+    QSqlQuery q(db());
+    q.prepare(
+        "SELECT ct.id, ct.title, ct.description, ct.created_at, "
+        "       COUNT(ctq.question_id) AS qcount "
+        "FROM custom_tests ct "
+        "LEFT JOIN custom_test_questions ctq ON ctq.test_id = ct.id "
+        "WHERE ct.user_id = :uid "
+        "GROUP BY ct.id "
+        "ORDER BY ct.created_at DESC"
+    );
+    q.bindValue(":uid", userId);
+    if (!q.exec()) {
+        qWarning() << "[QuizRepository] customTestsForUser failed:" << q.lastError().text();
+        return list;
+    }
+    while (q.next()) {
+        QuizDTO qz;
+        qz.id            = q.value("id").toInt();
+        qz.title         = q.value("title").toString();
+        qz.description   = q.value("description").toString();
+        qz.type          = "custom";
+        qz.isActive      = true;
+        qz.questionCount = q.value("qcount").toInt();
+        list << qz;
+    }
+    return list;
+}
+
+QList<QuestionDTO> QuizRepository::questionsForCustomTest(int testId) const
+{
+    QList<QuestionDTO> list;
+    QSqlQuery q(db());
+    q.prepare(
+        "SELECT q.id FROM questions q "
+        "JOIN custom_test_questions ctq ON ctq.question_id = q.id "
+        "WHERE ctq.test_id = :tid "
+        "ORDER BY ctq.order_index"
+    );
+    q.bindValue(":tid", testId);
+    if (!q.exec()) {
+        qWarning() << "[QuizRepository] questionsForCustomTest failed:" << q.lastError().text();
+        return list;
+    }
+    while (q.next()) {
+        list << loadQuestionWithOptions(q.value(0).toInt());
+    }
+    return list;
 }
