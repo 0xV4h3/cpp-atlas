@@ -165,3 +165,26 @@ QList<OptionDTO> QuizExporter::optionsFromJson(const QJsonArray& arr)
     }
     return opts;
 }
+QString QuizExporter::ensureJsonExtension(const QString& filePath)
+{
+    if (filePath.endsWith(".json", Qt::CaseInsensitive))
+        return filePath;
+    return filePath + ".json";
+}
+
+bool QuizExporter::readHeader(const QString& filePath,
+                               QString& outTitle,
+                               QString& outDescription)
+{
+    QFile file(filePath);
+    if (!file.open(QIODevice::ReadOnly | QIODevice::Text))
+        return false;
+    QJsonParseError err;
+    const QJsonDocument doc = QJsonDocument::fromJson(file.readAll(), &err);
+    if (err.error != QJsonParseError::NoError || !doc.isObject())
+        return false;
+    const QJsonObject root = doc.object();
+    outTitle       = root.value("title").toString();
+    outDescription = root.value("description").toString();
+    return true;
+}

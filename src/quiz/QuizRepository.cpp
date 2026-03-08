@@ -244,9 +244,14 @@ QList<QuizDTO> QuizRepository::allActiveQuizzes() const
 {
     QList<QuizDTO> list;
     QSqlQuery q(db());
-    q.exec("SELECT q.*, "
-           "(SELECT COUNT(*) FROM questions WHERE quiz_id = q.id AND is_active = 1) AS qcount "
-           "FROM quizzes q WHERE q.is_active = 1 ORDER BY q.difficulty, q.id");
+    q.exec(
+        "SELECT qz.*, COUNT(qu.id) AS qcount "
+        "FROM quizzes qz "
+        "LEFT JOIN questions qu ON qu.quiz_id = qz.id AND qu.is_active = 1 "
+        "WHERE qz.is_active = 1 "
+        "GROUP BY qz.id "
+        "ORDER BY qz.difficulty, qz.id"
+    );
     while (q.next()) {
         QuizDTO qz = quizFromQuery(q);
         qz.questionCount = q.value("qcount").toInt();
@@ -268,9 +273,21 @@ QList<QuizDTO> QuizRepository::quizzesByTopic(int topicId) const
 {
     QList<QuizDTO> list;
     QSqlQuery q(db());
-    q.prepare("SELECT * FROM quizzes WHERE topic_id = :tid AND is_active = 1");
+    q.prepare(
+        "SELECT qz.*, COUNT(qu.id) AS qcount "
+        "FROM quizzes qz "
+        "LEFT JOIN questions qu ON qu.quiz_id = qz.id AND qu.is_active = 1 "
+        "WHERE qz.topic_id = :tid AND qz.is_active = 1 "
+        "GROUP BY qz.id "
+        "ORDER BY qz.difficulty"
+    );
     q.bindValue(":tid", topicId);
-    if (q.exec()) while (q.next()) list << quizFromQuery(q);
+    if (!q.exec()) return list;
+    while (q.next()) {
+        QuizDTO qz = quizFromQuery(q);
+        qz.questionCount = q.value("qcount").toInt();
+        list << qz;
+    }
     return list;
 }
 
