@@ -599,10 +599,14 @@ void UserProfileWidget::applyTheme()
         #xpBarContainer {
             background-color: %3;
             border-radius: 6px;
+            min-height: 12px;
+            max-height: 12px;
         }
         #xpBarFill {
             background-color: %4;
             border-radius: 6px;
+            min-height: 12px;
+            max-height: 12px;
         }
 
         #analyticsCard {
@@ -664,4 +668,27 @@ void UserProfileWidget::applyTheme()
     );
     m_progressRing->update();
     m_radarChart->update();
+
+    // Force scroll area and its viewport/content to use window background
+    if (m_scrollArea) {
+        m_scrollArea->setStyleSheet(
+            QString("QScrollArea { background-color: %1; border: none; }"
+                    "QScrollArea > QWidget > QWidget { background-color: %1; }")
+            .arg(t.windowBackground.name())
+        );
+        if (m_scrollArea->viewport())
+            m_scrollArea->viewport()->setStyleSheet(
+                QString("background-color: %1;").arg(t.windowBackground.name())
+            );
+        if (m_contentWidget)
+            m_contentWidget->setStyleSheet(
+                QString("background-color: %1;").arg(t.windowBackground.name())
+            );
+    }
+
+    // Force XP bar fill color directly (QSS sometimes doesn't propagate to inner QWidget)
+    if (m_xpBarFill)
+        m_xpBarFill->setStyleSheet(
+            QString("background-color: %1; border-radius: 6px;").arg(t.accent.name())
+        );
 }

@@ -8,6 +8,8 @@
 #include <QListWidgetItem>
 #include <QFrame>
 #include <QScrollArea>
+#include <QCompleter>
+#include <QStringListModel>
 
 QuizSelectionWidget::QuizSelectionWidget(QWidget* parent)
     : QWidget(parent)
@@ -82,28 +84,57 @@ void QuizSelectionWidget::setupUi()
     diffLabel->setObjectName("filterLabel");
     m_difficultyCombo = new QComboBox(filterBar);
     m_difficultyCombo->setObjectName("filterCombo");
-    m_difficultyCombo->addItem("All levels", -1);
-    m_difficultyCombo->addItem("⭐ Beginner",     1);
-    m_difficultyCombo->addItem("⭐⭐ Intermediate", 2);
-    m_difficultyCombo->addItem("⭐⭐⭐ Advanced",   3);
-    m_difficultyCombo->addItem("⭐⭐⭐⭐ Expert",   4);
+    m_difficultyCombo->addItem("All levels",      -1);
+    m_difficultyCombo->addItem(QString::fromUtf8(u8"\u2605 Beginner"),                  1);
+    m_difficultyCombo->addItem(QString::fromUtf8(u8"\u2605\u2605 Intermediate"),        2);
+    m_difficultyCombo->addItem(QString::fromUtf8(u8"\u2605\u2605\u2605 Advanced"),      3);
+    m_difficultyCombo->addItem(QString::fromUtf8(u8"\u2605\u2605\u2605\u2605 Expert"),  4);
     connect(m_difficultyCombo, QOverload<int>::of(&QComboBox::currentIndexChanged),
             this, &QuizSelectionWidget::onDifficultyFilterChanged);
     filterLayout->addWidget(diffLabel);
     filterLayout->addWidget(m_difficultyCombo);
 
-    filterLayout->addSpacing(16);
+    filterLayout->addSpacing(8);
+
+    QLabel* titleLabel = new QLabel("Title:", filterBar);
+    titleLabel->setObjectName("filterLabel");
+    m_titleSearch = new QLineEdit(filterBar);
+    m_titleSearch->setObjectName("titleSearch");
+    m_titleSearch->setPlaceholderText("Search by title…");
+    m_titleSearch->setFixedWidth(160);
+    connect(m_titleSearch, &QLineEdit::textChanged,
+            this, [this](const QString&) { onSearchChanged(); });
+    filterLayout->addWidget(titleLabel);
+    filterLayout->addWidget(m_titleSearch);
+
+    filterLayout->addSpacing(8);
 
     QLabel* tagLabel = new QLabel("Tag:", filterBar);
     tagLabel->setObjectName("filterLabel");
     m_tagSearch = new QLineEdit(filterBar);
     m_tagSearch->setObjectName("tagSearch");
-    m_tagSearch->setPlaceholderText("e.g. pointers, oop, stl …");
-    m_tagSearch->setFixedWidth(200);
+    m_tagSearch->setPlaceholderText("e.g. pointers, oop …");
+    m_tagSearch->setFixedWidth(150);
     connect(m_tagSearch, &QLineEdit::textChanged,
             this, &QuizSelectionWidget::onTagSearchChanged);
     filterLayout->addWidget(tagLabel);
     filterLayout->addWidget(m_tagSearch);
+
+    // Tag suggestion completer
+    m_tagCompleter = new QCompleter(this);
+    m_tagCompleter->setCaseSensitivity(Qt::CaseInsensitive);
+    m_tagCompleter->setFilterMode(Qt::MatchContains);
+    m_tagSearch->setCompleter(m_tagCompleter);
+    {
+        QStringList tagNames;
+        for (const auto& tg : m_repo.allTags()) tagNames << tg.name;
+        m_tagCompleter->setModel(new QStringListModel(tagNames, m_tagCompleter));
+    }
+    // Lazily theme completer popup on first keypress
+    connect(m_tagSearch, &QLineEdit::textChanged, this, [this](const QString&) {
+        applyCompleterTheme();
+    });
+
     filterLayout->addStretch();
 
     rightLayout->addWidget(filterBar);
@@ -196,7 +227,8 @@ void QuizSelectionWidget::populateQuizList(int topicId)
     clearQuizDetail();
 
     const int diffFilter = m_difficultyCombo->currentData().toInt();
-    const QString tagFilter = m_tagSearch->text().trimmed().toLower();
+    const QString titleFilter = m_titleSearch ? m_titleSearch->text().trimmed().toLower() : QString();
+    const QString tagFilter   = m_tagSearch   ? m_tagSearch->text().trimmed().toLower()   : QString();
 
     QList<QuizDTO> quizzes = (topicId < 0)
                               ? m_repo.allActiveQuizzes()
@@ -206,6 +238,7 @@ void QuizSelectionWidget::populateQuizList(int topicId)
     m_currentQuizzes.clear();
     for (const auto& qz : quizzes) {
         if (diffFilter > 0 && qz.difficulty != diffFilter) continue;
+        if (!titleFilter.isEmpty() && !qz.title.toLower().contains(titleFilter)) continue;
         if (!tagFilter.isEmpty()) {
             bool tagMatch = false;
             for (const auto& tag : qz.tags) {
@@ -281,11 +314,16 @@ void QuizSelectionWidget::onDifficultyFilterChanged(int /*index*/)
     populateQuizList(topicId);
 }
 
-void QuizSelectionWidget::onTagSearchChanged(const QString& /*text*/)
+void QuizSelectionWidget::onSearchChanged()
 {
     QTreeWidgetItem* curr = m_topicTree->currentItem();
     const int topicId = curr ? curr->data(0, Qt::UserRole).toInt() : -1;
     populateQuizList(topicId);
+}
+
+void QuizSelectionWidget::onTagSearchChanged(const QString& /*text*/)
+{
+    onSearchChanged();
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -338,11 +376,28 @@ QString QuizSelectionWidget::difficultyLabel(int d) const
 
 QString QuizSelectionWidget::difficultyStars(int d) const
 {
-    const QString filled  = "⭐";
-    const QString empty   = "☆";
+    const QString star  = QString::fromUtf8(u8"\u2605");
+    const QString empty = QString::fromUtf8(u8"\u2606");
     QString s;
-    for (int i = 1; i <= 4; ++i) s += (i <= d ? filled : empty);
+    for (int i = 1; i <= 4; ++i) s += (i <= d ? star : empty);
     return s;
+}
+
+void QuizSelectionWidget::applyCompleterTheme()
+{
+    if (!m_tagCompleter || !m_tagCompleter->popup()) return;
+    const Theme& th = ThemeManager::instance()->currentTheme();
+    m_tagCompleter->popup()->setStyleSheet(QString(
+        "QAbstractItemView {"
+        "  background-color: %1; color: %2;"
+        "  border: 1px solid %3;"
+        "  selection-background-color: %4; selection-color: white;"
+        "  font-size: 12px; padding: 2px;"
+        "}")
+        .arg(th.panelBackground.name())
+        .arg(th.textPrimary.name())
+        .arg(th.border.name())
+        .arg(th.accent.name()));
 }
 
 void QuizSelectionWidget::applyTheme()
@@ -367,14 +422,19 @@ void QuizSelectionWidget::applyTheme()
             font-size: 13px;
         }
         #topicTree::item { padding: 4px 6px; }
+        #topicTree::item:hover    { padding-left: 10px; background-color: %7; }
         #topicTree::item:selected { background-color: %6; color: white; }
-        #topicTree::item:hover    { background-color: %7; }
+        #topicTree::item:selected:hover {
+            background-color: %6;
+            color: white;
+            padding-left: 10px;
+        }
         #filterBar {
             background-color: %4;
             border-bottom: 1px solid %3;
         }
         #filterLabel { color: %8; font-size: 12px; }
-        #filterCombo, #tagSearch {
+        #filterCombo, #titleSearch, #tagSearch {
             background-color: %1;
             color: %5;
             border: 1px solid %3;
@@ -382,6 +442,7 @@ void QuizSelectionWidget::applyTheme()
             padding: 3px 6px;
             font-size: 12px;
         }
+        #titleSearch:focus, #tagSearch:focus { border-color: %6; }
         #quizList {
             background-color: %1;
             color: %5;
@@ -391,12 +452,13 @@ void QuizSelectionWidget::applyTheme()
         #quizList::item {
             background-color: %2;
             border-radius: 4px;
-            padding: 4px 8px;
+            padding: 8px 10px;
             margin: 2px 8px;
             color: %5;
+            border-bottom: 1px solid %3;
         }
-        #quizList::item:selected { background-color: %6; color: white; }
-        #quizList::item:hover    { background-color: %7; }
+        #quizList::item:selected { background-color: %9; color: white; }
+        #quizList::item:hover    { background-color: %6; border-radius: 4px; }
         #quizDetailPanel {
             background-color: %4;
             border-top: 1px solid %3;
@@ -430,4 +492,7 @@ void QuizSelectionWidget::applyTheme()
     .arg(t.textSecondary.name())           // %8
     .arg(t.accent.lighter(115).name())     // %9
     );
+
+    // Theme tag completer popup (if already visible)
+    applyCompleterTheme();
 }

@@ -8,6 +8,7 @@
 #include <QPushButton>
 #include <QComboBox>
 #include <QLineEdit>
+#include <QCompleter>
 #include "quiz/QuizRepository.h"
 
 /**
@@ -42,7 +43,8 @@ private slots:
     void onQuizSelected();
     void onStartClicked();
     void onDifficultyFilterChanged(int index);
-    void onTagSearchChanged(const QString& text);
+    void onSearchChanged();      // unified: called by title or tag textChanged
+    void onTagSearchChanged(const QString& text);  // kept for tag-only use
     void applyTheme();
 
 private:
@@ -51,6 +53,7 @@ private:
     void populateQuizList(int topicId = -1);   // -1 = all
     void showQuizDetail(const QuizDTO& quiz);
     void clearQuizDetail();
+    void applyCompleterTheme();   ///< theme m_tagCompleter popup
     QString difficultyLabel(int d) const;
     QString difficultyStars(int d) const;
 
@@ -61,7 +64,9 @@ private:
 
     // Right: quiz list + filters
     QComboBox*       m_difficultyCombo = nullptr;
+    QLineEdit*       m_titleSearch     = nullptr;  // filter by quiz title
     QLineEdit*       m_tagSearch       = nullptr;
+    QCompleter*      m_tagCompleter    = nullptr;
     QListWidget*     m_quizList        = nullptr;
 
     // Detail panel (bottom-right)

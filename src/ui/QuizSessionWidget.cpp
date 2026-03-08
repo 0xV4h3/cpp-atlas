@@ -57,6 +57,21 @@ void QuizSessionWidget::startQuiz(int quizId, int userId,
     m_engine->startSession(quizId, userId, mode, shuffle);
 }
 
+void QuizSessionWidget::startCustomSession(const QList<QuestionDTO>& questions,
+                                            int userId,
+                                            const QString& mode)
+{
+    m_currentMode      = mode;
+    m_selectedOptionId = -1;
+    m_awaitingNext     = false;
+
+    m_hintLabel->setVisible(false);
+    m_feedbackLabel->setVisible(false);
+    m_timerLabel->setVisible(false);
+
+    m_engine->startCustomSession(questions, userId, mode);
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
 // UI Setup
 // ─────────────────────────────────────────────────────────────────────────────
@@ -608,6 +623,10 @@ void QuizSessionWidget::applyTheme()
         #abandonButton:hover { background-color: %6; color: white; }
 
         #contentScroll, #optionScroll { background-color: %1; border: none; }
+        #contentScroll > QWidget, #contentScroll > QWidget > QWidget,
+        #optionScroll > QWidget, #optionScroll > QWidget > QWidget {
+            background-color: %1;
+        }
 
         #questionNumLabel { color: %8; font-size: 12px; }
         #difficultyLabel  { color: %5; font-size: 12px; }
@@ -724,4 +743,22 @@ void QuizSessionWidget::applyTheme()
     .arg(t.sidebarBackground.name())        // %14 (hint bg)
     .arg(t.accent.lighter(115).name())      // %15 (submit hover)
     );
+
+    // Force viewport backgrounds — QSS child selectors don't always propagate
+    if (m_optionScroll) {
+        if (m_optionScroll->viewport())
+            m_optionScroll->viewport()->setStyleSheet(
+                QString("background-color: %1;").arg(t.windowBackground.name())
+            );
+        if (m_optionArea)
+            m_optionArea->setStyleSheet(
+                QString("background-color: %1;").arg(t.panelBackground.name())
+            );
+    }
+    // contentScroll is a local widget — find it by object name
+    auto* cScroll = findChild<QScrollArea*>("contentScroll");
+    if (cScroll && cScroll->viewport())
+        cScroll->viewport()->setStyleSheet(
+            QString("background-color: %1;").arg(t.windowBackground.name())
+        );
 }

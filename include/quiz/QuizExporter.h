@@ -55,16 +55,30 @@ public:
     QuizExporter() = delete;  // static utility class
 
     static constexpr int FORMAT_VERSION = 1;
-    static constexpr const char* FILE_EXTENSION = "cppatlas";
+    static constexpr const char* FILE_EXTENSION = "json";
     static constexpr const char* FILE_FILTER =
-        "CppAtlas Test (*.cppatlas);;JSON Files (*.json);;All Files (*)";
+        "CppAtlas Quiz Test (*.json);;All Files (*)";
 
     /**
-     * @brief Export a list of questions to a .cppatlas JSON file.
+     * @brief Ensure filePath ends with .json. If not, appends it.
+     * Call this before passing filePath to exportToFile().
+     */
+    static QString ensureJsonExtension(const QString& filePath);
+
+    /**
+     * @brief Return title/description read from a JSON export header
+     * without loading all questions. Useful for preview.
+     */
+    static bool readHeader(const QString& filePath,
+                           QString& outTitle,
+                           QString& outDescription);
+
+    /**
+     * @brief Export a list of questions to a .json file.
      * @param questions   Questions to export (with options and tags populated).
      * @param title       Custom test title (stored in the JSON header).
      * @param description Optional description.
-     * @param filePath    Absolute path to write — should end in .cppatlas.
+     * @param filePath    Absolute path to write — should end in .json.
      * @return true on success; false if file could not be written.
      */
     static bool exportToFile(const QList<QuestionDTO>& questions,
@@ -73,7 +87,7 @@ public:
                               const QString& filePath);
 
     /**
-     * @brief Import questions from a .cppatlas JSON file.
+     * @brief Import questions from a .json export file.
      *
      * The returned QuestionDTO objects have their options and tags populated
      * from the JSON. The id field is set to -1 (not from DB) so the caller
