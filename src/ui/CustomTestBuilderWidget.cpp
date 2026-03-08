@@ -8,16 +8,12 @@
 #include <QTreeWidgetItem>
 #include <QListWidgetItem>
 #include <QFileDialog>
-#include <QInputDialog>
 #include <QMessageBox>
 #include <QLabel>
 #include <QFrame>
-#include <QScrollArea>
-#include <QGroupBox>
 #include <QDebug>
+#include <QSet>
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Constructor
 // ─────────────────────────────────────────────────────────────────────────────
 CustomTestBuilderWidget::CustomTestBuilderWidget(QWidget* parent)
     : QWidget(parent)
@@ -39,7 +35,7 @@ void CustomTestBuilderWidget::refresh()
 // ─────────────────────────────────────────────────────────────────────────────
 void CustomTestBuilderWidget::setupUi()
 {
-    QVBoxLayout* main = new QVBoxLayout(this);
+    auto* main = new QVBoxLayout(this);
     main->setContentsMargins(0, 0, 0, 0);
     main->setSpacing(0);
 
@@ -51,17 +47,17 @@ void CustomTestBuilderWidget::setupUi()
 
 void CustomTestBuilderWidget::setupMyTestsPage()
 {
-    QWidget* page = new QWidget(m_innerStack);
+    auto* page = new QWidget(m_innerStack);
     page->setObjectName("myTestsPage");
-    QVBoxLayout* layout = new QVBoxLayout(page);
+    auto* layout = new QVBoxLayout(page);
     layout->setContentsMargins(24, 20, 24, 20);
     layout->setSpacing(16);
 
-    // Header
-    QHBoxLayout* hdr = new QHBoxLayout();
-    QLabel* title = new QLabel("📁  My Custom Tests", page);
-    title->setObjectName("sectionHeader");
-    hdr->addWidget(title);
+    // Header row
+    auto* hdr = new QHBoxLayout();
+    auto* titleLbl = new QLabel("📁  My Custom Tests", page);
+    titleLbl->setObjectName("sectionHeader");
+    hdr->addWidget(titleLbl);
     hdr->addStretch();
 
     m_newTestBtn = new QPushButton("➕  New Test", page);
@@ -76,15 +72,15 @@ void CustomTestBuilderWidget::setupMyTestsPage()
 
     layout->addLayout(hdr);
 
-    // Test list
+    // List
     m_myTestsList = new QListWidget(page);
     m_myTestsList->setObjectName("myTestsList");
     m_myTestsList->setSpacing(4);
     m_myTestsList->setUniformItemSizes(false);
     layout->addWidget(m_myTestsList, 1);
 
-    // Actions bar
-    QHBoxLayout* actions = new QHBoxLayout();
+    // Bottom actions bar
+    auto* actions = new QHBoxLayout();
 
     m_loadTestBtn = new QPushButton("▶  Launch Selected", page);
     m_loadTestBtn->setObjectName("primaryButton");
@@ -92,34 +88,49 @@ void CustomTestBuilderWidget::setupMyTestsPage()
     connect(m_loadTestBtn, &QPushButton::clicked, this, &CustomTestBuilderWidget::onLoadTestClicked);
     actions->addWidget(m_loadTestBtn);
 
-    QPushButton* editBtn = new QPushButton("✏  Edit", page);
-    editBtn->setObjectName("secondaryButton");
-    connect(editBtn, &QPushButton::clicked, this, [this]() {
+    m_editTestBtn = new QPushButton("✏  Edit", page);
+    m_editTestBtn->setObjectName("secondaryButton");
+    m_editTestBtn->setEnabled(false);
+    connect(m_editTestBtn, &QPushButton::clicked, this, [this]() {
         QListWidgetItem* item = m_myTestsList->currentItem();
         if (!item) return;
         const int testId = item->data(Qt::UserRole).toInt();
         m_editingTestId  = testId;
-        // Load questions for this test into builder
         const auto questions = m_repo.questionsForCustomTest(testId);
         m_selectedQuestions = questions;
-        // Set title from test list
         for (const auto& t : m_myTests) {
             if (t.id == testId) {
                 m_testTitleEdit->setText(t.title);
                 m_testDescEdit->setText(t.description);
+                m_originalTitle = t.title;
+                m_originalDesc  = t.description;
                 break;
             }
         }
+        m_originalQuestionIds.clear();
+        for (const auto& q : m_selectedQuestions)
+            m_originalQuestionIds << q.id;
+        m_hasChanges = false;
         refreshSelectedList();
         populateTopicTree();
+        populateQuestionBrowser(-1);
+        updateSaveButtonStates();
         m_innerStack->setCurrentIndex(1);
     });
-    actions->addWidget(editBtn);
+    actions->addWidget(m_editTestBtn);
+
+    m_exportMyTestBtn = new QPushButton("📤  Export", page);
+    m_exportMyTestBtn->setObjectName("secondaryButton");
+    m_exportMyTestBtn->setEnabled(false);
+    connect(m_exportMyTestBtn, &QPushButton::clicked,
+            this, &CustomTestBuilderWidget::onExportSelectedTestClicked);
+    actions->addWidget(m_exportMyTestBtn);
 
     m_deleteTestBtn = new QPushButton("🗑  Delete", page);
     m_deleteTestBtn->setObjectName("dangerButton");
     m_deleteTestBtn->setEnabled(false);
-    connect(m_deleteTestBtn, &QPushButton::clicked, this, &CustomTestBuilderWidget::onDeleteTestClicked);
+    connect(m_deleteTestBtn, &QPushButton::clicked,
+            this, &CustomTestBuilderWidget::onDeleteTestClicked);
     actions->addWidget(m_deleteTestBtn);
 
     actions->addStretch();
@@ -129,141 +140,187 @@ void CustomTestBuilderWidget::setupMyTestsPage()
     connect(m_myTestsList, &QListWidget::itemSelectionChanged, this, [this]() {
         const bool sel = m_myTestsList->currentItem() != nullptr;
         m_loadTestBtn->setEnabled(sel);
+        m_editTestBtn->setEnabled(sel);
+        m_exportMyTestBtn->setEnabled(sel);
         m_deleteTestBtn->setEnabled(sel);
     });
-    connect(m_myTestsList, &QListWidget::itemDoubleClicked, this, [this]() {
-        onLoadTestClicked();
-    });
+    connect(m_myTestsList, &QListWidget::itemDoubleClicked,
+            this, [this]() { onLoadTestClicked(); });
 
     m_innerStack->addWidget(page);
 }
 
 void CustomTestBuilderWidget::setupBuilderPage()
 {
-    QWidget* page = new QWidget(m_innerStack);
+    auto* page = new QWidget(m_innerStack);
     page->setObjectName("builderPage");
-    QVBoxLayout* main = new QVBoxLayout(page);
-    main->setContentsMargins(0, 0, 0, 0);
-    main->setSpacing(0);
+    auto* mainLayout = new QVBoxLayout(page);
+    mainLayout->setContentsMargins(0, 0, 0, 0);
+    mainLayout->setSpacing(0);
 
-    // ── Top area: browser (left) + selected (right) ───────────────────────
-    QSplitter* splitter = new QSplitter(Qt::Horizontal, page);
+    // ── Main splitter (left | right) ─────────────────────────────────────────
+    auto* splitter = new QSplitter(Qt::Horizontal, page);
     splitter->setHandleWidth(1);
 
-    // Left: topic tree + question browser
-    QWidget* leftPane = new QWidget(splitter);
+    // ── LEFT PANE ────────────────────────────────────────────────────────────
+    auto* leftPane = new QWidget(splitter);
     leftPane->setObjectName("builderLeft");
-    QVBoxLayout* leftLayout = new QVBoxLayout(leftPane);
+    auto* leftLayout = new QVBoxLayout(leftPane);
     leftLayout->setContentsMargins(0, 0, 0, 0);
     leftLayout->setSpacing(0);
 
-    QLabel* topicHdr = new QLabel("  Browse by Topic", leftPane);
+    // Topic header
+    auto* topicHdr = new QLabel("  Browse by Topic", leftPane);
     topicHdr->setObjectName("paneHeader");
     topicHdr->setFixedHeight(32);
     leftLayout->addWidget(topicHdr);
 
-    m_topicTree = new QTreeWidget(leftPane);
+    // Vertical sub-splitter: topic tree (top) / question browser (bottom)
+    auto* leftSplit = new QSplitter(Qt::Vertical, leftPane);
+    leftSplit->setHandleWidth(4);
+
+    m_topicTree = new QTreeWidget(leftSplit);
     m_topicTree->setObjectName("topicTree");
     m_topicTree->setHeaderHidden(true);
     m_topicTree->setAnimated(true);
-    m_topicTree->setMaximumHeight(160);
+    m_topicTree->setMinimumHeight(80);
     connect(m_topicTree, &QTreeWidget::itemSelectionChanged,
             this, &CustomTestBuilderWidget::onTopicSelected);
-    leftLayout->addWidget(m_topicTree);
 
-    QLabel* qHdr = new QLabel("  Questions", leftPane);
+    // Question browser + search
+    auto* qPane = new QWidget(leftSplit);
+    auto* qPaneLayout = new QVBoxLayout(qPane);
+    qPaneLayout->setContentsMargins(0, 0, 0, 0);
+    qPaneLayout->setSpacing(0);
+
+    auto* qHdr = new QLabel("  Questions", qPane);
     qHdr->setObjectName("paneHeader");
     qHdr->setFixedHeight(32);
-    leftLayout->addWidget(qHdr);
+    qPaneLayout->addWidget(qHdr);
 
-    m_questionList = new QListWidget(leftPane);
+    // Search bar
+    m_searchEdit = new QLineEdit(qPane);
+    m_searchEdit->setObjectName("searchEdit");
+    m_searchEdit->setPlaceholderText("🔍  Search by title or tag…");
+    m_searchEdit->setContentsMargins(8, 4, 8, 4);
+    connect(m_searchEdit, &QLineEdit::textChanged,
+            this, &CustomTestBuilderWidget::onSearchChanged);
+    qPaneLayout->addWidget(m_searchEdit);
+
+    m_questionList = new QListWidget(qPane);
     m_questionList->setObjectName("questionBrowser");
-    m_questionList->setSpacing(2);
+    m_questionList->setSpacing(0);
+    m_questionList->setWordWrap(true);
     m_questionList->setUniformItemSizes(false);
-    leftLayout->addWidget(m_questionList, 1);
+    qPaneLayout->addWidget(m_questionList, 1);
 
-    m_addBtn = new QPushButton("➕  Add to Test", leftPane);
+    // Add / Add All
+    auto* addBar = new QHBoxLayout();
+    addBar->setContentsMargins(4, 4, 4, 4);
+    addBar->setSpacing(6);
+
+    m_addBtn = new QPushButton("➕  Add to Test", qPane);
     m_addBtn->setObjectName("primaryButton");
     m_addBtn->setEnabled(false);
-    connect(m_addBtn, &QPushButton::clicked, this, &CustomTestBuilderWidget::onAddQuestionClicked);
-    leftLayout->addWidget(m_addBtn);
+    connect(m_addBtn, &QPushButton::clicked,
+            this, &CustomTestBuilderWidget::onAddQuestionClicked);
+    addBar->addWidget(m_addBtn, 1);
 
-    connect(m_questionList, &QListWidget::itemSelectionChanged, this, [this]() {
-        m_addBtn->setEnabled(m_questionList->currentItem() != nullptr);
-    });
-    connect(m_questionList, &QListWidget::itemDoubleClicked, this, [this]() {
-        onAddQuestionClicked();
-    });
+    m_addAllBtn = new QPushButton("➕➕  Add All", qPane);
+    m_addAllBtn->setObjectName("secondaryButton");
+    connect(m_addAllBtn, &QPushButton::clicked,
+            this, &CustomTestBuilderWidget::onAddAllClicked);
+    addBar->addWidget(m_addAllBtn);
+
+    qPaneLayout->addLayout(addBar);
+    leftSplit->addWidget(m_topicTree);
+    leftSplit->addWidget(qPane);
+    leftSplit->setStretchFactor(0, 1);
+    leftSplit->setStretchFactor(1, 3);
+
+    leftLayout->addWidget(leftSplit, 1);
 
     splitter->addWidget(leftPane);
     splitter->setStretchFactor(0, 1);
 
-    // Right: selected questions
-    QWidget* rightPane = new QWidget(splitter);
+    // ── RIGHT PANE ───────────────────────────────────────────────────────────
+    auto* rightPane = new QWidget(splitter);
     rightPane->setObjectName("builderRight");
-    QVBoxLayout* rightLayout = new QVBoxLayout(rightPane);
+    auto* rightLayout = new QVBoxLayout(rightPane);
     rightLayout->setContentsMargins(0, 0, 0, 0);
     rightLayout->setSpacing(0);
 
-    QLabel* selHdr = new QLabel("  Selected Questions", rightPane);
+    auto* selHdr = new QLabel("  Selected Questions", rightPane);
     selHdr->setObjectName("paneHeader");
     selHdr->setFixedHeight(32);
     rightLayout->addWidget(selHdr);
 
     m_selectedList = new QListWidget(rightPane);
     m_selectedList->setObjectName("selectedList");
-    m_selectedList->setSpacing(2);
+    m_selectedList->setWordWrap(true);
+    m_selectedList->setUniformItemSizes(false);
     rightLayout->addWidget(m_selectedList, 1);
 
-    // Move up/down/remove toolbar
-    QHBoxLayout* orderBar = new QHBoxLayout();
+    // Order / Remove toolbar
+    auto* orderBar = new QHBoxLayout();
     orderBar->setContentsMargins(8, 4, 8, 4);
+    orderBar->setSpacing(6);
 
     m_moveUpBtn = new QPushButton("↑", rightPane);
     m_moveUpBtn->setObjectName("iconButton");
     m_moveUpBtn->setFixedWidth(32);
-    connect(m_moveUpBtn, &QPushButton::clicked, this, &CustomTestBuilderWidget::onMoveUpClicked);
+    connect(m_moveUpBtn, &QPushButton::clicked,
+            this, &CustomTestBuilderWidget::onMoveUpClicked);
     orderBar->addWidget(m_moveUpBtn);
 
     m_moveDownBtn = new QPushButton("↓", rightPane);
     m_moveDownBtn->setObjectName("iconButton");
     m_moveDownBtn->setFixedWidth(32);
-    connect(m_moveDownBtn, &QPushButton::clicked, this, &CustomTestBuilderWidget::onMoveDownClicked);
+    connect(m_moveDownBtn, &QPushButton::clicked,
+            this, &CustomTestBuilderWidget::onMoveDownClicked);
     orderBar->addWidget(m_moveDownBtn);
 
     m_removeBtn = new QPushButton("🗑  Remove", rightPane);
     m_removeBtn->setObjectName("dangerButton");
-    connect(m_removeBtn, &QPushButton::clicked, this, &CustomTestBuilderWidget::onRemoveQuestionClicked);
+    connect(m_removeBtn, &QPushButton::clicked,
+            this, &CustomTestBuilderWidget::onRemoveQuestionClicked);
     orderBar->addWidget(m_removeBtn);
-    orderBar->addStretch();
 
+    m_removeAllBtn = new QPushButton("🗑  Remove All", rightPane);
+    m_removeAllBtn->setObjectName("dangerButton");
+    connect(m_removeAllBtn, &QPushButton::clicked,
+            this, &CustomTestBuilderWidget::onRemoveAllClicked);
+    orderBar->addWidget(m_removeAllBtn);
+
+    orderBar->addStretch();
     rightLayout->addLayout(orderBar);
+
     splitter->addWidget(rightPane);
     splitter->setStretchFactor(1, 1);
 
-    main->addWidget(splitter, 1);
+    mainLayout->addWidget(splitter, 1);
 
-    // ── Bottom: Random Generator + Save/Launch/Export ─────────────────────
-    QFrame* bottomBar = new QFrame(page);
+    // ── BOTTOM BAR ───────────────────────────────────────────────────────────
+    auto* bottomBar = new QFrame(page);
     bottomBar->setObjectName("builderBottomBar");
     bottomBar->setFrameShape(QFrame::NoFrame);
-    QHBoxLayout* botLayout = new QHBoxLayout(bottomBar);
-    botLayout->setContentsMargins(16, 10, 16, 10);
-    botLayout->setSpacing(10);
+    auto* botLayout = new QHBoxLayout(bottomBar);
+    botLayout->setContentsMargins(16, 8, 16, 8);
+    botLayout->setSpacing(8);
 
-    // Random generator group
-    QLabel* genLabel = new QLabel("Random:", bottomBar);
-    genLabel->setObjectName("toolLabel");
-    botLayout->addWidget(genLabel);
+    // Random generator
+    auto* genLbl = new QLabel("Random:", bottomBar);
+    genLbl->setObjectName("toolLabel");
+    botLayout->addWidget(genLbl);
 
     m_diffCombo = new QComboBox(bottomBar);
     m_diffCombo->setObjectName("difficultyCombo");
     m_diffCombo->addItem("Any Difficulty", 0);
     m_diffCombo->addItem("★ Beginner",     1);
     m_diffCombo->addItem("★★ Intermediate", 2);
-    m_diffCombo->addItem("★★★ Advanced",    3);
-    m_diffCombo->addItem("★★★★ Expert",     4);
-    m_diffCombo->setFixedWidth(160);
+    m_diffCombo->addItem("★★★ Advanced",   3);
+    m_diffCombo->addItem("★★★★ Expert",    4);
+    m_diffCombo->setFixedWidth(155);
     botLayout->addWidget(m_diffCombo);
 
     m_countSpin = new QSpinBox(bottomBar);
@@ -276,11 +333,12 @@ void CustomTestBuilderWidget::setupBuilderPage()
 
     m_generateBtn = new QPushButton("🎲  Generate", bottomBar);
     m_generateBtn->setObjectName("secondaryButton");
-    connect(m_generateBtn, &QPushButton::clicked, this, &CustomTestBuilderWidget::onGenerateRandomClicked);
+    connect(m_generateBtn, &QPushButton::clicked,
+            this, &CustomTestBuilderWidget::onGenerateRandomClicked);
     botLayout->addWidget(m_generateBtn);
 
     // Separator
-    QFrame* sep = new QFrame(bottomBar);
+    auto* sep = new QFrame(bottomBar);
     sep->setFrameShape(QFrame::VLine);
     sep->setFrameShadow(QFrame::Sunken);
     botLayout->addWidget(sep);
@@ -289,92 +347,138 @@ void CustomTestBuilderWidget::setupBuilderPage()
     m_testTitleEdit = new QLineEdit(bottomBar);
     m_testTitleEdit->setObjectName("testTitleEdit");
     m_testTitleEdit->setPlaceholderText("Test title…");
-    m_testTitleEdit->setFixedWidth(180);
+    m_testTitleEdit->setFixedWidth(175);
     botLayout->addWidget(m_testTitleEdit);
 
     m_testDescEdit = new QLineEdit(bottomBar);
     m_testDescEdit->setObjectName("testDescEdit");
     m_testDescEdit->setPlaceholderText("Description (optional)…");
-    m_testDescEdit->setFixedWidth(200);
+    m_testDescEdit->setFixedWidth(195);
     botLayout->addWidget(m_testDescEdit);
 
-    // Action buttons
+    // Save (label set dynamically in updateSaveButtonStates)
     m_saveBtn = new QPushButton("💾  Save", bottomBar);
     m_saveBtn->setObjectName("secondaryButton");
-    connect(m_saveBtn, &QPushButton::clicked, this, &CustomTestBuilderWidget::onSaveTestClicked);
+    m_saveBtn->setEnabled(false);
+    connect(m_saveBtn, &QPushButton::clicked,
+            this, &CustomTestBuilderWidget::onSaveTestClicked);
     botLayout->addWidget(m_saveBtn);
 
-    m_exportBtn = new QPushButton("📤  Export", bottomBar);
-    m_exportBtn->setObjectName("secondaryButton");
-    connect(m_exportBtn, &QPushButton::clicked, this, &CustomTestBuilderWidget::onExportClicked);
-    botLayout->addWidget(m_exportBtn);
+    // Save As — only relevant for Edit mode; hidden otherwise
+    m_saveAsBtn = new QPushButton("💾  Save As New", bottomBar);
+    m_saveAsBtn->setObjectName("secondaryButton");
+    m_saveAsBtn->setEnabled(false);
+    m_saveAsBtn->setVisible(false);
+    connect(m_saveAsBtn, &QPushButton::clicked,
+            this, &CustomTestBuilderWidget::onSaveAsClicked);
+    botLayout->addWidget(m_saveAsBtn);
 
+    // Launch
     m_launchBtn = new QPushButton("▶  Launch", bottomBar);
     m_launchBtn->setObjectName("primaryButton");
-    connect(m_launchBtn, &QPushButton::clicked, this, &CustomTestBuilderWidget::onLaunchClicked);
+    connect(m_launchBtn, &QPushButton::clicked,
+            this, &CustomTestBuilderWidget::onLaunchClicked);
     botLayout->addWidget(m_launchBtn);
 
-    m_backBtn = new QPushButton("← My Tests", bottomBar);
-    m_backBtn->setObjectName("quizNavButton");
-    connect(m_backBtn, &QPushButton::clicked, this, [this]() {
-        clearBuilder();
-        populateMyTests();
-        m_innerStack->setCurrentIndex(0);
-    });
-    botLayout->addWidget(m_backBtn);
-
-    main->addWidget(bottomBar);
+    mainLayout->addWidget(bottomBar);
     m_innerStack->addWidget(page);
+
+    // ── Change-detection wiring ───────────────────────────────────────────────
+    auto markChanged = [this]() {
+        m_hasChanges = true;
+        updateSaveButtonStates();
+    };
+    connect(m_testTitleEdit, &QLineEdit::textChanged, this, [this, markChanged](const QString&) {
+        markChanged();
+    });
+    connect(m_testDescEdit, &QLineEdit::textChanged, this, [this, markChanged](const QString&) {
+        markChanged();
+    });
+
+    // Enable add button on selection
+    connect(m_questionList, &QListWidget::itemSelectionChanged, this, [this]() {
+        m_addBtn->setEnabled(m_questionList->currentItem() != nullptr);
+    });
+    connect(m_questionList, &QListWidget::itemDoubleClicked, this, [this]() {
+        onAddQuestionClicked();
+    });
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Data population
-// ─────────────────────────────────────────────────────────────────────────────
+// ─────────────��───────────────────────────────────────────────────────────────
 void CustomTestBuilderWidget::populateTopicTree()
 {
     m_topicTree->clear();
 
-    QTreeWidgetItem* allItem = new QTreeWidgetItem(m_topicTree);
+    auto* allItem = new QTreeWidgetItem(m_topicTree);
     allItem->setText(0, "📋  All Topics");
     allItem->setData(0, Qt::UserRole, -1);
 
-    const QList<TopicDTO> roots = m_repo.rootTopics();
-    for (const auto& root : roots) {
-        QTreeWidgetItem* item = new QTreeWidgetItem(m_topicTree);
-        item->setText(0, QString("%1  %2").arg(root.icon, root.title));
+    // Get question counts per topic
+    for (const auto& root : m_repo.rootTopics()) {
+        const auto qs = m_repo.questionsForQuiz(
+            m_repo.quizzesByTopic(root.id).isEmpty()
+                ? -1
+                : m_repo.quizzesByTopic(root.id).first().id);
+        // Use randomQuestions with large limit to count
+        const int count = m_repo.randomQuestions({root.id}, 1000, 4).size();
+        auto* item = new QTreeWidgetItem(m_topicTree);
+        item->setText(0, QString("%1  %2  (%3)")
+                             .arg(root.icon, root.title)
+                             .arg(count));
         item->setData(0, Qt::UserRole, root.id);
     }
     m_topicTree->setCurrentItem(allItem);
 }
 
-void CustomTestBuilderWidget::populateQuestionBrowser(int topicId)
+void CustomTestBuilderWidget::populateQuestionBrowser(int topicId,
+                                                      const QString& filterText)
 {
     m_questionList->clear();
 
     QList<QuestionDTO> questions;
     if (topicId < 0) {
-        // All topics — gather from all quizzes
-        const auto allTopics = m_repo.allTopics();
-        for (const auto& t : allTopics) {
-            const auto qs = m_repo.randomQuestions({t.id}, 100, 4);
+        for (const auto& t : m_repo.allTopics()) {
+            const auto qs = m_repo.randomQuestions({t.id}, 200, 4);
             questions << qs;
         }
     } else {
-        questions = m_repo.randomQuestions({topicId}, 100, 4);
+        questions = m_repo.randomQuestions({topicId}, 200, 4);
     }
 
-    // Deduplicate by id
+    // Stable sort by id so list is consistent
+    std::sort(questions.begin(), questions.end(),
+              [](const QuestionDTO& a, const QuestionDTO& b) { return a.id < b.id; });
+
+    // Deduplicate
     QSet<int> seen;
     for (const auto& q : questions) {
         if (seen.contains(q.id)) continue;
         seen.insert(q.id);
 
-        QListWidgetItem* item = new QListWidgetItem(m_questionList);
-        const QString diff = difficultyLabel(q.difficulty);
-        item->setText(QString("[%1] %2").arg(diff, q.content.left(80)));
+        // Filter by text (partial match on content or tags)
+        if (!filterText.isEmpty()) {
+            const bool matchContent = q.content.contains(filterText, Qt::CaseInsensitive);
+            bool matchTag = false;
+            for (const auto& tag : q.tags) {
+                if (tag.contains(filterText, Qt::CaseInsensitive)) {
+                    matchTag = true;
+                    break;
+                }
+            }
+            if (!matchContent && !matchTag) continue;
+        }
+
+        auto* item = new QListWidgetItem(m_questionList);
+        const QString typeBadge = questionTypeLabel(q.type);
+        const QString diff      = difficultyLabel(q.difficulty);
+        // Full content — word wrap handles long text
+        item->setText(QString("[%1] %2  %3").arg(diff, typeBadge, q.content));
         item->setData(Qt::UserRole, q.id);
-        item->setSizeHint(QSize(0, 44));
-        item->setToolTip(q.content);
+        item->setData(Qt::UserRole + 1, q.type);
+        item->setSizeHint(QSize(0, 48));
+        item->setToolTip(q.content + (q.codeSnippet.isEmpty() ? "" : "\n\n" + q.codeSnippet));
         m_questionList->addItem(item);
     }
 }
@@ -386,18 +490,19 @@ void CustomTestBuilderWidget::populateMyTests()
     m_myTests = m_repo.customTestsForUser(userId);
 
     if (m_myTests.isEmpty()) {
-        QListWidgetItem* empty = new QListWidgetItem("No custom tests yet. Click '➕ New Test' to create one.");
+        auto* empty = new QListWidgetItem(
+            "No custom tests yet. Click '➕ New Test' to create one.");
         empty->setFlags(Qt::NoItemFlags);
         m_myTestsList->addItem(empty);
         return;
     }
 
     for (const auto& t : m_myTests) {
-        QListWidgetItem* item = new QListWidgetItem(m_myTestsList);
+        auto* item = new QListWidgetItem(m_myTestsList);
         item->setText(QString("📝  %1\n    %2 questions  •  %3")
-                      .arg(t.title)
-                      .arg(t.questionCount)
-                      .arg(t.description.isEmpty() ? "No description" : t.description));
+                          .arg(t.title)
+                          .arg(t.questionCount)
+                          .arg(t.description.isEmpty() ? "No description" : t.description));
         item->setData(Qt::UserRole, t.id);
         item->setSizeHint(QSize(0, 52));
         m_myTestsList->addItem(item);
@@ -409,26 +514,53 @@ void CustomTestBuilderWidget::populateMyTests()
 // ─────────────────────────────────────────────────────────────────────────────
 void CustomTestBuilderWidget::onTopicSelected()
 {
-    QTreeWidgetItem* item = m_topicTree->currentItem();
+    auto* item = m_topicTree->currentItem();
     if (!item) return;
     const int topicId = item->data(0, Qt::UserRole).toInt();
-    populateQuestionBrowser(topicId);
+    populateQuestionBrowser(topicId, m_searchEdit->text().trimmed());
+}
+
+void CustomTestBuilderWidget::onSearchChanged(const QString& text)
+{
+    auto* item = m_topicTree->currentItem();
+    const int topicId = item ? item->data(0, Qt::UserRole).toInt() : -1;
+    populateQuestionBrowser(topicId, text.trimmed());
 }
 
 void CustomTestBuilderWidget::onAddQuestionClicked()
 {
-    QListWidgetItem* item = m_questionList->currentItem();
+    auto* item = m_questionList->currentItem();
     if (!item) return;
     const int qId = item->data(Qt::UserRole).toInt();
     if (qId <= 0) return;
-
-    // Check not already added
     for (const auto& q : m_selectedQuestions)
         if (q.id == qId) return;
-
     QuestionDTO q = m_repo.questionById(qId);
     if (q.id < 0) return;
     addQuestionToSelected(q);
+    m_hasChanges = true;
+    updateSaveButtonStates();
+}
+
+void CustomTestBuilderWidget::onAddAllClicked()
+{
+    QSet<int> existing;
+    for (const auto& q : m_selectedQuestions)
+        existing.insert(q.id);
+
+    for (int i = 0; i < m_questionList->count(); ++i) {
+        auto* item = m_questionList->item(i);
+        if (!item) continue;
+        const int qId = item->data(Qt::UserRole).toInt();
+        if (qId <= 0 || existing.contains(qId)) continue;
+        QuestionDTO q = m_repo.questionById(qId);
+        if (q.id < 0) continue;
+        m_selectedQuestions << q;
+        existing.insert(qId);
+    }
+    refreshSelectedList();
+    m_hasChanges = true;
+    updateSaveButtonStates();
 }
 
 void CustomTestBuilderWidget::onRemoveQuestionClicked()
@@ -437,6 +569,20 @@ void CustomTestBuilderWidget::onRemoveQuestionClicked()
     if (row < 0 || row >= m_selectedQuestions.size()) return;
     m_selectedQuestions.removeAt(row);
     refreshSelectedList();
+    m_hasChanges = true;
+    updateSaveButtonStates();
+}
+
+void CustomTestBuilderWidget::onRemoveAllClicked()
+{
+    if (m_selectedQuestions.isEmpty()) return;
+    const auto btn = QMessageBox::question(this, "Remove All",
+                                           "Remove all selected questions?");
+    if (btn != QMessageBox::Yes) return;
+    m_selectedQuestions.clear();
+    refreshSelectedList();
+    m_hasChanges = true;
+    updateSaveButtonStates();
 }
 
 void CustomTestBuilderWidget::onMoveUpClicked()
@@ -446,6 +592,8 @@ void CustomTestBuilderWidget::onMoveUpClicked()
     m_selectedQuestions.swapItemsAt(row, row - 1);
     refreshSelectedList();
     m_selectedList->setCurrentRow(row - 1);
+    m_hasChanges = true;
+    updateSaveButtonStates();
 }
 
 void CustomTestBuilderWidget::onMoveDownClicked()
@@ -455,41 +603,74 @@ void CustomTestBuilderWidget::onMoveDownClicked()
     m_selectedQuestions.swapItemsAt(row, row + 1);
     refreshSelectedList();
     m_selectedList->setCurrentRow(row + 1);
+    m_hasChanges = true;
+    updateSaveButtonStates();
 }
 
 void CustomTestBuilderWidget::onGenerateRandomClicked()
 {
-    // Collect selected topics from tree (if any selected beyond "All")
+    // Determine topic scope
     QList<int> topicIds;
     for (auto* item : m_topicTree->selectedItems()) {
         const int id = item->data(0, Qt::UserRole).toInt();
         if (id > 0) topicIds << id;
     }
     if (topicIds.isEmpty()) {
-        // Use all topics
         for (const auto& t : m_repo.allTopics())
             topicIds << t.id;
     }
 
-    const int count      = m_countSpin->value();
-    const int maxDiff    = m_diffCombo->currentData().toInt();
+    const int requestedCount = m_countSpin->value();
+    const int maxDiff = m_diffCombo->currentData().toInt();
     const int effectiveD = (maxDiff == 0) ? 4 : maxDiff;
 
-    const auto questions = m_repo.randomQuestions(topicIds, count, effectiveD);
-    if (questions.isEmpty()) {
-        QMessageBox::information(this, "No Questions",
-            "No questions found for the selected topics and difficulty.");
+    // Build set of already-selected IDs — we need exactly `requestedCount` NEW ones
+    QSet<int> alreadySelected;
+    for (const auto& q : m_selectedQuestions)
+        alreadySelected.insert(q.id);
+
+    // Request more than needed to compensate for duplicates;
+    // repeat until we have enough or exhaust the pool.
+    QList<QuestionDTO> newOnes;
+    int attempts = 0;
+    const int maxAttempts = 5;
+
+    while (newOnes.size() < requestedCount && attempts < maxAttempts) {
+        // Ask for (requestedCount - newOnes.size()) * 3 to reduce round trips
+        const int fetchCount = (requestedCount - newOnes.size()) * 3;
+        const auto candidates = m_repo.randomQuestions(topicIds, fetchCount, effectiveD);
+
+        bool anyNew = false;
+        for (const auto& q : candidates) {
+            if (alreadySelected.contains(q.id)) continue;
+            // Also skip if already in newOnes
+            bool inNew = false;
+            for (const auto& n : newOnes)
+                if (n.id == q.id) { inNew = true; break; }
+            if (inNew) continue;
+
+            newOnes << q;
+            alreadySelected.insert(q.id);
+            anyNew = true;
+            if (newOnes.size() >= requestedCount) break;
+        }
+        if (!anyNew) break; // pool exhausted
+        ++attempts;
+    }
+
+    if (newOnes.isEmpty()) {
+        QMessageBox::information(this, "No New Questions",
+                                 "No additional questions found for the selected topics and difficulty.\n"
+                                 "Try changing the topic or difficulty filter.");
         return;
     }
 
-    // Append (skip duplicates)
-    for (const auto& q : questions) {
-        bool dup = false;
-        for (const auto& existing : m_selectedQuestions)
-            if (existing.id == q.id) { dup = true; break; }
-        if (!dup) m_selectedQuestions << q;
-    }
+    for (const auto& q : newOnes)
+        m_selectedQuestions << q;
+
     refreshSelectedList();
+    m_hasChanges = true;
+    updateSaveButtonStates();
 }
 
 void CustomTestBuilderWidget::onSaveTestClicked()
@@ -507,8 +688,8 @@ void CustomTestBuilderWidget::onSaveTestClicked()
     const int userId = UserManager::instance().currentUser().id;
     const QString desc = m_testDescEdit->text().trimmed();
 
-    // If editing existing test, delete old questions first
     if (m_editingTestId > 0) {
+        // Save Changes: remove old, recreate with same id logic (delete + insert)
         m_repo.removeCustomTest(m_editingTestId);
     }
 
@@ -522,9 +703,53 @@ void CustomTestBuilderWidget::onSaveTestClicked()
         m_repo.addQuestionToCustomTest(testId, m_selectedQuestions[i].id, i);
 
     m_editingTestId = testId;
+    // Update snapshot
+    m_originalTitle = title;
+    m_originalDesc  = desc;
+    m_originalQuestionIds.clear();
+    for (const auto& q : m_selectedQuestions)
+        m_originalQuestionIds << q.id;
+    m_hasChanges = false;
+    updateSaveButtonStates();
+
     QMessageBox::information(this, "Saved",
-        QString("Test \"%1\" saved with %2 questions.")
-        .arg(title).arg(m_selectedQuestions.size()));
+                             QString("Test \"%1\" saved (%2 questions).").arg(title).arg(m_selectedQuestions.size()));
+}
+
+void CustomTestBuilderWidget::onSaveAsClicked()
+{
+    // Require a *new* title different from the original
+    const QString currentTitle = m_testTitleEdit->text().trimmed();
+    if (currentTitle.isEmpty()) {
+        QMessageBox::warning(this, "Missing Title",
+                             "Please enter a new title for the copy.");
+        return;
+    }
+    if (currentTitle == m_originalTitle) {
+        QMessageBox::warning(this, "Title Unchanged",
+                             "Please change the title to save as a new test.\n"
+                             "The new title must differ from the original.");
+        return;
+    }
+    if (m_selectedQuestions.isEmpty()) {
+        QMessageBox::warning(this, "No Questions", "Please add at least one question.");
+        return;
+    }
+
+    const int userId = UserManager::instance().currentUser().id;
+    const QString desc = m_testDescEdit->text().trimmed();
+    const int testId = m_repo.createCustomTest(userId, currentTitle, desc);
+    if (testId < 0) {
+        QMessageBox::critical(this, "Save Failed", "Could not save the new test.");
+        return;
+    }
+
+    for (int i = 0; i < m_selectedQuestions.size(); ++i)
+        m_repo.addQuestionToCustomTest(testId, m_selectedQuestions[i].id, i);
+
+    QMessageBox::information(this, "Saved As New",
+                             QString("New test \"%1\" created (%2 questions).")
+                                 .arg(currentTitle).arg(m_selectedQuestions.size()));
 }
 
 void CustomTestBuilderWidget::onLaunchClicked()
@@ -538,20 +763,24 @@ void CustomTestBuilderWidget::onLaunchClicked()
 
 void CustomTestBuilderWidget::onExportClicked()
 {
+    // Export current builder selection
     if (m_selectedQuestions.isEmpty()) {
         QMessageBox::warning(this, "Nothing to Export", "Add questions before exporting.");
         return;
     }
 
     const QString defaultName = m_testTitleEdit->text().trimmed().isEmpty()
-                                ? "custom_test"
-                                : m_testTitleEdit->text().trimmed().replace(' ', '_');
+                                    ? "custom_test"
+                                    : m_testTitleEdit->text().trimmed().replace(' ', '_');
 
-    const QString path = QFileDialog::getSaveFileName(
+    QString path = QFileDialog::getSaveFileName(
         this, "Export Custom Test",
-        defaultName + "." + QuizExporter::FILE_EXTENSION,
+        defaultName + ".json",
         QuizExporter::FILE_FILTER);
     if (path.isEmpty()) return;
+
+    // Auto-append .json if missing
+    path = QuizExporter::ensureJsonExtension(path);
 
     const bool ok = QuizExporter::exportToFile(
         m_selectedQuestions,
@@ -561,10 +790,56 @@ void CustomTestBuilderWidget::onExportClicked()
 
     if (ok)
         QMessageBox::information(this, "Exported",
-            QString("Test exported to:\n%1").arg(path));
+                                 QString("Test exported to:\n%1").arg(path));
     else
         QMessageBox::critical(this, "Export Failed",
-            "Could not write the file. Check permissions.");
+                              "Could not write the file. Check permissions.");
+}
+
+void CustomTestBuilderWidget::onExportSelectedTestClicked()
+{
+    // Export a saved test from My Tests page
+    auto* item = m_myTestsList->currentItem();
+    if (!item) return;
+    const int testId = item->data(Qt::UserRole).toInt();
+    if (testId <= 0) return;
+
+    const auto questions = m_repo.questionsForCustomTest(testId);
+    if (questions.isEmpty()) {
+        QMessageBox::information(this, "Empty Test",
+                                 "This test has no questions and cannot be exported.");
+        return;
+    }
+
+    // Retrieve title/description from cached list
+    QString testTitle, testDesc;
+    for (const auto& t : m_myTests) {
+        if (t.id == testId) {
+            testTitle = t.title;
+            testDesc  = t.description;
+            break;
+        }
+    }
+
+    const QString defaultName = testTitle.isEmpty()
+                                    ? "custom_test"
+                                    : testTitle.replace(' ', '_');
+
+    QString path = QFileDialog::getSaveFileName(
+        this, "Export Custom Test",
+        defaultName + ".json",
+        QuizExporter::FILE_FILTER);
+    if (path.isEmpty()) return;
+
+    path = QuizExporter::ensureJsonExtension(path);
+
+    const bool ok = QuizExporter::exportToFile(questions, testTitle, testDesc, path);
+    if (ok)
+        QMessageBox::information(this, "Exported",
+                                 QString("Test exported to:\n%1").arg(path));
+    else
+        QMessageBox::critical(this, "Export Failed",
+                              "Could not write the file. Check permissions.");
 }
 
 void CustomTestBuilderWidget::onImportClicked()
@@ -581,26 +856,37 @@ void CustomTestBuilderWidget::onImportClicked()
         return;
     }
 
-    // Switch to builder and populate
+    // Restore title/description from JSON header
+    QString importedTitle, importedDesc;
+    QuizExporter::readHeader(path, importedTitle, importedDesc);
+
     clearBuilder();
     m_selectedQuestions = questions;
+    if (!importedTitle.isEmpty())
+        m_testTitleEdit->setText(importedTitle);
+    if (!importedDesc.isEmpty())
+        m_testDescEdit->setText(importedDesc);
     refreshSelectedList();
     populateTopicTree();
+    populateQuestionBrowser(-1);
+    m_hasChanges = true;
+    updateSaveButtonStates();
     m_innerStack->setCurrentIndex(1);
 
     QMessageBox::information(this, "Imported",
-        QString("Imported %1 questions.\nYou can now launch or save the test.")
-        .arg(questions.size()));
+                             QString("Imported %1 questions from \"%2\".\nYou can now launch or save the test.")
+                                 .arg(questions.size())
+                                 .arg(importedTitle.isEmpty() ? "file" : importedTitle));
 }
 
 void CustomTestBuilderWidget::onDeleteTestClicked()
 {
-    QListWidgetItem* item = m_myTestsList->currentItem();
+    auto* item = m_myTestsList->currentItem();
     if (!item) return;
     const int testId = item->data(Qt::UserRole).toInt();
 
     const auto btn = QMessageBox::question(this, "Delete Test",
-        "Are you sure you want to delete this test? This cannot be undone.");
+                                           "Are you sure you want to delete this test? This cannot be undone.");
     if (btn != QMessageBox::Yes) return;
 
     m_repo.removeCustomTest(testId);
@@ -609,20 +895,20 @@ void CustomTestBuilderWidget::onDeleteTestClicked()
 
 void CustomTestBuilderWidget::onLoadTestClicked()
 {
-    QListWidgetItem* item = m_myTestsList->currentItem();
+    auto* item = m_myTestsList->currentItem();
     if (!item) return;
     const int testId = item->data(Qt::UserRole).toInt();
 
     const auto questions = m_repo.questionsForCustomTest(testId);
     if (questions.isEmpty()) {
         QMessageBox::information(this, "Empty Test",
-            "This test has no questions. Edit it to add some.");
+                                 "This test has no questions. Edit it to add some.");
         return;
     }
 
     clearBuilder();
     m_selectedQuestions = questions;
-    m_editingTestId     = testId;
+    m_editingTestId     = -1;  // launch mode — not editing
     for (const auto& t : m_myTests) {
         if (t.id == testId) {
             m_testTitleEdit->setText(t.title);
@@ -630,9 +916,7 @@ void CustomTestBuilderWidget::onLoadTestClicked()
             break;
         }
     }
-    refreshSelectedList();
-    populateTopicTree();
-    m_innerStack->setCurrentIndex(1);
+    emit launchCustomTest(m_selectedQuestions);
 }
 
 void CustomTestBuilderWidget::onNewTestClicked()
@@ -640,6 +924,8 @@ void CustomTestBuilderWidget::onNewTestClicked()
     clearBuilder();
     populateTopicTree();
     populateQuestionBrowser(-1);
+    m_hasChanges = false;
+    updateSaveButtonStates();
     m_innerStack->setCurrentIndex(1);
 }
 
@@ -657,13 +943,15 @@ void CustomTestBuilderWidget::refreshSelectedList()
     m_selectedList->clear();
     for (int i = 0; i < m_selectedQuestions.size(); ++i) {
         const auto& q = m_selectedQuestions[i];
-        QListWidgetItem* item = new QListWidgetItem(m_selectedList);
-        item->setText(QString("%1. [%2] %3")
-                      .arg(i + 1)
-                      .arg(difficultyLabel(q.difficulty))
-                      .arg(q.content.left(70)));
+        auto* item = new QListWidgetItem(m_selectedList);
+        const QString typeBadge = questionTypeLabel(q.type);
+        item->setText(QString("%1. [%2] %3  %4")
+                          .arg(i + 1)
+                          .arg(difficultyLabel(q.difficulty))
+                          .arg(typeBadge)
+                          .arg(q.content));
         item->setData(Qt::UserRole, q.id);
-        item->setSizeHint(QSize(0, 40));
+        item->setSizeHint(QSize(0, 44));
         item->setToolTip(q.content);
         m_selectedList->addItem(item);
     }
@@ -676,6 +964,33 @@ void CustomTestBuilderWidget::clearBuilder()
     m_testTitleEdit->clear();
     m_testDescEdit->clear();
     m_editingTestId = -1;
+    m_hasChanges    = false;
+    m_originalQuestionIds.clear();
+    m_originalTitle.clear();
+    m_originalDesc.clear();
+}
+
+void CustomTestBuilderWidget::updateSaveButtonStates()
+{
+    const bool hasQuestions = !m_selectedQuestions.isEmpty();
+    const bool hasTitle     = !m_testTitleEdit->text().trimmed().isEmpty();
+    const bool isEditing    = (m_editingTestId > 0);
+
+    if (isEditing) {
+        // "Save Changes" label
+        m_saveBtn->setText("💾  Save Changes");
+        m_saveBtn->setEnabled(m_hasChanges && hasQuestions && hasTitle);
+
+        // "Save As New" — visible only in edit mode
+        m_saveAsBtn->setVisible(true);
+        m_saveAsBtn->setEnabled(m_hasChanges && hasQuestions && hasTitle);
+    } else {
+        // New test — plain "Save"
+        m_saveBtn->setText("💾  Save");
+        m_saveBtn->setEnabled(hasQuestions && hasTitle);
+        m_saveAsBtn->setVisible(false);
+        m_saveAsBtn->setEnabled(false);
+    }
 }
 
 QString CustomTestBuilderWidget::difficultyLabel(int d) const
@@ -689,16 +1004,24 @@ QString CustomTestBuilderWidget::difficultyLabel(int d) const
     }
 }
 
+QString CustomTestBuilderWidget::questionTypeLabel(const QString& type) const
+{
+    if (type == "mcq")          return "[MCQ]";
+    if (type == "multi_select") return "[Multi]";
+    if (type == "true_false")   return "[T/F]";
+    if (type == "code_output")  return "[Code]";
+    if (type == "fill_blank")   return "[Fill]";
+    return "[?]";
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
-// Theme
+// Theme — matches WelcomeScreen recentProjectsList style
 // ─────────────────────────────────────────────────────────────────────────────
 void CustomTestBuilderWidget::applyTheme()
 {
     const Theme& t = ThemeManager::instance()->currentTheme();
     setStyleSheet(QString(R"(
-        CustomTestBuilderWidget {
-            background-color: %1;
-        }
+        CustomTestBuilderWidget,
         #myTestsPage, #builderPage {
             background-color: %1;
         }
@@ -715,36 +1038,57 @@ void CustomTestBuilderWidget::applyTheme()
             font-weight: bold;
         }
         #myTestsList, #questionBrowser, #selectedList, #topicTree {
-            background-color: %3;
-            color: %4;
-            border: 1px solid %5;
+            background-color: %5;
+            border: 1px solid %6;
+            border-radius: 4px;
+            color: %3;
+        }
+        #myTestsList::item, #questionBrowser::item,
+        #selectedList::item, #topicTree::item {
+            padding: 8px;
+            border-bottom: 1px solid %6;
+            background-color: %5;
+            color: %3;
+        }
+        #myTestsList::item:hover, #questionBrowser::item:hover,
+        #selectedList::item:hover, #topicTree::item:hover {
+            background-color: %2;
             border-radius: 4px;
         }
-        #myTestsList::item:selected,
-        #questionBrowser::item:selected,
-        #selectedList::item:selected,
-        #topicTree::item:selected {
-            background-color: %6;
-            color: white;
+        #myTestsList::item:selected, #questionBrowser::item:selected,
+        #selectedList::item:selected, #topicTree::item:selected {
+            background-color: %8;
+            color: %3;
         }
         #primaryButton {
-            background-color: %6;
+            background-color: %7;
             color: white;
             border: none;
             border-radius: 4px;
             padding: 6px 16px;
             font-size: 13px;
+            font-weight: bold;
         }
-        #primaryButton:hover { background-color: %7; }
+        #primaryButton:hover { background-color: %8; color: white; }
+        #primaryButton:disabled {
+            background-color: %5;
+            color: %4;
+            border: 1px solid %6;
+        }
         #secondaryButton {
             background-color: transparent;
-            color: %4;
-            border: 1px solid %5;
+            color: %3;
+            border: 1px solid %6;
             border-radius: 4px;
             padding: 6px 14px;
             font-size: 13px;
         }
-        #secondaryButton:hover { background-color: %8; }
+        #secondaryButton:hover { background-color: %2; }
+        #secondaryButton:disabled {
+            background-color: %5;
+            color: %4;
+            border: 1px solid %6;
+        }
         #dangerButton {
             background-color: transparent;
             color: %9;
@@ -753,45 +1097,34 @@ void CustomTestBuilderWidget::applyTheme()
             padding: 6px 14px;
             font-size: 13px;
         }
-        #dangerButton:hover { background-color: %9; color: white; }
-        #quizNavButton {
-            background-color: transparent;
-            color: %4;
-            border: 1px solid %5;
-            border-radius: 4px;
-            padding: 5px 12px;
-        }
+        #dangerButton:hover  { background-color: %9; color: white; }
         #builderBottomBar {
             background-color: %2;
-            border-top: 1px solid %5;
+            border-top: 1px solid %6;
         }
-        #testTitleEdit, #testDescEdit, #difficultyCombo, #countSpin {
-            background-color: %3;
-            color: %4;
-            border: 1px solid %5;
+        #testTitleEdit, #testDescEdit, #difficultyCombo, #countSpin, #searchEdit {
+            background-color: %5;
+            color: %3;
+            border: 1px solid %6;
             border-radius: 3px;
             padding: 4px 8px;
         }
         #iconButton {
             background-color: transparent;
-            color: %4;
-            border: 1px solid %5;
+            color: %3;
+            border: 1px solid %6;
             border-radius: 3px;
         }
-        #toolLabel {
-            color: %10;
-            font-size: 12px;
-        }
+        #toolLabel { color: %4; font-size: 12px; }
     )")
-    .arg(t.windowBackground.name())     // %1
-    .arg(t.toolbarBackground.name())    // %2
-    .arg(t.editorBackground.name())     // %3
-    .arg(t.textPrimary.name())          // %4
-    .arg(t.border.name())               // %5
-    .arg(t.accent.name())               // %6
-    .arg(t.accent.darker(120).name())   // %7
-    .arg(t.accent.darker(160).name())   // %8
-    .arg(t.error.name())                // %9
-    .arg(t.textSecondary.name())        // %10
-    );
+                      .arg(t.windowBackground.name())        // %1
+                      .arg(t.accent.name())                  // %2  (hover = accent, like WelcomeScreen)
+                      .arg(t.textPrimary.name())             // %3
+                      .arg(t.textSecondary.name())           // %4
+                      .arg(t.panelBackground.name())         // %5
+                      .arg(t.border.name())                  // %6
+                      .arg(t.accent.name())                  // %7  (primary button bg)
+                      .arg(t.accent.lighter(110).name())     // %8  (selected + button hover)
+                      .arg(t.error.name())                   // %9  (danger)
+                  );
 }
