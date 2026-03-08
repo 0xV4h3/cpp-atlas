@@ -92,14 +92,27 @@ void QuizSelectionWidget::setupUi()
     filterLayout->addWidget(diffLabel);
     filterLayout->addWidget(m_difficultyCombo);
 
-    filterLayout->addSpacing(16);
+    filterLayout->addSpacing(8);
+
+    QLabel* titleLabel = new QLabel("Title:", filterBar);
+    titleLabel->setObjectName("filterLabel");
+    m_titleSearch = new QLineEdit(filterBar);
+    m_titleSearch->setObjectName("titleSearch");
+    m_titleSearch->setPlaceholderText("Search by title…");
+    m_titleSearch->setFixedWidth(160);
+    connect(m_titleSearch, &QLineEdit::textChanged,
+            this, [this](const QString&) { onSearchChanged(); });
+    filterLayout->addWidget(titleLabel);
+    filterLayout->addWidget(m_titleSearch);
+
+    filterLayout->addSpacing(8);
 
     QLabel* tagLabel = new QLabel("Tag:", filterBar);
     tagLabel->setObjectName("filterLabel");
     m_tagSearch = new QLineEdit(filterBar);
     m_tagSearch->setObjectName("tagSearch");
-    m_tagSearch->setPlaceholderText("e.g. pointers, oop, stl …");
-    m_tagSearch->setFixedWidth(200);
+    m_tagSearch->setPlaceholderText("e.g. pointers, oop …");
+    m_tagSearch->setFixedWidth(150);
     connect(m_tagSearch, &QLineEdit::textChanged,
             this, &QuizSelectionWidget::onTagSearchChanged);
     filterLayout->addWidget(tagLabel);
@@ -196,7 +209,8 @@ void QuizSelectionWidget::populateQuizList(int topicId)
     clearQuizDetail();
 
     const int diffFilter = m_difficultyCombo->currentData().toInt();
-    const QString tagFilter = m_tagSearch->text().trimmed().toLower();
+    const QString titleFilter = m_titleSearch ? m_titleSearch->text().trimmed().toLower() : QString();
+    const QString tagFilter   = m_tagSearch   ? m_tagSearch->text().trimmed().toLower()   : QString();
 
     QList<QuizDTO> quizzes = (topicId < 0)
                               ? m_repo.allActiveQuizzes()
@@ -206,6 +220,7 @@ void QuizSelectionWidget::populateQuizList(int topicId)
     m_currentQuizzes.clear();
     for (const auto& qz : quizzes) {
         if (diffFilter > 0 && qz.difficulty != diffFilter) continue;
+        if (!titleFilter.isEmpty() && !qz.title.toLower().contains(titleFilter)) continue;
         if (!tagFilter.isEmpty()) {
             bool tagMatch = false;
             for (const auto& tag : qz.tags) {
@@ -281,11 +296,16 @@ void QuizSelectionWidget::onDifficultyFilterChanged(int /*index*/)
     populateQuizList(topicId);
 }
 
-void QuizSelectionWidget::onTagSearchChanged(const QString& /*text*/)
+void QuizSelectionWidget::onSearchChanged()
 {
     QTreeWidgetItem* curr = m_topicTree->currentItem();
     const int topicId = curr ? curr->data(0, Qt::UserRole).toInt() : -1;
     populateQuizList(topicId);
+}
+
+void QuizSelectionWidget::onTagSearchChanged(const QString& /*text*/)
+{
+    onSearchChanged();
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -368,13 +388,13 @@ void QuizSelectionWidget::applyTheme()
         }
         #topicTree::item { padding: 4px 6px; }
         #topicTree::item:selected { background-color: %6; color: white; }
-        #topicTree::item:hover    { background-color: %7; }
+        #topicTree::item:hover    { padding-left: 10px; background-color: %7; }
         #filterBar {
             background-color: %4;
             border-bottom: 1px solid %3;
         }
         #filterLabel { color: %8; font-size: 12px; }
-        #filterCombo, #tagSearch {
+        #filterCombo, #titleSearch, #tagSearch {
             background-color: %1;
             color: %5;
             border: 1px solid %3;
@@ -382,6 +402,7 @@ void QuizSelectionWidget::applyTheme()
             padding: 3px 6px;
             font-size: 12px;
         }
+        #titleSearch:focus, #tagSearch:focus { border-color: %6; }
         #quizList {
             background-color: %1;
             color: %5;
@@ -391,12 +412,13 @@ void QuizSelectionWidget::applyTheme()
         #quizList::item {
             background-color: %2;
             border-radius: 4px;
-            padding: 4px 8px;
+            padding: 8px 10px;
             margin: 2px 8px;
             color: %5;
+            border-bottom: 1px solid %3;
         }
         #quizList::item:selected { background-color: %6; color: white; }
-        #quizList::item:hover    { background-color: %7; }
+        #quizList::item:hover    { background-color: %7; border-radius: 4px; }
         #quizDetailPanel {
             background-color: %4;
             border-top: 1px solid %3;

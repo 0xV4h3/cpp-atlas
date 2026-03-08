@@ -13,6 +13,7 @@
 #include <QFrame>
 #include <QDebug>
 #include <QSet>
+#include <QStringListModel>
 
 // ─────────────────────────────────────────────────────────────────────────────
 CustomTestBuilderWidget::CustomTestBuilderWidget(QWidget* parent)
@@ -138,7 +139,7 @@ void CustomTestBuilderWidget::setupMyTestsPage()
 
     // Enable/disable actions on selection change
     connect(m_myTestsList, &QListWidget::itemSelectionChanged, this, [this]() {
-        const bool sel = m_myTestsList->currentItem() != nullptr;
+        const bool sel = !m_myTestsList->selectedItems().isEmpty();
         m_loadTestBtn->setEnabled(sel);
         m_editTestBtn->setEnabled(sel);
         m_exportMyTestBtn->setEnabled(sel);
@@ -146,6 +147,10 @@ void CustomTestBuilderWidget::setupMyTestsPage()
     });
     connect(m_myTestsList, &QListWidget::itemDoubleClicked,
             this, [this]() { onLoadTestClicked(); });
+
+    // Allow deselection by clicking on empty area
+    m_myTestsList->setSelectionMode(QAbstractItemView::SingleSelection);
+    m_myTestsList->installEventFilter(this);
 
     m_innerStack->addWidget(page);
 }
@@ -198,14 +203,38 @@ void CustomTestBuilderWidget::setupBuilderPage()
     qHdr->setFixedHeight(32);
     qPaneLayout->addWidget(qHdr);
 
-    // Search bar
-    m_searchEdit = new QLineEdit(qPane);
-    m_searchEdit->setObjectName("searchEdit");
-    m_searchEdit->setPlaceholderText("🔍  Search by title or tag…");
-    m_searchEdit->setContentsMargins(8, 4, 8, 4);
-    connect(m_searchEdit, &QLineEdit::textChanged,
-            this, &CustomTestBuilderWidget::onSearchChanged);
-    qPaneLayout->addWidget(m_searchEdit);
+    // Split search bar: title + tag
+    auto* searchRow = new QHBoxLayout();
+    searchRow->setContentsMargins(4, 4, 4, 2);
+    searchRow->setSpacing(4);
+
+    m_questionTitleSearch = new QLineEdit(qPane);
+    m_questionTitleSearch->setObjectName("titleSearch");
+    m_questionTitleSearch->setPlaceholderText("Search by title…");
+    connect(m_questionTitleSearch, &QLineEdit::textChanged,
+            this, &CustomTestBuilderWidget::onQuestionSearchChanged);
+    searchRow->addWidget(m_questionTitleSearch, 2);
+
+    m_questionTagSearch = new QLineEdit(qPane);
+    m_questionTagSearch->setObjectName("tagSearch");
+    m_questionTagSearch->setPlaceholderText("Tag…");
+    m_questionTagSearch->setFixedWidth(100);
+    connect(m_questionTagSearch, &QLineEdit::textChanged,
+            this, &CustomTestBuilderWidget::onQuestionSearchChanged);
+    searchRow->addWidget(m_questionTagSearch);
+
+    // Tag completer from DB
+    m_questionTagCompleter = new QCompleter(this);
+    m_questionTagCompleter->setCaseSensitivity(Qt::CaseInsensitive);
+    m_questionTagCompleter->setFilterMode(Qt::MatchContains);
+    m_questionTagSearch->setCompleter(m_questionTagCompleter);
+    {
+        QStringList tagNames;
+        for (const auto& t : m_repo.allTags()) tagNames << t.name;
+        m_questionTagCompleter->setModel(new QStringListModel(tagNames, m_questionTagCompleter));
+    }
+
+    qPaneLayout->addLayout(searchRow);
 
     m_questionList = new QListWidget(qPane);
     m_questionList->setObjectName("questionBrowser");
@@ -266,15 +295,15 @@ void CustomTestBuilderWidget::setupBuilderPage()
     orderBar->setContentsMargins(8, 4, 8, 4);
     orderBar->setSpacing(6);
 
-    m_moveUpBtn = new QPushButton("↑", rightPane);
-    m_moveUpBtn->setObjectName("iconButton");
+    m_moveUpBtn = new QPushButton("▲", rightPane);
+    m_moveUpBtn->setObjectName("moveButton");
     m_moveUpBtn->setFixedWidth(32);
     connect(m_moveUpBtn, &QPushButton::clicked,
             this, &CustomTestBuilderWidget::onMoveUpClicked);
     orderBar->addWidget(m_moveUpBtn);
 
-    m_moveDownBtn = new QPushButton("↓", rightPane);
-    m_moveDownBtn->setObjectName("iconButton");
+    m_moveDownBtn = new QPushButton("▼", rightPane);
+    m_moveDownBtn->setObjectName("moveButton");
     m_moveDownBtn->setFixedWidth(32);
     connect(m_moveDownBtn, &QPushButton::clicked,
             this, &CustomTestBuilderWidget::onMoveDownClicked);
@@ -332,7 +361,7 @@ void CustomTestBuilderWidget::setupBuilderPage()
     botLayout->addWidget(m_countSpin);
 
     m_generateBtn = new QPushButton("🎲  Generate", bottomBar);
-    m_generateBtn->setObjectName("secondaryButton");
+    m_generateBtn->setObjectName("generateButton");
     connect(m_generateBtn, &QPushButton::clicked,
             this, &CustomTestBuilderWidget::onGenerateRandomClicked);
     botLayout->addWidget(m_generateBtn);
@@ -397,11 +426,26 @@ void CustomTestBuilderWidget::setupBuilderPage()
 
     // Enable add button on selection
     connect(m_questionList, &QListWidget::itemSelectionChanged, this, [this]() {
-        m_addBtn->setEnabled(m_questionList->currentItem() != nullptr);
+        m_addBtn->setEnabled(!m_questionList->selectedItems().isEmpty());
     });
     connect(m_questionList, &QListWidget::itemDoubleClicked, this, [this]() {
         onAddQuestionClicked();
     });
+
+    // Enable remove/move buttons on selection
+    connect(m_selectedList, &QListWidget::itemSelectionChanged, this, [this]() {
+        const bool hasSel = !m_selectedList->selectedItems().isEmpty();
+        m_removeBtn->setEnabled(hasSel);
+        m_moveUpBtn->setEnabled(hasSel && m_selectedList->currentRow() > 0);
+        m_moveDownBtn->setEnabled(hasSel && m_selectedList->currentRow() < m_selectedList->count() - 1);
+    });
+    m_removeBtn->setEnabled(false);
+    m_moveUpBtn->setEnabled(false);
+    m_moveDownBtn->setEnabled(false);
+
+    // Allow deselection by clicking empty area
+    m_questionList->installEventFilter(this);
+    m_selectedList->installEventFilter(this);
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -432,10 +476,12 @@ void CustomTestBuilderWidget::populateTopicTree()
     m_topicTree->setCurrentItem(allItem);
 }
 
-void CustomTestBuilderWidget::populateQuestionBrowser(int topicId,
-                                                      const QString& filterText)
+void CustomTestBuilderWidget::populateQuestionBrowser(int topicId)
 {
     m_questionList->clear();
+
+    const QString titleF = m_questionTitleSearch ? m_questionTitleSearch->text().trimmed() : QString();
+    const QString tagF   = m_questionTagSearch   ? m_questionTagSearch->text().trimmed()   : QString();
 
     QList<QuestionDTO> questions;
     if (topicId < 0) {
@@ -451,29 +497,28 @@ void CustomTestBuilderWidget::populateQuestionBrowser(int topicId,
     std::sort(questions.begin(), questions.end(),
               [](const QuestionDTO& a, const QuestionDTO& b) { return a.id < b.id; });
 
-    // Deduplicate
+    // Deduplicate + filter
     QSet<int> seen;
     for (const auto& q : questions) {
         if (seen.contains(q.id)) continue;
         seen.insert(q.id);
 
-        // Filter by text (partial match on content or tags)
-        if (!filterText.isEmpty()) {
-            const bool matchContent = q.content.contains(filterText, Qt::CaseInsensitive);
+        // Title filter (partial match on content)
+        if (!titleF.isEmpty() && !q.content.contains(titleF, Qt::CaseInsensitive))
+            continue;
+
+        // Tag filter (partial match on any tag)
+        if (!tagF.isEmpty()) {
             bool matchTag = false;
             for (const auto& tag : q.tags) {
-                if (tag.contains(filterText, Qt::CaseInsensitive)) {
-                    matchTag = true;
-                    break;
-                }
+                if (tag.contains(tagF, Qt::CaseInsensitive)) { matchTag = true; break; }
             }
-            if (!matchContent && !matchTag) continue;
+            if (!matchTag) continue;
         }
 
         auto* item = new QListWidgetItem(m_questionList);
         const QString typeBadge = questionTypeLabel(q.type);
         const QString diff      = difficultyLabel(q.difficulty);
-        // Full content — word wrap handles long text
         item->setText(QString("[%1] %2  %3").arg(diff, typeBadge, q.content));
         item->setData(Qt::UserRole, q.id);
         item->setData(Qt::UserRole + 1, q.type);
@@ -481,6 +526,8 @@ void CustomTestBuilderWidget::populateQuestionBrowser(int topicId,
         item->setToolTip(q.content + (q.codeSnippet.isEmpty() ? "" : "\n\n" + q.codeSnippet));
         m_questionList->addItem(item);
     }
+
+    updateAddAllState();
 }
 
 void CustomTestBuilderWidget::populateMyTests()
@@ -517,14 +564,14 @@ void CustomTestBuilderWidget::onTopicSelected()
     auto* item = m_topicTree->currentItem();
     if (!item) return;
     const int topicId = item->data(0, Qt::UserRole).toInt();
-    populateQuestionBrowser(topicId, m_searchEdit->text().trimmed());
+    populateQuestionBrowser(topicId);
 }
 
-void CustomTestBuilderWidget::onSearchChanged(const QString& text)
+void CustomTestBuilderWidget::onQuestionSearchChanged()
 {
     auto* item = m_topicTree->currentItem();
     const int topicId = item ? item->data(0, Qt::UserRole).toInt() : -1;
-    populateQuestionBrowser(topicId, text.trimmed());
+    populateQuestionBrowser(topicId);
 }
 
 void CustomTestBuilderWidget::onAddQuestionClicked()
@@ -955,6 +1002,9 @@ void CustomTestBuilderWidget::refreshSelectedList()
         item->setToolTip(q.content);
         m_selectedList->addItem(item);
     }
+    if (m_removeAllBtn)
+        m_removeAllBtn->setEnabled(!m_selectedQuestions.isEmpty());
+    updateAddAllState();
 }
 
 void CustomTestBuilderWidget::clearBuilder()
@@ -1017,6 +1067,41 @@ QString CustomTestBuilderWidget::questionTypeLabel(const QString& type) const
 // ─────────────────────────────────────────────────────────────────────────────
 // Theme
 // ─────────────────────────────────────────────────────────────────────────────
+
+bool CustomTestBuilderWidget::eventFilter(QObject* obj, QEvent* event)
+{
+    if (event->type() == QEvent::MouseButtonPress) {
+        auto* me = dynamic_cast<QMouseEvent*>(event);
+        if (me) {
+            if (obj == m_myTestsList && !m_myTestsList->itemAt(me->pos()))
+                m_myTestsList->clearSelection();
+            else if (obj == m_questionList && !m_questionList->itemAt(me->pos()))
+                m_questionList->clearSelection();
+            else if (obj == m_selectedList && !m_selectedList->itemAt(me->pos()))
+                m_selectedList->clearSelection();
+        }
+    }
+    return QWidget::eventFilter(obj, event);
+}
+
+void CustomTestBuilderWidget::updateAddAllState()
+{
+    if (!m_addAllBtn || !m_questionList) return;
+
+    QSet<int> selectedIds;
+    for (const auto& q : m_selectedQuestions) selectedIds.insert(q.id);
+
+    for (int i = 0; i < m_questionList->count(); ++i) {
+        auto* item = m_questionList->item(i);
+        if (!item) continue;
+        if (!selectedIds.contains(item->data(Qt::UserRole).toInt())) {
+            m_addAllBtn->setEnabled(true);
+            return;
+        }
+    }
+    m_addAllBtn->setEnabled(false);
+}
+
 void CustomTestBuilderWidget::applyTheme()
 {
     const Theme& t = ThemeManager::instance()->currentTheme();
@@ -1081,20 +1166,20 @@ void CustomTestBuilderWidget::applyTheme()
         #topicTree::item:selected { background-color: %6; color: white; }
 
         /* Question browser list */
-        #questionList {
+        #questionBrowser {
             background-color: %2;
             color: %5;
             border: none;
             font-size: 13px;
         }
-        #questionList::item {
+        #questionBrowser::item {
             padding: 6px 8px;
             border-bottom: 1px solid %3;
             background-color: %2;
             color: %5;
         }
-        #questionList::item:hover    { background-color: %6; border-radius: 3px; }
-        #questionList::item:selected { background-color: %9; color: white; }
+        #questionBrowser::item:hover    { background-color: %6; border-radius: 3px; }
+        #questionBrowser::item:selected { background-color: %9; color: white; }
 
         /* Selected questions list */
         #selectedList {
@@ -1193,7 +1278,7 @@ void CustomTestBuilderWidget::applyTheme()
         #moveButton:disabled { color: %8; border-color: %3; }
 
         /* Metadata labels */
-        #difficultyCombo, #countSpinBox {
+        #difficultyCombo, #countSpin {
             background-color: %2;
             color: %5;
             border: 1px solid %3;
@@ -1201,7 +1286,7 @@ void CustomTestBuilderWidget::applyTheme()
             padding: 3px 6px;
         }
 
-        #titleEdit, #descEdit {
+        #testTitleEdit, #testDescEdit {
             background-color: %2;
             color: %5;
             border: 1px solid %3;
@@ -1209,7 +1294,7 @@ void CustomTestBuilderWidget::applyTheme()
             padding: 4px 8px;
             font-size: 12px;
         }
-        #titleEdit:focus, #descEdit:focus { border-color: %6; }
+        #testTitleEdit:focus, #testDescEdit:focus { border-color: %6; }
 
         QLabel { color: %5; }
         QScrollBar:vertical { background: %2; width: 8px; border-radius: 4px; }

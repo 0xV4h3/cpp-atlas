@@ -11,6 +11,9 @@
 #include <QComboBox>
 #include <QSplitter>
 #include <QStackedWidget>
+#include <QCompleter>
+#include <QEvent>
+#include <QMouseEvent>
 
 #include "quiz/QuizRepository.h"
 #include "quiz/QuizExporter.h"
@@ -55,20 +58,23 @@ private slots:
     void onDeleteTestClicked();
     void onLoadTestClicked();
     void onNewTestClicked();
-    void onSearchChanged(const QString& text);
+    void onQuestionSearchChanged();     // called when either title or tag search changes
     void applyTheme();
 
 private:
+    bool eventFilter(QObject* obj, QEvent* event) override;
+
     void setupUi();
     void setupMyTestsPage();
     void setupBuilderPage();
     void populateTopicTree();
-    void populateQuestionBrowser(int topicId, const QString& filterText = {});
+    void populateQuestionBrowser(int topicId);
     void populateMyTests();
     void addQuestionToSelected(const QuestionDTO& q);
     void refreshSelectedList();
     void clearBuilder();
     void updateSaveButtonStates();
+    void updateAddAllState();
     QString difficultyLabel(int d) const;
     QString questionTypeLabel(const QString& type) const;
 
@@ -87,7 +93,9 @@ private:
     QPushButton*     m_importBtn        = nullptr;
 
     // ── Sub-page 1: Builder ──────────────────────────────────────────────────
-    QLineEdit*       m_searchEdit       = nullptr;  // search by tag/title
+    QLineEdit*       m_questionTitleSearch  = nullptr;  // filter by question content
+    QLineEdit*       m_questionTagSearch    = nullptr;  // filter by tag
+    QCompleter*      m_questionTagCompleter = nullptr;
     QTreeWidget*     m_topicTree        = nullptr;
     QListWidget*     m_questionList     = nullptr;
     QPushButton*     m_addBtn           = nullptr;

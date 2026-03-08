@@ -5,6 +5,7 @@
 #include <QStackedWidget>
 #include <QPushButton>
 #include <QLabel>
+#include <QStack>
 #include "quiz/UserManager.h"
 #include "quiz/QuizEngine.h"   // SessionResult
 #include "quiz/QuizRepository.h" // QuestionDTO
@@ -73,6 +74,8 @@ private slots:
 private:
     void setupUi();
     void setupHeader();
+    void navigateTo(int pageIndex, const QString& backLabel = "← Back");
+    void navigateBack();
 
     QStackedWidget*      m_stack          = nullptr;
     QuizSelectionWidget* m_selectionWidget= nullptr;
@@ -87,6 +90,9 @@ private:
     bool    m_lastShuffle = true;
     int     m_lastUserId  = -1;
     QList<QuestionDTO> m_lastQuestions;  // cached from session for results review
+
+    // Navigation history (page indices)
+    QStack<int> m_pageHistory;
 
     // Header bar
     QWidget*    m_header      = nullptr;

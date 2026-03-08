@@ -664,4 +664,21 @@ void UserProfileWidget::applyTheme()
     );
     m_progressRing->update();
     m_radarChart->update();
+
+    // Force scroll area and its viewport/content to use window background
+    if (m_scrollArea) {
+        m_scrollArea->setStyleSheet(
+            QString("QScrollArea { background-color: %1; border: none; }"
+                    "QScrollArea > QWidget > QWidget { background-color: %1; }")
+            .arg(t.windowBackground.name())
+        );
+        if (m_scrollArea->viewport())
+            m_scrollArea->viewport()->setStyleSheet(
+                QString("background-color: %1;").arg(t.windowBackground.name())
+            );
+        if (m_contentWidget)
+            m_contentWidget->setStyleSheet(
+                QString("background-color: %1;").arg(t.windowBackground.name())
+            );
+    }
 }
