@@ -1015,116 +1015,217 @@ QString CustomTestBuilderWidget::questionTypeLabel(const QString& type) const
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Theme — matches WelcomeScreen recentProjectsList style
+// Theme
 // ─────────────────────────────────────────────────────────────────────────────
 void CustomTestBuilderWidget::applyTheme()
 {
     const Theme& t = ThemeManager::instance()->currentTheme();
     setStyleSheet(QString(R"(
-        CustomTestBuilderWidget,
-        #myTestsPage, #builderPage {
-            background-color: %1;
+        CustomTestBuilderWidget { background-color: %1; }
+
+        /* ── My Tests page ─────────────────────────────────────── */
+        #myTestsPage { background-color: %1; }
+
+        #sectionHeader {
+            color: %5;
+            font-size: 15px;
+            font-weight: bold;
         }
-        #paneHeader {
+
+        #myTestsList {
             background-color: %2;
-            color: %4;
+            border: 1px solid %3;
+            border-radius: 4px;
+            color: %5;
+        }
+        #myTestsList::item {
+            padding: 10px;
+            border-bottom: 1px solid %3;
+            background-color: %2;
+            color: %5;
+        }
+        #myTestsList::item:hover {
+            background-color: %6;
+            border-radius: 4px;
+        }
+        #myTestsList::item:selected {
+            background-color: %9;
+            color: white;
+        }
+
+        /* ── Builder page ───────────────────────────────────────── */
+        #builderPage  { background-color: %1; }
+
+        /* Pane headers*/
+        #paneHeader {
+            background-color: %4;
+            color: %5;
             font-size: 12px;
             font-weight: bold;
-            padding: 0 12px;
+            padding-left: 10px;
+            border-bottom: 1px solid %3;
         }
-        #sectionHeader {
-            color: %4;
-            font-size: 16px;
-            font-weight: bold;
-        }
-        #myTestsList, #questionBrowser, #selectedList, #topicTree {
-            background-color: %5;
-            border: 1px solid %6;
-            border-radius: 4px;
-            color: %3;
-        }
-        #myTestsList::item, #questionBrowser::item,
-        #selectedList::item, #topicTree::item {
-            padding: 8px;
-            border-bottom: 1px solid %6;
-            background-color: %5;
-            color: %3;
-        }
-        #myTestsList::item:hover, #questionBrowser::item:hover,
-        #selectedList::item:hover, #topicTree::item:hover {
+
+        /* Topic tree */
+        #topicTree {
             background-color: %2;
-            border-radius: 4px;
+            color: %5;
+            border: none;
+            font-size: 13px;
         }
-        #myTestsList::item:selected, #questionBrowser::item:selected,
-        #selectedList::item:selected, #topicTree::item:selected {
-            background-color: %8;
-            color: %3;
-        }
-        #primaryButton {
+        #topicTree::item { padding: 4px 6px; }
+        #topicTree::item:hover {
+            padding-left: 10px;
             background-color: %7;
+        }
+        #topicTree::item:selected { background-color: %6; color: white; }
+
+        /* Question browser list */
+        #questionList {
+            background-color: %2;
+            color: %5;
+            border: none;
+            font-size: 13px;
+        }
+        #questionList::item {
+            padding: 6px 8px;
+            border-bottom: 1px solid %3;
+            background-color: %2;
+            color: %5;
+        }
+        #questionList::item:hover    { background-color: %6; border-radius: 3px; }
+        #questionList::item:selected { background-color: %9; color: white; }
+
+        /* Selected questions list */
+        #selectedList {
+            background-color: %2;
+            color: %5;
+            border: none;
+            font-size: 13px;
+        }
+        #selectedList::item {
+            padding: 6px 8px;
+            border-bottom: 1px solid %3;
+            background-color: %2;
+            color: %5;
+        }
+        #selectedList::item:hover    { background-color: %6; border-radius: 3px; }
+        #selectedList::item:selected { background-color: %9; color: white; }
+
+        /* Search fields */
+        #titleSearch, #tagSearch {
+            background-color: %2;
+            color: %5;
+            border: 1px solid %3;
+            border-radius: 3px;
+            padding: 4px 8px;
+            font-size: 12px;
+        }
+        #titleSearch:focus, #tagSearch:focus { border-color: %6; }
+
+        /* Bottom action bar — use toolbar/sidebar bg, NOT accent */
+        #builderBottomBar {
+            background-color: %4;
+            border-top: 1px solid %3;
+        }
+        #randomBar {
+            background-color: %4;
+            border-top: 1px solid %3;
+        }
+
+        /* Primary button */
+        #primaryButton {
+            background-color: %6;
             color: white;
             border: none;
             border-radius: 4px;
-            padding: 6px 16px;
-            font-size: 13px;
             font-weight: bold;
+            padding: 6px 16px;
         }
-        #primaryButton:hover { background-color: %8; color: white; }
-        #primaryButton:disabled {
-            background-color: %5;
-            color: %4;
-            border: 1px solid %6;
-        }
+        #primaryButton:hover    { background-color: %9; }
+        #primaryButton:disabled { background-color: %3; color: %8; border: 1px solid %3; }
+
+        /* Secondary / outline button */
         #secondaryButton {
             background-color: transparent;
-            color: %3;
-            border: 1px solid %6;
+            color: %5;
+            border: 1px solid %3;
             border-radius: 4px;
             padding: 6px 14px;
-            font-size: 13px;
         }
-        #secondaryButton:hover { background-color: %2; }
-        #secondaryButton:disabled {
-            background-color: %5;
-            color: %4;
-            border: 1px solid %6;
-        }
+        #secondaryButton:hover    { background-color: %7; border-color: %6; }
+        #secondaryButton:disabled { color: %8; border-color: %3; }
+
+        /* Danger button */
         #dangerButton {
             background-color: transparent;
-            color: %9;
-            border: 1px solid %9;
+            color: %10;
+            border: 1px solid %10;
             border-radius: 4px;
             padding: 6px 14px;
-            font-size: 13px;
         }
-        #dangerButton:hover  { background-color: %9; color: white; }
-        #builderBottomBar {
-            background-color: %2;
-            border-top: 1px solid %6;
-        }
-        #testTitleEdit, #testDescEdit, #difficultyCombo, #countSpin, #searchEdit {
-            background-color: %5;
-            color: %3;
+        #dangerButton:hover    { background-color: %10; color: white; }
+        #dangerButton:disabled { color: %8; border-color: %3; }
+
+        /* Generate button — same as secondary with accent hover */
+        #generateButton {
+            background-color: transparent;
+            color: %6;
             border: 1px solid %6;
+            border-radius: 4px;
+            padding: 6px 14px;
+            font-weight: bold;
+        }
+        #generateButton:hover    { background-color: %6; color: white; }
+        #generateButton:pressed  { background-color: %9; color: white; }
+        #generateButton:disabled { color: %8; border-color: %3; }
+
+        /* Move up/down arrow buttons */
+        #moveButton {
+            background-color: transparent;
+            color: %5;
+            border: 1px solid %3;
             border-radius: 3px;
             padding: 4px 8px;
+            font-size: 14px;
         }
-        #iconButton {
-            background-color: transparent;
-            color: %3;
-            border: 1px solid %6;
+        #moveButton:hover    { background-color: %7; border-color: %6; }
+        #moveButton:disabled { color: %8; border-color: %3; }
+
+        /* Metadata labels */
+        #difficultyCombo, #countSpinBox {
+            background-color: %2;
+            color: %5;
+            border: 1px solid %3;
             border-radius: 3px;
+            padding: 3px 6px;
         }
-        #toolLabel { color: %4; font-size: 12px; }
+
+        #titleEdit, #descEdit {
+            background-color: %2;
+            color: %5;
+            border: 1px solid %3;
+            border-radius: 3px;
+            padding: 4px 8px;
+            font-size: 12px;
+        }
+        #titleEdit:focus, #descEdit:focus { border-color: %6; }
+
+        QLabel { color: %5; }
+        QScrollBar:vertical { background: %2; width: 8px; border-radius: 4px; }
+        QScrollBar::handle:vertical { background: %3; border-radius: 4px; min-height: 20px; }
+        QScrollBar::handle:vertical:hover { background: %6; }
+        QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical { height: 0; }
     )")
-                      .arg(t.windowBackground.name())        // %1
-                      .arg(t.accent.name())                  // %2  (hover = accent, like WelcomeScreen)
-                      .arg(t.textPrimary.name())             // %3
-                      .arg(t.textSecondary.name())           // %4
-                      .arg(t.panelBackground.name())         // %5
-                      .arg(t.border.name())                  // %6
-                      .arg(t.accent.name())                  // %7  (primary button bg)
-                      .arg(t.accent.lighter(110).name())     // %8  (selected + button hover)
-                      .arg(t.error.name())                   // %9  (danger)
+                      .arg(t.windowBackground.name())      // %1
+                      .arg(t.panelBackground.name())       // %2
+                      .arg(t.border.name())                // %3
+                      .arg(t.toolbarBackground.name())     // %4
+                      .arg(t.textPrimary.name())           // %5
+                      .arg(t.accent.name())                // %6
+                      .arg(t.sidebarBackground.name())     // %7
+                      .arg(t.textSecondary.name())         // %8
+                      .arg(t.accent.lighter(115).name())   // %9
+                      .arg(t.error.name())                 // %10
                   );
 }
