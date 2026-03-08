@@ -1164,6 +1164,11 @@ void CustomTestBuilderWidget::applyTheme()
             background-color: %7;
         }
         #topicTree::item:selected { background-color: %6; color: white; }
+        #topicTree::item:selected:hover {
+            background-color: %6;
+            color: white;
+            padding-left: 10px;
+        }
 
         /* Question browser list */
         #questionBrowser {

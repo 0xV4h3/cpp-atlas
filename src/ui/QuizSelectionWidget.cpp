@@ -387,8 +387,13 @@ void QuizSelectionWidget::applyTheme()
             font-size: 13px;
         }
         #topicTree::item { padding: 4px 6px; }
-        #topicTree::item:selected { background-color: %6; color: white; }
         #topicTree::item:hover    { padding-left: 10px; background-color: %7; }
+        #topicTree::item:selected { background-color: %6; color: white; }
+        #topicTree::item:selected:hover {
+            background-color: %6;
+            color: white;
+            padding-left: 10px;
+        }
         #filterBar {
             background-color: %4;
             border-bottom: 1px solid %3;
@@ -417,8 +422,8 @@ void QuizSelectionWidget::applyTheme()
             color: %5;
             border-bottom: 1px solid %3;
         }
-        #quizList::item:selected { background-color: %6; color: white; }
-        #quizList::item:hover    { background-color: %7; border-radius: 4px; }
+        #quizList::item:selected { background-color: %9; color: white; }
+        #quizList::item:hover    { background-color: %6; border-radius: 4px; }
         #quizDetailPanel {
             background-color: %4;
             border-top: 1px solid %3;
