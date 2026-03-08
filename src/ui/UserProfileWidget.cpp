@@ -599,10 +599,14 @@ void UserProfileWidget::applyTheme()
         #xpBarContainer {
             background-color: %3;
             border-radius: 6px;
+            min-height: 12px;
+            max-height: 12px;
         }
         #xpBarFill {
             background-color: %4;
             border-radius: 6px;
+            min-height: 12px;
+            max-height: 12px;
         }
 
         #analyticsCard {
@@ -681,4 +685,10 @@ void UserProfileWidget::applyTheme()
                 QString("background-color: %1;").arg(t.windowBackground.name())
             );
     }
+
+    // Force XP bar fill color directly (QSS sometimes doesn't propagate to inner QWidget)
+    if (m_xpBarFill)
+        m_xpBarFill->setStyleSheet(
+            QString("background-color: %1; border-radius: 6px;").arg(t.accent.name())
+        );
 }

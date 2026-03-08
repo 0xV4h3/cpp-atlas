@@ -121,6 +121,17 @@ void QuizModeWindow::setupUi()
         m_sessionWidget->startCustomSession(questions, userId, "practice");
         navigateTo(1, "← Back");
     });
+    // Update back button label when builder switches between My Tests / Builder sub-page
+    connect(m_builderWidget, &CustomTestBuilderWidget::subPageChanged,
+            this, [this](int sub) {
+        if (sub == 1) {
+            m_backBtn->setText("← My Tests");
+            m_backBtn->setVisible(true);
+        } else {
+            m_backBtn->setText("← Back");
+            m_backBtn->setVisible(true);  // still on Page 4
+        }
+    });
 
     // Wire session signals
     connect(m_sessionWidget, &QuizSessionWidget::sessionCompleted,

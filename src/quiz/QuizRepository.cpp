@@ -286,6 +286,15 @@ QList<QuizDTO> QuizRepository::quizzesByTopic(int topicId) const
     while (q.next()) {
         QuizDTO qz = quizFromQuery(q);
         qz.questionCount = q.value("qcount").toInt();
+        qz.tags = [&]() -> QStringList {
+            QStringList t;
+            QSqlQuery tq(db());
+            tq.prepare("SELECT tg.name FROM tags tg "
+                       "JOIN quiz_tags qt ON qt.tag_id = tg.id WHERE qt.quiz_id = :id");
+            tq.bindValue(":id", qz.id);
+            if (tq.exec()) while (tq.next()) t << tq.value(0).toString();
+            return t;
+        }();
         list << qz;
     }
     return list;

@@ -8,6 +8,7 @@
 #include <QPushButton>
 #include <QComboBox>
 #include <QLineEdit>
+#include <QCompleter>
 #include "quiz/QuizRepository.h"
 
 /**
@@ -52,6 +53,7 @@ private:
     void populateQuizList(int topicId = -1);   // -1 = all
     void showQuizDetail(const QuizDTO& quiz);
     void clearQuizDetail();
+    void applyCompleterTheme();   ///< theme m_tagCompleter popup
     QString difficultyLabel(int d) const;
     QString difficultyStars(int d) const;
 
@@ -64,6 +66,7 @@ private:
     QComboBox*       m_difficultyCombo = nullptr;
     QLineEdit*       m_titleSearch     = nullptr;  // filter by quiz title
     QLineEdit*       m_tagSearch       = nullptr;
+    QCompleter*      m_tagCompleter    = nullptr;
     QListWidget*     m_quizList        = nullptr;
 
     // Detail panel (bottom-right)

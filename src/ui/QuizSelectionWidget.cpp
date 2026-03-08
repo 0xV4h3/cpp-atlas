@@ -8,6 +8,8 @@
 #include <QListWidgetItem>
 #include <QFrame>
 #include <QScrollArea>
+#include <QCompleter>
+#include <QStringListModel>
 
 QuizSelectionWidget::QuizSelectionWidget(QWidget* parent)
     : QWidget(parent)
@@ -82,11 +84,11 @@ void QuizSelectionWidget::setupUi()
     diffLabel->setObjectName("filterLabel");
     m_difficultyCombo = new QComboBox(filterBar);
     m_difficultyCombo->setObjectName("filterCombo");
-    m_difficultyCombo->addItem("All levels", -1);
-    m_difficultyCombo->addItem("⭐ Beginner",     1);
-    m_difficultyCombo->addItem("⭐⭐ Intermediate", 2);
-    m_difficultyCombo->addItem("⭐⭐⭐ Advanced",   3);
-    m_difficultyCombo->addItem("⭐⭐⭐⭐ Expert",   4);
+    m_difficultyCombo->addItem("All levels",      -1);
+    m_difficultyCombo->addItem(QString::fromUtf8(u8"\u2605 Beginner"),                  1);
+    m_difficultyCombo->addItem(QString::fromUtf8(u8"\u2605\u2605 Intermediate"),        2);
+    m_difficultyCombo->addItem(QString::fromUtf8(u8"\u2605\u2605\u2605 Advanced"),      3);
+    m_difficultyCombo->addItem(QString::fromUtf8(u8"\u2605\u2605\u2605\u2605 Expert"),  4);
     connect(m_difficultyCombo, QOverload<int>::of(&QComboBox::currentIndexChanged),
             this, &QuizSelectionWidget::onDifficultyFilterChanged);
     filterLayout->addWidget(diffLabel);
@@ -117,6 +119,22 @@ void QuizSelectionWidget::setupUi()
             this, &QuizSelectionWidget::onTagSearchChanged);
     filterLayout->addWidget(tagLabel);
     filterLayout->addWidget(m_tagSearch);
+
+    // Tag suggestion completer
+    m_tagCompleter = new QCompleter(this);
+    m_tagCompleter->setCaseSensitivity(Qt::CaseInsensitive);
+    m_tagCompleter->setFilterMode(Qt::MatchContains);
+    m_tagSearch->setCompleter(m_tagCompleter);
+    {
+        QStringList tagNames;
+        for (const auto& tg : m_repo.allTags()) tagNames << tg.name;
+        m_tagCompleter->setModel(new QStringListModel(tagNames, m_tagCompleter));
+    }
+    // Lazily theme completer popup on first keypress
+    connect(m_tagSearch, &QLineEdit::textChanged, this, [this](const QString&) {
+        applyCompleterTheme();
+    });
+
     filterLayout->addStretch();
 
     rightLayout->addWidget(filterBar);
@@ -358,11 +376,28 @@ QString QuizSelectionWidget::difficultyLabel(int d) const
 
 QString QuizSelectionWidget::difficultyStars(int d) const
 {
-    const QString filled  = "⭐";
-    const QString empty   = "☆";
+    const QString star  = QString::fromUtf8(u8"\u2605");
+    const QString empty = QString::fromUtf8(u8"\u2606");
     QString s;
-    for (int i = 1; i <= 4; ++i) s += (i <= d ? filled : empty);
+    for (int i = 1; i <= 4; ++i) s += (i <= d ? star : empty);
     return s;
+}
+
+void QuizSelectionWidget::applyCompleterTheme()
+{
+    if (!m_tagCompleter || !m_tagCompleter->popup()) return;
+    const Theme& th = ThemeManager::instance()->currentTheme();
+    m_tagCompleter->popup()->setStyleSheet(QString(
+        "QAbstractItemView {"
+        "  background-color: %1; color: %2;"
+        "  border: 1px solid %3;"
+        "  selection-background-color: %4; selection-color: white;"
+        "  font-size: 12px; padding: 2px;"
+        "}")
+        .arg(th.panelBackground.name())
+        .arg(th.textPrimary.name())
+        .arg(th.border.name())
+        .arg(th.accent.name()));
 }
 
 void QuizSelectionWidget::applyTheme()
@@ -457,4 +492,7 @@ void QuizSelectionWidget::applyTheme()
     .arg(t.textSecondary.name())           // %8
     .arg(t.accent.lighter(115).name())     // %9
     );
+
+    // Theme tag completer popup (if already visible)
+    applyCompleterTheme();
 }

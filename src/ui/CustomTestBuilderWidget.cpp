@@ -29,6 +29,7 @@ void CustomTestBuilderWidget::refresh()
 {
     populateMyTests();
     m_innerStack->setCurrentIndex(0);
+    emit subPageChanged(0);
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -117,6 +118,7 @@ void CustomTestBuilderWidget::setupMyTestsPage()
         populateQuestionBrowser(-1);
         updateSaveButtonStates();
         m_innerStack->setCurrentIndex(1);
+        emit subPageChanged(1);
     });
     actions->addWidget(m_editTestBtn);
 
@@ -233,6 +235,10 @@ void CustomTestBuilderWidget::setupBuilderPage()
         for (const auto& t : m_repo.allTags()) tagNames << t.name;
         m_questionTagCompleter->setModel(new QStringListModel(tagNames, m_questionTagCompleter));
     }
+    // Lazily theme completer popup on first keypress
+    connect(m_questionTagSearch, &QLineEdit::textChanged, this, [this](const QString&) {
+        applyCompleterTheme();
+    });
 
     qPaneLayout->addLayout(searchRow);
 
@@ -919,6 +925,7 @@ void CustomTestBuilderWidget::onImportClicked()
     m_hasChanges = true;
     updateSaveButtonStates();
     m_innerStack->setCurrentIndex(1);
+    emit subPageChanged(1);
 
     QMessageBox::information(this, "Imported",
                              QString("Imported %1 questions from \"%2\".\nYou can now launch or save the test.")
@@ -974,6 +981,7 @@ void CustomTestBuilderWidget::onNewTestClicked()
     m_hasChanges = false;
     updateSaveButtonStates();
     m_innerStack->setCurrentIndex(1);
+    emit subPageChanged(1);
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -1100,6 +1108,23 @@ void CustomTestBuilderWidget::updateAddAllState()
         }
     }
     m_addAllBtn->setEnabled(false);
+}
+
+void CustomTestBuilderWidget::applyCompleterTheme()
+{
+    if (!m_questionTagCompleter || !m_questionTagCompleter->popup()) return;
+    const Theme& th = ThemeManager::instance()->currentTheme();
+    m_questionTagCompleter->popup()->setStyleSheet(QString(
+        "QAbstractItemView {"
+        "  background-color: %1; color: %2;"
+        "  border: 1px solid %3;"
+        "  selection-background-color: %4; selection-color: white;"
+        "  font-size: 12px; padding: 2px;"
+        "}")
+        .arg(th.panelBackground.name())
+        .arg(th.textPrimary.name())
+        .arg(th.border.name())
+        .arg(th.accent.name()));
 }
 
 void CustomTestBuilderWidget::applyTheme()
@@ -1318,4 +1343,6 @@ void CustomTestBuilderWidget::applyTheme()
                       .arg(t.accent.lighter(115).name())   // %9
                       .arg(t.error.name())                 // %10
                   );
+
+    applyCompleterTheme();
 }

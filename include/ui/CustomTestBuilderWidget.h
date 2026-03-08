@@ -39,6 +39,7 @@ public:
 signals:
     void launchCustomTest(const QList<QuestionDTO>& questions);
     void backRequested();
+    void subPageChanged(int subPage);  ///< 0=MyTests, 1=Builder
 
 private slots:
     void onTopicSelected();
@@ -75,6 +76,7 @@ private:
     void clearBuilder();
     void updateSaveButtonStates();
     void updateAddAllState();
+    void applyCompleterTheme();   ///< theme m_questionTagCompleter popup
     QString difficultyLabel(int d) const;
     QString questionTypeLabel(const QString& type) const;
 
