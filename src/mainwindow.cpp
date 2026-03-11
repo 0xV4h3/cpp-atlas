@@ -13,12 +13,16 @@
 #include "ui/NewFileDialog.h"
 #include "ui/NewProjectDialog.h"
 #include "ui/AnalysisPanel.h"
+#include "ui/QuizModeWindow.h"
+#include "ui/SettingsDialog.h"
 #include "core/FileManager.h"
 #include "core/Project.h"
 #include "core/ProjectManager.h"
 #include "core/RecentProjectsManager.h"
 #include "compiler/CompilerRegistry.h"
 #include "compiler/ICompiler.h"
+#include "quiz/UserManager.h"
+#include "core/AppSettings.h"
 
 #include <QToolBar>
 #include <QMenuBar>
@@ -36,6 +40,7 @@
 #include <QHBoxLayout>
 #include <QPushButton>
 #include <QToolButton>
+#include <QTimer>
 
 #ifdef Q_OS_WIN
 #include <windows.h>
@@ -74,6 +79,12 @@ MainWindow::MainWindow(QWidget *parent)
     setupConnections();
     setupWelcomeScreen();
     
+    // Store and reflect current logged-in user
+    if (UserManager::instance().isLoggedIn()) {
+        m_currentUsername = UserManager::instance().currentUser().username;
+        updateTitleBarUser();
+    }
+    
     // Auto-scan for compilers
     CompilerRegistry::instance().autoScanCompilers();
     loadCompilers();
@@ -82,23 +93,13 @@ MainWindow::MainWindow(QWidget *parent)
     ThemeManager::instance()->setTheme("dark");
     
     updateWindowTitle();
-    
-    // Restore window state
-    QSettings settings("CppAtlas", "CppAtlas");
-    restoreGeometry(settings.value("geometry").toByteArray());
-    restoreState(settings.value("windowState").toByteArray());
-    
+        
     // Show Welcome Screen on startup
     showWelcomeScreen();
 }
 
 MainWindow::~MainWindow()
-{
-    // Save window state
-    QSettings settings("CppAtlas", "CppAtlas");
-    settings.setValue("geometry", saveGeometry());
-    settings.setValue("windowState", saveState());
-    
+{   
     delete ui;
 }
 
@@ -112,7 +113,16 @@ void MainWindow::setupUi() {
     // Create central widget - editor tabs
     m_editorTabs = new EditorTabWidget(this);
     m_centralStack->addWidget(m_editorTabs);
-    
+
+    // Quiz Mode window (created once, added to stack)
+    m_quizModeWindow = new QuizModeWindow(this);
+    m_centralStack->addWidget(m_quizModeWindow);
+    connect(m_quizModeWindow, &QuizModeWindow::exitRequested,
+            this, &MainWindow::onQuizModeExit);
+    // Update user display if already logged in
+    if (UserManager::instance().isLoggedIn())
+        m_quizModeWindow->setCurrentUser(UserManager::instance().currentUser());
+
     setCentralWidget(m_centralStack);
 }
 
@@ -390,6 +400,12 @@ void MainWindow::setupMenus() {
     // Tools menu — Analysis Panel + tab shortcuts
     m_toolsMenu = menuBar()->addMenu(QStringLiteral("&Tools"));
 
+    m_settingsAction = m_toolsMenu->addAction(QStringLiteral("&Settings..."));
+    m_settingsAction->setShortcut(QKeySequence(Qt::CTRL | Qt::Key_Comma));
+    connect(m_settingsAction, &QAction::triggered, this, &MainWindow::onSettingsRequested);
+
+    m_toolsMenu->addSeparator();
+
     m_toggleAnalysisAction = m_toolsMenu->addAction(
         QStringLiteral("Toggle &Analysis Panel"));
     m_toggleAnalysisAction->setShortcut(
@@ -502,7 +518,7 @@ void MainWindow::setupDockWidgets() {
     m_fileTree = new FileTreeWidget(m_fileTreeDock);
     m_fileTreeDock->setWidget(m_fileTree);
     addDockWidget(Qt::LeftDockWidgetArea, m_fileTreeDock);
-    
+
     // Output panel dock
     m_outputPanelDock = new QDockWidget("Output", this);
     m_outputPanelDock->setObjectName("outputPanelDock");
@@ -516,7 +532,7 @@ void MainWindow::setupDockWidgets() {
     m_analysisPanel = new AnalysisPanel(m_analysisDock);
     m_analysisDock->setWidget(m_analysisPanel);
     addDockWidget(Qt::RightDockWidgetArea, m_analysisDock);
-    m_analysisDock->hide(); // Hidden by default; open via Tools menu
+    m_analysisDock->hide();
 }
 
 void MainWindow::setupStatusBar() {
@@ -586,6 +602,12 @@ void MainWindow::setupConnections() {
 void MainWindow::setupWelcomeScreen() {
     m_welcomeScreen = new WelcomeScreen(this);
     m_centralStack->addWidget(m_welcomeScreen);
+
+    // Show current user on welcome screen
+    if (UserManager::instance().isLoggedIn()) {
+        const auto u = UserManager::instance().currentUser();
+        m_welcomeScreen->setCurrentUser(u.displayName, u.username, u.isAdmin);
+    }
     
     // Connect Welcome Screen signals
     connect(m_welcomeScreen, &WelcomeScreen::newFileRequested, this, [this]() {
@@ -650,14 +672,8 @@ void MainWindow::setupWelcomeScreen() {
         }
     });
     
-    connect(m_welcomeScreen, &WelcomeScreen::quizModeRequested, this, [this]() {
-        QMessageBox::information(this, "Quiz Mode",
-            "Quiz Mode will be available in a future update.\n\n"
-            "This will include:\n"
-            "- C++ knowledge assessments\n"
-            "- Interactive coding challenges\n"
-            "- Progress tracking");
-    });
+    connect(m_welcomeScreen, &WelcomeScreen::quizModeRequested,
+            this, &MainWindow::onQuizModeRequested);
     
     connect(m_welcomeScreen, &WelcomeScreen::continueWithoutProjectRequested,
             this, [this]() {
@@ -679,11 +695,11 @@ void MainWindow::showWelcomeScreen() {
     
     m_centralStack->setCurrentWidget(m_welcomeScreen);
     
-    // Hide IDE-specific docks
+    // Hide IDE-specific docks — deferred to avoid Wayland xdg_surface buffer mismatch
     m_fileTreeDock->hide();
     m_outputPanelDock->hide();
     m_analysisDockWasVisible = m_analysisDock->isVisible();
-    m_analysisDock->hide();
+    QTimer::singleShot(0, this, [this]{ m_analysisDock->hide(); });
     
     // Show "Return to Project" button if a project/folder is open
     bool hasOpenProject = ProjectManager::instance()->hasOpenProject();
@@ -695,13 +711,54 @@ void MainWindow::showWelcomeScreen() {
 void MainWindow::hideWelcomeScreen() {
     m_centralStack->setCurrentWidget(m_editorTabs);
     
-    // Show IDE docks
+    // Show IDE docks — deferred to avoid Wayland xdg_surface buffer mismatch
     m_fileTreeDock->show();
     m_outputPanelDock->show();
-    if (m_analysisDockWasVisible) m_analysisDock->show();
+    QTimer::singleShot(0, this, [this]{ if (m_analysisDockWasVisible) m_analysisDock->show(); });
     
     if (m_closeProjectAction) m_closeProjectAction->setEnabled(true);
     updateMenuState(false);
+}
+
+void MainWindow::onQuizModeRequested()
+{
+    showQuizModeWindow();
+}
+
+void MainWindow::onQuizModeExit()
+{
+    hideQuizModeWindow();
+    showWelcomeScreen();
+}
+
+void MainWindow::onSettingsRequested()
+{
+    const QString username = UserManager::instance().currentUser().username;
+    SettingsDialog dlg(username, this);
+    connect(&dlg, &SettingsDialog::settingsChanged, this, [this](){
+        updateWindowTitle();
+    });
+    dlg.exec();
+}
+
+void MainWindow::showQuizModeWindow()
+{
+    m_centralStack->setCurrentWidget(m_quizModeWindow);
+    m_fileTreeDock->hide();
+    m_outputPanelDock->hide();
+    m_analysisDockWasVisible = m_analysisDock->isVisible();
+    QTimer::singleShot(0, this, [this]{ m_analysisDock->hide(); });
+    updateMenuState(true);
+    updateCustomTitleLabel("CppAtlas — Quiz Mode");
+}
+
+void MainWindow::hideQuizModeWindow()
+{
+    // Restore docks to their pre-quiz-mode state so that showWelcomeScreen()
+    // captures the correct visibility when it re-saves m_analysisDockWasVisible.
+    m_fileTreeDock->show();
+    m_outputPanelDock->show();
+    QTimer::singleShot(0, this, [this]{ if (m_analysisDockWasVisible) m_analysisDock->show(); });
 }
 
 void MainWindow::updateMenuState(bool isWelcomeVisible) {
@@ -814,7 +871,47 @@ void MainWindow::updateCustomTitleLabel(const QString& title) {
     }
 }
 
+void MainWindow::updateTitleBarUser()
+{
+    if (!m_titleLabel) return;
+    const auto user = UserManager::instance().currentUser();
+    if (!user.username.isEmpty()) {
+        const QString adminBadge = user.isAdmin ? " 👑" : "";
+        m_titleLabel->setText(
+            QString("CppAtlas — %1%2").arg(user.displayName, adminBadge));
+    }
+}
+
+void MainWindow::saveUserSession()
+{
+    if (UserManager::instance().isLoggedIn()) {
+        AppSettings userSettings(UserManager::instance().currentUser().username);
+        userSettings.setWindowGeometry(saveGeometry());
+        userSettings.setWindowState(saveState());
+    }
+}
+
+void MainWindow::loadUserSession()
+{
+    if (!UserManager::instance().isLoggedIn())
+        return;
+
+    AppSettings userSettings(UserManager::instance().currentUser().username);
+    const QByteArray geometry = userSettings.windowGeometry();
+    const QByteArray state    = userSettings.windowState();
+
+    if (!geometry.isEmpty() && !isMaximized() && !isFullScreen()) {
+        restoreGeometry(geometry);
+    }
+    if (!state.isEmpty()) {
+        restoreState(state);
+    }
+}
+
 void MainWindow::closeEvent(QCloseEvent *event) {
+    // Save per-user window geometry
+    saveUserSession();
+
     // Save project session before closing
     saveCurrentSession();
     
