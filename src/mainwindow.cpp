@@ -13,16 +13,12 @@
 #include "ui/NewFileDialog.h"
 #include "ui/NewProjectDialog.h"
 #include "ui/AnalysisPanel.h"
-#include "ui/QuizModeWindow.h"
-#include "ui/SettingsDialog.h"
 #include "core/FileManager.h"
 #include "core/Project.h"
 #include "core/ProjectManager.h"
 #include "core/RecentProjectsManager.h"
 #include "compiler/CompilerRegistry.h"
 #include "compiler/ICompiler.h"
-#include "quiz/UserManager.h"
-#include "core/AppSettings.h"
 
 #include <QToolBar>
 #include <QMenuBar>
@@ -40,7 +36,6 @@
 #include <QHBoxLayout>
 #include <QPushButton>
 #include <QToolButton>
-#include <QTimer>
 
 #ifdef Q_OS_WIN
 #include <windows.h>
@@ -52,7 +47,7 @@ MainWindow::MainWindow(QWidget *parent)
     , ui(new Ui::MainWindow)
 {
     ui->setupUi(this);
-    
+
     // Enable frameless window with custom styling
 #ifdef Q_OS_WIN
     // On Windows, use native frameless with resize support
@@ -63,13 +58,13 @@ MainWindow::MainWindow(QWidget *parent)
     // On Linux/macOS
     setWindowFlags(Qt::FramelessWindowHint);
 #endif
-    
+
     setAttribute(Qt::WA_TranslucentBackground, false);
-    
+
     // Initialize components
     m_fileManager = new FileManager(this);
     m_project = new Project(this);
-    
+
     setupUi();
     setupMenus();
     setupCustomTitleBar();
@@ -78,50 +73,45 @@ MainWindow::MainWindow(QWidget *parent)
     setupStatusBar();
     setupConnections();
     setupWelcomeScreen();
-    
-    // Store and reflect current logged-in user
-    if (UserManager::instance().isLoggedIn()) {
-        m_currentUsername = UserManager::instance().currentUser().username;
-        updateTitleBarUser();
-    }
-    
+
     // Auto-scan for compilers
     CompilerRegistry::instance().autoScanCompilers();
     loadCompilers();
-    
+
     // Apply default theme
     ThemeManager::instance()->setTheme("dark");
-    
+
     updateWindowTitle();
-        
+
+    // Restore window state
+    QSettings settings("CppAtlas", "CppAtlas");
+    restoreGeometry(settings.value("geometry").toByteArray());
+    restoreState(settings.value("windowState").toByteArray());
+
     // Show Welcome Screen on startup
     showWelcomeScreen();
 }
 
 MainWindow::~MainWindow()
-{   
+{
+    // Save window state
+    QSettings settings("CppAtlas", "CppAtlas");
+    settings.setValue("geometry", saveGeometry());
+    settings.setValue("windowState", saveState());
+
     delete ui;
 }
 
 void MainWindow::setupUi() {
     setWindowTitle("CppAtlas - C++ Learning IDE");
     resize(1200, 800);
-    
+
     // Create stacked widget for Welcome/IDE switching
     m_centralStack = new QStackedWidget(this);
-    
+
     // Create central widget - editor tabs
     m_editorTabs = new EditorTabWidget(this);
     m_centralStack->addWidget(m_editorTabs);
-
-    // Quiz Mode window (created once, added to stack)
-    m_quizModeWindow = new QuizModeWindow(this);
-    m_centralStack->addWidget(m_quizModeWindow);
-    connect(m_quizModeWindow, &QuizModeWindow::exitRequested,
-            this, &MainWindow::onQuizModeExit);
-    // Update user display if already logged in
-    if (UserManager::instance().isLoggedIn())
-        m_quizModeWindow->setCurrentUser(UserManager::instance().currentUser());
 
     setCentralWidget(m_centralStack);
 }
@@ -131,11 +121,11 @@ void MainWindow::setupCustomTitleBar() {
     m_titleBar->setObjectName("customTitleBar");
     m_titleBar->setFixedHeight(TITLE_BAR_HEIGHT);
     m_titleBar->setMouseTracking(true);
-    
+
     QHBoxLayout* layout = new QHBoxLayout(m_titleBar);
     layout->setContentsMargins(8, 0, 0, 0);
     layout->setSpacing(0);
-    
+
     // App icon (C++ icon)
     m_iconLabel = new QLabel(this);
     m_iconLabel->setText("C++");
@@ -143,31 +133,31 @@ void MainWindow::setupCustomTitleBar() {
     m_iconLabel->setFixedSize(36, 28);  // Wider to fit "C++"
     m_iconLabel->setAlignment(Qt::AlignCenter);
     layout->addWidget(m_iconLabel);
-    
+
     layout->addSpacing(8);
-    
+
     // Menu bar goes here (move existing menu bar into title bar)
     if (menuBar()) {
         menuBar()->setObjectName("titleBarMenu");
         layout->addWidget(menuBar());
     }
-    
+
     layout->addStretch();
-    
+
     // Window title (filename - CppAtlas)
     m_titleLabel = new QLabel("CppAtlas - C++ Learning IDE", this);
     m_titleLabel->setObjectName("windowTitle");
     m_titleLabel->setAlignment(Qt::AlignCenter);
     layout->addWidget(m_titleLabel);
-    
+
     layout->addStretch();
-    
+
     // Window control buttons (right side)
     QWidget* buttonContainer = new QWidget(this);
     QHBoxLayout* btnLayout = new QHBoxLayout(buttonContainer);
     btnLayout->setContentsMargins(0, 0, 0, 0);
     btnLayout->setSpacing(0);
-    
+
     // Minimize button
     m_minimizeBtn = new QPushButton(this);
     m_minimizeBtn->setObjectName("minimizeButton");
@@ -176,7 +166,7 @@ void MainWindow::setupCustomTitleBar() {
     m_minimizeBtn->setFlat(true);
     connect(m_minimizeBtn, &QPushButton::clicked, this, &QMainWindow::showMinimized);
     btnLayout->addWidget(m_minimizeBtn);
-    
+
     // Maximize/Restore button
     m_maximizeBtn = new QPushButton(this);
     m_maximizeBtn->setObjectName("maximizeButton");
@@ -193,7 +183,7 @@ void MainWindow::setupCustomTitleBar() {
         }
     });
     btnLayout->addWidget(m_maximizeBtn);
-    
+
     // Close button
     m_closeBtn = new QPushButton(this);
     m_closeBtn->setObjectName("closeButton");
@@ -202,9 +192,9 @@ void MainWindow::setupCustomTitleBar() {
     m_closeBtn->setFlat(true);
     connect(m_closeBtn, &QPushButton::clicked, this, &QMainWindow::close);
     btnLayout->addWidget(m_closeBtn);
-    
+
     layout->addWidget(buttonContainer);
-    
+
     // Set title bar as menu widget (replaces default)
     setMenuWidget(m_titleBar);
 }
@@ -212,37 +202,37 @@ void MainWindow::setupCustomTitleBar() {
 void MainWindow::setupMenus() {
     // File menu
     QMenu* fileMenu = menuBar()->addMenu("&File");
-    
+
     QAction* newAction = fileMenu->addAction("New &File");
     newAction->setShortcut(QKeySequence::New);
     connect(newAction, &QAction::triggered, this, &MainWindow::onFileNew);
-    
+
     QAction* newProjectAction = fileMenu->addAction("New &Project...");
     newProjectAction->setShortcut(QKeySequence("Ctrl+Shift+N"));
     connect(newProjectAction, &QAction::triggered, this, &MainWindow::onFileNewProject);
-    
+
     fileMenu->addSeparator();
-    
+
     QAction* openAction = fileMenu->addAction("&Open...");
     openAction->setShortcut(QKeySequence::Open);
     connect(openAction, &QAction::triggered, this, &MainWindow::onFileOpen);
-    
+
     fileMenu->addSeparator();
-    
+
     QAction* saveAction = fileMenu->addAction("&Save");
     saveAction->setShortcut(QKeySequence::Save);
     connect(saveAction, &QAction::triggered, this, &MainWindow::onFileSave);
-    
+
     QAction* saveAsAction = fileMenu->addAction("Save &As...");
     saveAsAction->setShortcut(QKeySequence::SaveAs);
     connect(saveAsAction, &QAction::triggered, this, &MainWindow::onFileSaveAs);
-    
+
     fileMenu->addSeparator();
-    
+
     QAction* openFolderAction = fileMenu->addAction("Open F&older...");
     openFolderAction->setShortcut(QKeySequence("Ctrl+K"));
     connect(openFolderAction, &QAction::triggered, this, &MainWindow::onFileOpenFolder);
-    
+
     QAction* openProjectAction = fileMenu->addAction("Open Pro&ject...");
     connect(openProjectAction, &QAction::triggered, this, &MainWindow::onFileOpenProject);
 
@@ -250,109 +240,109 @@ void MainWindow::setupMenus() {
     m_closeProjectAction = fileMenu->addAction(QStringLiteral("Close Project"));
     m_closeProjectAction->setEnabled(false);
     connect(m_closeProjectAction, &QAction::triggered, this, &MainWindow::onFileCloseProject);
-    
+
     fileMenu->addSeparator();
-    
+
     QAction* exitAction = fileMenu->addAction("E&xit");
     exitAction->setShortcut(QKeySequence::Quit);
     connect(exitAction, &QAction::triggered, this, &MainWindow::onFileExit);
-    
+
     // Edit menu
     m_editMenu = menuBar()->addMenu("&Edit");
-    
+
     QAction* undoAction = m_editMenu->addAction("&Undo");
     undoAction->setShortcut(QKeySequence::Undo);
     connect(undoAction, &QAction::triggered, this, &MainWindow::onEditUndo);
-    
+
     QAction* redoAction = m_editMenu->addAction("&Redo");
     redoAction->setShortcut(QKeySequence::Redo);
     connect(redoAction, &QAction::triggered, this, &MainWindow::onEditRedo);
-    
+
     m_editMenu->addSeparator();
-    
+
     QAction* cutAction = m_editMenu->addAction("Cu&t");
     cutAction->setShortcut(QKeySequence::Cut);
     connect(cutAction, &QAction::triggered, this, &MainWindow::onEditCut);
-    
+
     QAction* copyAction = m_editMenu->addAction("&Copy");
     copyAction->setShortcut(QKeySequence::Copy);
     connect(copyAction, &QAction::triggered, this, &MainWindow::onEditCopy);
-    
+
     QAction* pasteAction = m_editMenu->addAction("&Paste");
     pasteAction->setShortcut(QKeySequence::Paste);
     connect(pasteAction, &QAction::triggered, this, &MainWindow::onEditPaste);
-    
+
     m_editMenu->addSeparator();
-    
+
     m_findAction = m_editMenu->addAction("&Find...");
     m_findAction->setShortcut(QKeySequence::Find);
     connect(m_findAction, &QAction::triggered, this, &MainWindow::onEditFind);
-    
+
     m_replaceAction = m_editMenu->addAction("&Replace...");
     m_replaceAction->setShortcut(QKeySequence::Replace);
     connect(m_replaceAction, &QAction::triggered, this, &MainWindow::onEditReplace);
-    
+
     m_editMenu->addSeparator();
-    
+
     m_gotoLineAction = m_editMenu->addAction("&Go to Line...");
     m_gotoLineAction->setShortcut(QKeySequence(Qt::CTRL | Qt::Key_G));
     connect(m_gotoLineAction, &QAction::triggered, this, &MainWindow::onEditGotoLine);
-    
+
     // Build menu
     m_buildMenu = menuBar()->addMenu("&Build");
-    
+
     QAction* compileAction = m_buildMenu->addAction("&Build");
     compileAction->setShortcut(Qt::Key_F7);
     connect(compileAction, &QAction::triggered, this, &MainWindow::onBuildCompile);
-    
+
     m_runAction = m_buildMenu->addAction("&Run");
     m_runAction->setShortcut(Qt::Key_F5);
     connect(m_runAction, &QAction::triggered, this, &MainWindow::onBuildRun);
-    
+
     QAction* compileAndRunAction = m_buildMenu->addAction("Build && R&un");
     compileAndRunAction->setShortcut(Qt::CTRL | Qt::Key_F5);
     connect(compileAndRunAction, &QAction::triggered, this, &MainWindow::onBuildCompileAndRun);
-    
+
     m_buildMenu->addSeparator();
-    
+
     QAction* stopAction = m_buildMenu->addAction("&Stop");
     stopAction->setShortcut(Qt::SHIFT | Qt::Key_F5);
     connect(stopAction, &QAction::triggered, this, &MainWindow::onBuildStop);
-    
+
     QAction* cleanAction = m_buildMenu->addAction("&Clean");
     connect(cleanAction, &QAction::triggered, this, &MainWindow::onBuildClean);
-    
+
     // View menu
     m_viewMenu = menuBar()->addMenu("&View");
-    
+
     m_toggleFileTreeAction = m_viewMenu->addAction("Toggle &File Tree");
     connect(m_toggleFileTreeAction, &QAction::triggered, this, &MainWindow::onViewToggleFileTree);
-    
+
     m_toggleOutputAction = m_viewMenu->addAction("Toggle &Output Panel");
     connect(m_toggleOutputAction, &QAction::triggered, this, &MainWindow::onViewToggleOutputPanel);
-    
+
     m_viewMenu->addSeparator();
-    
+
     // Theme submenu
     QMenu* themeMenu = m_viewMenu->addMenu("&Theme");
     QActionGroup* themeGroup = new QActionGroup(this);
-    
+
     QAction* darkThemeAction = themeMenu->addAction("Dark");
     darkThemeAction->setCheckable(true);
     darkThemeAction->setChecked(true);
     darkThemeAction->setData("dark");
     themeGroup->addAction(darkThemeAction);
-    
+
     QAction* lightThemeAction = themeMenu->addAction("Light");
     lightThemeAction->setCheckable(true);
     lightThemeAction->setData("light");
     themeGroup->addAction(lightThemeAction);
-    
+
     QAction* draculaThemeAction = themeMenu->addAction("Dracula");
     draculaThemeAction->setCheckable(true);
     draculaThemeAction->setData("dracula");
     themeGroup->addAction(draculaThemeAction);
-    
+
     QAction* monokaiThemeAction = themeMenu->addAction("Monokai");
     monokaiThemeAction->setCheckable(true);
     monokaiThemeAction->setData("monokai");
@@ -362,7 +352,7 @@ void MainWindow::setupMenus() {
     oneMonokaiThemeAction->setCheckable(true);
     oneMonokaiThemeAction->setData("one-monokai");
     themeGroup->addAction(oneMonokaiThemeAction);
-    
+
     connect(themeGroup, &QActionGroup::triggered, this, [this](QAction* action) {
         QString themeName = action->data().toString();
         ThemeManager::instance()->setTheme(themeName);
@@ -374,37 +364,31 @@ void MainWindow::setupMenus() {
             }
         }
     });
-    
+
     m_viewMenu->addSeparator();
-    
+
     QAction* fullscreenAction = m_viewMenu->addAction("&Fullscreen");
     fullscreenAction->setShortcut(Qt::Key_F11);
     connect(fullscreenAction, &QAction::triggered, this, &MainWindow::onViewFullscreen);
-    
+
     m_viewMenu->addSeparator();
-    
+
     QAction* showWelcomeAction = m_viewMenu->addAction("Show &Welcome Screen");
     showWelcomeAction->setShortcut(QKeySequence("Ctrl+Shift+W"));
     connect(showWelcomeAction, &QAction::triggered, this, &MainWindow::showWelcomeScreen);
-    
+
     // Help menu
     QMenu* helpMenu = menuBar()->addMenu("&Help");
     QAction* aboutAction = helpMenu->addAction("&About");
     connect(aboutAction, &QAction::triggered, this, [this]() {
         QMessageBox::about(this, "About CppAtlas",
-            "CppAtlas - C++ Learning IDE\n\n"
-            "Version 0.1\n\n"
-            "An educational Qt-based environment for learning C++.");
+                           "CppAtlas - C++ Learning IDE\n\n"
+                           "Version 0.1\n\n"
+                           "An educational Qt-based environment for learning C++.");
     });
 
     // Tools menu — Analysis Panel + tab shortcuts
     m_toolsMenu = menuBar()->addMenu(QStringLiteral("&Tools"));
-
-    m_settingsAction = m_toolsMenu->addAction(QStringLiteral("&Settings..."));
-    m_settingsAction->setShortcut(QKeySequence(Qt::CTRL | Qt::Key_Comma));
-    connect(m_settingsAction, &QAction::triggered, this, &MainWindow::onSettingsRequested);
-
-    m_toolsMenu->addSeparator();
 
     m_toggleAnalysisAction = m_toolsMenu->addAction(
         QStringLiteral("Toggle &Analysis Panel"));
@@ -451,9 +435,8 @@ void MainWindow::setupMenus() {
 
 void MainWindow::setupToolbar() {
     m_mainToolbar = addToolBar("Main Toolbar");
-    m_mainToolbar->setObjectName("mainToolbar");
     m_mainToolbar->setMovable(false);
-    
+
     // New button with dropdown menu
     QToolButton* newButton = new QToolButton(this);
     newButton->setText("New");
@@ -465,7 +448,7 @@ void MainWindow::setupToolbar() {
     connect(newFolderAction, &QAction::triggered, this, [this]() {
         bool ok;
         QString folderName = QInputDialog::getText(this, "New Folder",
-            "Folder name:", QLineEdit::Normal, "NewFolder", &ok);
+                                                   "Folder name:", QLineEdit::Normal, "NewFolder", &ok);
         if (ok && !folderName.isEmpty()) {
             QString basePath = m_fileTree->rootPath();
             if (basePath.isEmpty()) {
@@ -479,32 +462,32 @@ void MainWindow::setupToolbar() {
     newButton->setMenu(newMenu);
     connect(newButton, &QToolButton::clicked, this, &MainWindow::onFileNew);
     m_mainToolbar->addWidget(newButton);
-    
+
     m_mainToolbar->addAction("Open", this, &MainWindow::onFileOpen);
     m_mainToolbar->addAction("Save", this, &MainWindow::onFileSave);
-    
+
     m_mainToolbar->addSeparator();
-    
+
     // Build, Run, Stop buttons
     m_mainToolbar->addAction("Build", this, &MainWindow::onBuildCompile);
     m_mainToolbar->addAction("Run", this, &MainWindow::onBuildRun);
     m_mainToolbar->addAction("Stop", this, &MainWindow::onBuildStop);
-    
+
     m_mainToolbar->addSeparator();
-    
+
     // Compiler selection
     m_mainToolbar->addWidget(new QLabel(" Compiler: "));
     m_compilerCombo = new QComboBox(m_mainToolbar);
     m_compilerCombo->setMinimumWidth(150);
     m_mainToolbar->addWidget(m_compilerCombo);
-    
+
     // Standard selection
     m_mainToolbar->addWidget(new QLabel(" Standard: "));
     m_standardCombo = new QComboBox(m_mainToolbar);
     m_standardCombo->addItems({"c++11", "c++14", "c++17", "c++20", "c++23"});
     m_standardCombo->setCurrentText("c++17");
     m_mainToolbar->addWidget(m_standardCombo);
-    
+
     connect(m_compilerCombo, QOverload<int>::of(&QComboBox::currentIndexChanged),
             this, &MainWindow::onCompilerChanged);
     connect(m_standardCombo, QOverload<int>::of(&QComboBox::currentIndexChanged),
@@ -514,25 +497,22 @@ void MainWindow::setupToolbar() {
 void MainWindow::setupDockWidgets() {
     // File tree dock
     m_fileTreeDock = new QDockWidget("File Tree", this);
-    m_fileTreeDock->setObjectName("fileTreeDock");
     m_fileTree = new FileTreeWidget(m_fileTreeDock);
     m_fileTreeDock->setWidget(m_fileTree);
     addDockWidget(Qt::LeftDockWidgetArea, m_fileTreeDock);
 
     // Output panel dock
     m_outputPanelDock = new QDockWidget("Output", this);
-    m_outputPanelDock->setObjectName("outputPanelDock");
     m_outputPanel = new OutputPanel(m_outputPanelDock);
     m_outputPanelDock->setWidget(m_outputPanel);
     addDockWidget(Qt::BottomDockWidgetArea, m_outputPanelDock);
 
     // Analysis dock (right side — Insights | Assembly | Benchmark tabs)
     m_analysisDock  = new QDockWidget(QStringLiteral("Analysis"), this);
-    m_analysisDock->setObjectName("analysisDock");
     m_analysisPanel = new AnalysisPanel(m_analysisDock);
     m_analysisDock->setWidget(m_analysisPanel);
     addDockWidget(Qt::RightDockWidgetArea, m_analysisDock);
-    m_analysisDock->hide();
+    m_analysisDock->hide(); // Hidden by default; open via Tools menu
 }
 
 void MainWindow::setupStatusBar() {
@@ -540,7 +520,7 @@ void MainWindow::setupStatusBar() {
     m_cursorPosLabel = new QLabel("Ln 1, Col 1");
     m_standardLabel = new QLabel("C++17");
     m_compilerLabel = new QLabel("No compiler");
-    
+
     statusBar()->addWidget(m_statusLabel, 1);
     statusBar()->addPermanentWidget(m_cursorPosLabel);
     statusBar()->addPermanentWidget(m_standardLabel);
@@ -551,7 +531,7 @@ void MainWindow::setupConnections() {
     // Editor signals
     connect(m_editorTabs, &EditorTabWidget::editorChanged,
             this, &MainWindow::onEditorChanged);
-    
+
     // File tree signals
     connect(m_fileTree, &FileTreeWidget::fileDoubleClicked,
             this, &MainWindow::onFileTreeDoubleClicked);
@@ -559,17 +539,17 @@ void MainWindow::setupConnections() {
             this, &MainWindow::onNewFileRequested);
     connect(m_fileTree, &FileTreeWidget::fileCreated,
             this, [this](const QString& filePath) {
-        m_editorTabs->openFile(filePath);
-    });
+                m_editorTabs->openFile(filePath);
+            });
     connect(m_fileTree, &FileTreeWidget::fileDeleted,
             this, [this](const QString& filePath) {
-        m_editorTabs->closeFileTab(filePath);
-    });
+                m_editorTabs->closeFileTab(filePath);
+            });
     connect(m_fileTree, &FileTreeWidget::fileRenamed,
             this, [this](const QString& oldPath, const QString& newPath) {
-        m_editorTabs->updateFilePath(oldPath, newPath);
-    });
-    
+                m_editorTabs->updateFilePath(oldPath, newPath);
+            });
+
     // Problems widget signals
     connect(m_outputPanel->problems(), &ProblemsWidget::diagnosticClicked,
             this, &MainWindow::onDiagnosticClicked);
@@ -577,54 +557,48 @@ void MainWindow::setupConnections() {
     // Keep close project action in sync with project state
     connect(ProjectManager::instance(), &ProjectManager::projectClosed,
             this, [this]() {
-        if (m_closeProjectAction) m_closeProjectAction->setEnabled(false);
-    });
+                if (m_closeProjectAction) m_closeProjectAction->setEnabled(false);
+            });
 
     // Forward assembly line activation to editor navigation
     connect(m_analysisPanel, &AnalysisPanel::sourceLineActivated,
             this, [this](int line) {
-        CodeEditor* ed = m_editorTabs->currentEditor();
-        if (ed) ed->gotoLine(line);
-    });
+                CodeEditor* ed = m_editorTabs->currentEditor();
+                if (ed) ed->gotoLine(line);
+            });
 
     // Keep AnalysisPanel in sync with MainWindow toolbar compiler/standard selections
     connect(m_compilerCombo, QOverload<int>::of(&QComboBox::currentIndexChanged),
             this, [this](int) {
-        m_analysisPanel->setCompilerId(
-            m_compilerCombo->currentData().toString());
-    });
+                m_analysisPanel->setCompilerId(
+                    m_compilerCombo->currentData().toString());
+            });
     connect(m_standardCombo, QOverload<int>::of(&QComboBox::currentIndexChanged),
             this, [this](int) {
-        m_analysisPanel->setStandard(m_standardCombo->currentText());
-    });
+                m_analysisPanel->setStandard(m_standardCombo->currentText());
+            });
 }
 
 void MainWindow::setupWelcomeScreen() {
     m_welcomeScreen = new WelcomeScreen(this);
     m_centralStack->addWidget(m_welcomeScreen);
 
-    // Show current user on welcome screen
-    if (UserManager::instance().isLoggedIn()) {
-        const auto u = UserManager::instance().currentUser();
-        m_welcomeScreen->setCurrentUser(u.displayName, u.username, u.isAdmin);
-    }
-    
     // Connect Welcome Screen signals
     connect(m_welcomeScreen, &WelcomeScreen::newFileRequested, this, [this]() {
         hideWelcomeScreen();
         onFileNew();
     });
-    
+
     connect(m_welcomeScreen, &WelcomeScreen::openFileRequested, this, [this]() {
         QString file = QFileDialog::getOpenFileName(this, "Open File", QString(),
-            "C++ Files (*.cpp *.h *.hpp *.cc *.cxx);;All Files (*)");
+                                                    "C++ Files (*.cpp *.h *.hpp *.cc *.cxx);;All Files (*)");
         if (!file.isEmpty()) {
             hideWelcomeScreen();
             m_editorTabs->openFile(file);
             RecentProjectsManager::instance()->addRecentProject(file);
         }
     });
-    
+
     connect(m_welcomeScreen, &WelcomeScreen::openFolderRequested, this, [this]() {
         QString folder = QFileDialog::getExistingDirectory(this, "Open Folder");
         if (!folder.isEmpty()) {
@@ -634,57 +608,63 @@ void MainWindow::setupWelcomeScreen() {
             setWindowTitle(QString("%1 - CppAtlas").arg(QFileInfo(folder).fileName()));
         }
     });
-    
+
     connect(m_welcomeScreen, &WelcomeScreen::createProjectRequested, this, [this]() {
         onFileNewProject();
     });
-    
+
     connect(m_welcomeScreen, &WelcomeScreen::openProjectRequested, this, [this]() {
         onFileOpenProject();
     });
-    
+
     connect(m_welcomeScreen, &WelcomeScreen::recentProjectSelected,
             this, [this](const QString& path) {
-        QFileInfo info(path);
-        if (info.suffix() == "cppatlas") {
-            // Open as a project
-            auto result = ProjectManager::instance()->openProject(path);
-            if (result == Project::LoadResult::Success) {
-                auto project = ProjectManager::instance()->currentProject();
-                m_fileTree->openFolder(project->projectDirectory());
-                restoreProjectSession(project);
-                
-                hideWelcomeScreen();
-                m_statusLabel->setText("Project: " + project->name());
-                m_welcomeScreen->setReturnToProjectVisible(true);
-            } else {
-                showProjectLoadError(result);
-            }
-        } else {
-            hideWelcomeScreen();
-            if (info.isDir()) {
-                m_fileTree->openFolder(path);
-                setWindowTitle(QString("%1 - CppAtlas").arg(info.fileName()));
-            } else {
-                m_editorTabs->openFile(path);
-            }
-            RecentProjectsManager::instance()->addRecentProject(path);
-        }
+                QFileInfo info(path);
+                if (info.suffix() == "cppatlas") {
+                    // Open as a project
+                    auto result = ProjectManager::instance()->openProject(path);
+                    if (result == Project::LoadResult::Success) {
+                        auto project = ProjectManager::instance()->currentProject();
+                        m_fileTree->openFolder(project->projectDirectory());
+                        restoreProjectSession(project);
+
+                        hideWelcomeScreen();
+                        m_statusLabel->setText("Project: " + project->name());
+                        m_welcomeScreen->setReturnToProjectVisible(true);
+                    } else {
+                        showProjectLoadError(result);
+                    }
+                } else {
+                    hideWelcomeScreen();
+                    if (info.isDir()) {
+                        m_fileTree->openFolder(path);
+                        setWindowTitle(QString("%1 - CppAtlas").arg(info.fileName()));
+                    } else {
+                        m_editorTabs->openFile(path);
+                    }
+                    RecentProjectsManager::instance()->addRecentProject(path);
+                }
+            });
+
+    connect(m_welcomeScreen, &WelcomeScreen::quizModeRequested, this, [this]() {
+        QMessageBox::information(this, "Quiz Mode",
+                                 "Quiz Mode will be available in a future update.\n\n"
+                                 "This will include:\n"
+                                 "- C++ knowledge assessments\n"
+                                 "- Interactive coding challenges\n"
+                                 "- Progress tracking");
     });
-    
-    connect(m_welcomeScreen, &WelcomeScreen::quizModeRequested,
-            this, &MainWindow::onQuizModeRequested);
-    
+
     connect(m_welcomeScreen, &WelcomeScreen::continueWithoutProjectRequested,
             this, [this]() {
-        hideWelcomeScreen();
-        m_editorTabs->newFile();
-    });
-    
+                hideWelcomeScreen();
+                m_editorTabs->newFile();
+            });
+
     connect(m_welcomeScreen, &WelcomeScreen::returnToProjectRequested,
             this, [this]() {
-        hideWelcomeScreen();
-    });
+                hideWelcomeScreen();
+            });
 }
 
 void MainWindow::showWelcomeScreen() {
@@ -692,73 +672,32 @@ void MainWindow::showWelcomeScreen() {
     if (ProjectManager::instance()->hasOpenProject()) {
         saveCurrentSession();
     }
-    
+
     m_centralStack->setCurrentWidget(m_welcomeScreen);
-    
-    // Hide IDE-specific docks — deferred to avoid Wayland xdg_surface buffer mismatch
+
+    // Hide IDE-specific docks
     m_fileTreeDock->hide();
     m_outputPanelDock->hide();
     m_analysisDockWasVisible = m_analysisDock->isVisible();
-    QTimer::singleShot(0, this, [this]{ m_analysisDock->hide(); });
-    
+    m_analysisDock->hide();
+
     // Show "Return to Project" button if a project/folder is open
     bool hasOpenProject = ProjectManager::instance()->hasOpenProject();
     m_welcomeScreen->setReturnToProjectVisible(hasOpenProject);
-    
+
     updateMenuState(true);
 }
 
 void MainWindow::hideWelcomeScreen() {
     m_centralStack->setCurrentWidget(m_editorTabs);
-    
-    // Show IDE docks — deferred to avoid Wayland xdg_surface buffer mismatch
+
+    // Show IDE docks
     m_fileTreeDock->show();
     m_outputPanelDock->show();
-    QTimer::singleShot(0, this, [this]{ if (m_analysisDockWasVisible) m_analysisDock->show(); });
-    
+    if (m_analysisDockWasVisible) m_analysisDock->show();
+
     if (m_closeProjectAction) m_closeProjectAction->setEnabled(true);
     updateMenuState(false);
-}
-
-void MainWindow::onQuizModeRequested()
-{
-    showQuizModeWindow();
-}
-
-void MainWindow::onQuizModeExit()
-{
-    hideQuizModeWindow();
-    showWelcomeScreen();
-}
-
-void MainWindow::onSettingsRequested()
-{
-    const QString username = UserManager::instance().currentUser().username;
-    SettingsDialog dlg(username, this);
-    connect(&dlg, &SettingsDialog::settingsChanged, this, [this](){
-        updateWindowTitle();
-    });
-    dlg.exec();
-}
-
-void MainWindow::showQuizModeWindow()
-{
-    m_centralStack->setCurrentWidget(m_quizModeWindow);
-    m_fileTreeDock->hide();
-    m_outputPanelDock->hide();
-    m_analysisDockWasVisible = m_analysisDock->isVisible();
-    QTimer::singleShot(0, this, [this]{ m_analysisDock->hide(); });
-    updateMenuState(true);
-    updateCustomTitleLabel("CppAtlas — Quiz Mode");
-}
-
-void MainWindow::hideQuizModeWindow()
-{
-    // Restore docks to their pre-quiz-mode state so that showWelcomeScreen()
-    // captures the correct visibility when it re-saves m_analysisDockWasVisible.
-    m_fileTreeDock->show();
-    m_outputPanelDock->show();
-    QTimer::singleShot(0, this, [this]{ if (m_analysisDockWasVisible) m_analysisDock->show(); });
 }
 
 void MainWindow::updateMenuState(bool isWelcomeVisible) {
@@ -769,7 +708,7 @@ void MainWindow::updateMenuState(bool isWelcomeVisible) {
     if (m_runAction) {
         m_runAction->setEnabled(!isWelcomeVisible);
     }
-    
+
     // Edit menu - disable Find, Replace, Go to Line in welcome screen
     if (m_findAction) {
         m_findAction->setEnabled(!isWelcomeVisible);
@@ -780,7 +719,7 @@ void MainWindow::updateMenuState(bool isWelcomeVisible) {
     if (m_gotoLineAction) {
         m_gotoLineAction->setEnabled(!isWelcomeVisible);
     }
-    
+
     // View menu - disable Toggle File Tree and Toggle Output Panel
     if (m_toggleFileTreeAction) {
         m_toggleFileTreeAction->setEnabled(!isWelcomeVisible);
@@ -788,12 +727,12 @@ void MainWindow::updateMenuState(bool isWelcomeVisible) {
     if (m_toggleOutputAction) {
         m_toggleOutputAction->setEnabled(!isWelcomeVisible);
     }
-    
+
     // Tools menu - disable entirely in welcome screen
     if (m_toolsMenu) {
         m_toolsMenu->setEnabled(!isWelcomeVisible);
     }
-    
+
     // Main toolbar - hide/show
     if (m_mainToolbar) {
         m_mainToolbar->setVisible(!isWelcomeVisible);
@@ -802,20 +741,20 @@ void MainWindow::updateMenuState(bool isWelcomeVisible) {
 
 void MainWindow::loadCompilers() {
     m_compilerCombo->clear();
-    
+
     auto compilers = CompilerRegistry::instance().getAvailableCompilers();
-    
+
     if (compilers.isEmpty()) {
         m_compilerCombo->addItem("No compilers found");
         m_compilerCombo->setEnabled(false);
         m_compilerLabel->setText("No compiler");
         return;
     }
-    
+
     for (const auto& compiler : compilers) {
         m_compilerCombo->addItem(compiler->name(), compiler->id());
     }
-    
+
     // Select default compiler
     QString defaultId = CompilerRegistry::instance().defaultCompilerId();
     int index = m_compilerCombo->findData(defaultId);
@@ -838,9 +777,9 @@ void MainWindow::updateStatusBar() {
         editor->getCursorPosition(&line, &col);
         m_cursorPosLabel->setText(QString("Ln %1, Col %2").arg(line + 1).arg(col + 1));
     }
-    
+
     m_standardLabel->setText(m_standardCombo->currentText().toUpper());
-    
+
     QString compilerId = m_compilerCombo->currentData().toString();
     auto compiler = CompilerRegistry::instance().getCompiler(compilerId);
     if (compiler) {
@@ -851,16 +790,16 @@ void MainWindow::updateStatusBar() {
 void MainWindow::updateWindowTitle() {
     CodeEditor* editor = m_editorTabs->currentEditor();
     QString title = "CppAtlas - C++ Learning IDE";
-    
+
     if (editor && !editor->filePath().isEmpty()) {
         QFileInfo info(editor->filePath());
         title = QString("%1 - %2").arg(info.fileName()).arg(title);
-        
+
         if (editor->isModified()) {
             title = "* " + title;
         }
     }
-    
+
     setWindowTitle(title);
     updateCustomTitleLabel(title);
 }
@@ -871,50 +810,10 @@ void MainWindow::updateCustomTitleLabel(const QString& title) {
     }
 }
 
-void MainWindow::updateTitleBarUser()
-{
-    if (!m_titleLabel) return;
-    const auto user = UserManager::instance().currentUser();
-    if (!user.username.isEmpty()) {
-        const QString adminBadge = user.isAdmin ? " 👑" : "";
-        m_titleLabel->setText(
-            QString("CppAtlas — %1%2").arg(user.displayName, adminBadge));
-    }
-}
-
-void MainWindow::saveUserSession()
-{
-    if (UserManager::instance().isLoggedIn()) {
-        AppSettings userSettings(UserManager::instance().currentUser().username);
-        userSettings.setWindowGeometry(saveGeometry());
-        userSettings.setWindowState(saveState());
-    }
-}
-
-void MainWindow::loadUserSession()
-{
-    if (!UserManager::instance().isLoggedIn())
-        return;
-
-    AppSettings userSettings(UserManager::instance().currentUser().username);
-    const QByteArray geometry = userSettings.windowGeometry();
-    const QByteArray state    = userSettings.windowState();
-
-    if (!geometry.isEmpty() && !isMaximized() && !isFullScreen()) {
-        restoreGeometry(geometry);
-    }
-    if (!state.isEmpty()) {
-        restoreState(state);
-    }
-}
-
 void MainWindow::closeEvent(QCloseEvent *event) {
-    // Save per-user window geometry
-    saveUserSession();
-
     // Save project session before closing
     saveCurrentSession();
-    
+
     if (m_editorTabs->closeAll()) {
         ProjectManager::instance()->closeCurrentProject();
         event->accept();
@@ -929,7 +828,7 @@ void MainWindow::onFileNew() {
     if (defaultDir.isEmpty()) {
         defaultDir = QDir::homePath();
     }
-    
+
     NewFileDialog dialog(defaultDir, this);
     if (dialog.exec() == QDialog::Accepted) {
         QStringList files = dialog.createdFiles();
@@ -948,18 +847,18 @@ void MainWindow::onFileNewProject() {
         settings.createMainCpp = dialog.createMainCpp();
         settings.createCMakeLists = dialog.createCMakeLists();
         settings.createProjectFolder = dialog.createProjectFolder();
-        
+
         if (ProjectManager::instance()->createProject(
                 dialog.projectName(), dialog.projectLocation(), settings)) {
             auto project = ProjectManager::instance()->currentProject();
             m_fileTree->openFolder(project->projectDirectory());
-            
+
             // Open main.cpp if created
             if (settings.createMainCpp) {
                 QString mainPath = project->projectDirectory() + QDir::separator() + "src" + QDir::separator() + "main.cpp";
                 m_editorTabs->openFile(mainPath);
             }
-            
+
             hideWelcomeScreen();
             m_statusLabel->setText("Project: " + project->name());
             m_welcomeScreen->setReturnToProjectVisible(true);
@@ -975,8 +874,8 @@ void MainWindow::onFileOpen() {
         "Open File",
         QString(),
         "C++ Files (*.cpp *.h *.hpp *.cc *.cxx);;All Files (*)"
-    );
-    
+        );
+
     if (!filePath.isEmpty()) {
         m_editorTabs->openFile(filePath);
         m_fileManager->addRecentFile(filePath);
@@ -1000,8 +899,8 @@ void MainWindow::onFileOpenFolder() {
         "Open Folder",
         QString(),
         QFileDialog::ShowDirsOnly | QFileDialog::DontResolveSymlinks
-    );
-    
+        );
+
     if (!folderPath.isEmpty()) {
         m_fileTree->openFolder(folderPath);
         m_statusLabel->setText("Opened folder: " + folderPath);
@@ -1015,15 +914,15 @@ void MainWindow::onFileOpenProject() {
         "Open Project",
         QString(),
         "CppAtlas Project (*.cppatlas);;All Files (*)"
-    );
-    
+        );
+
     if (!filePath.isEmpty()) {
         auto result = ProjectManager::instance()->openProject(filePath);
         if (result == Project::LoadResult::Success) {
             auto project = ProjectManager::instance()->currentProject();
             m_fileTree->openFolder(project->projectDirectory());
             restoreProjectSession(project);
-            
+
             hideWelcomeScreen();
             m_statusLabel->setText("Project: " + project->name());
             m_welcomeScreen->setReturnToProjectVisible(true);
@@ -1089,13 +988,13 @@ void MainWindow::onEditFind() {
     if (!editor) {
         return;
     }
-    
+
     FindReplaceDialog* dialog = new FindReplaceDialog(FindReplaceDialog::Find, this);
-    
+
     connect(dialog, &FindReplaceDialog::findNext, this, [this, dialog, editor]() {
         QString text = dialog->findText();
         if (text.isEmpty()) return;
-        
+
         bool found = editor->findFirst(
             text,
             dialog->useRegex(),  // use regex option
@@ -1103,17 +1002,17 @@ void MainWindow::onEditFind() {
             dialog->wholeWord(),
             false,  // wrap
             true    // forward
-        );
-        
+            );
+
         if (!found) {
             QMessageBox::information(this, "Find", "Text not found.");
         }
     });
-    
+
     connect(dialog, &FindReplaceDialog::findPrevious, this, [this, dialog, editor]() {
         QString text = dialog->findText();
         if (text.isEmpty()) return;
-        
+
         bool found = editor->findFirst(
             text,
             dialog->useRegex(),  // use regex option
@@ -1121,13 +1020,13 @@ void MainWindow::onEditFind() {
             dialog->wholeWord(),
             false,  // wrap
             false   // forward (backward)
-        );
-        
+            );
+
         if (!found) {
             QMessageBox::information(this, "Find", "Text not found.");
         }
     });
-    
+
     dialog->show();
 }
 
@@ -1136,13 +1035,13 @@ void MainWindow::onEditReplace() {
     if (!editor) {
         return;
     }
-    
+
     FindReplaceDialog* dialog = new FindReplaceDialog(FindReplaceDialog::Replace, this);
-    
+
     connect(dialog, &FindReplaceDialog::findNext, this, [this, dialog, editor]() {
         QString text = dialog->findText();
         if (text.isEmpty()) return;
-        
+
         bool found = editor->findFirst(
             text,
             dialog->useRegex(),  // use regex option
@@ -1150,30 +1049,30 @@ void MainWindow::onEditReplace() {
             dialog->wholeWord(),
             false,
             true
-        );
-        
+            );
+
         if (!found) {
             QMessageBox::information(this, "Find", "Text not found.");
         }
     });
-    
+
     connect(dialog, &FindReplaceDialog::replaceNext, this, [dialog, editor]() {
         QString findText = dialog->findText();
         QString replaceText = dialog->replaceText();
         if (findText.isEmpty()) return;
-        
+
         // Replace current selection if it matches (considering case sensitivity)
         if (editor->hasSelectedText()) {
             QString selectedText = editor->selectedText();
-            bool matches = dialog->caseSensitive() ? 
-                (selectedText == findText) : 
-                (selectedText.toLower() == findText.toLower());
-                
+            bool matches = dialog->caseSensitive() ?
+                               (selectedText == findText) :
+                               (selectedText.toLower() == findText.toLower());
+
             if (matches) {
                 editor->replaceSelectedText(replaceText);
             }
         }
-        
+
         // Find next
         editor->findFirst(
             findText,
@@ -1182,27 +1081,27 @@ void MainWindow::onEditReplace() {
             dialog->wholeWord(),
             false,
             true
-        );
+            );
     });
-    
+
     connect(dialog, &FindReplaceDialog::replaceAll, this, [this, dialog, editor]() {
         QString findText = dialog->findText();
         QString replaceText = dialog->replaceText();
         if (findText.isEmpty()) return;
-        
+
         // Prevent infinite loop if replacement contains search text
-        if (!dialog->useRegex() && replaceText.contains(findText, 
-            dialog->caseSensitive() ? Qt::CaseSensitive : Qt::CaseInsensitive)) {
-            QMessageBox::warning(this, "Replace All", 
-                "Replacement text contains search text. This would cause an infinite loop.");
+        if (!dialog->useRegex() && replaceText.contains(findText,
+                                                        dialog->caseSensitive() ? Qt::CaseSensitive : Qt::CaseInsensitive)) {
+            QMessageBox::warning(this, "Replace All",
+                                 "Replacement text contains search text. This would cause an infinite loop.");
             return;
         }
-        
+
         int count = 0;
-        
+
         // Go to beginning
         editor->setCursorPosition(0, 0);
-        
+
         // Use a position-based approach to avoid infinite loops
         int lastLine = -1, lastCol = -1;
         while (editor->findFirst(
@@ -1212,33 +1111,33 @@ void MainWindow::onEditReplace() {
             dialog->wholeWord(),
             false,
             true
-        )) {
+            )) {
             int line, col;
             editor->getCursorPosition(&line, &col);
-            
+
             // Break if we're at the same position (shouldn't happen but safety check)
             if (line == lastLine && col == lastCol) {
                 break;
             }
-            
+
             lastLine = line;
             lastCol = col;
-            
+
             editor->replaceSelectedText(replaceText);
             count++;
-            
+
             // Safety limit
             if (count > 10000) {
-                QMessageBox::warning(this, "Replace All", 
-                    QString("Stopped after %1 replacements (safety limit).").arg(count));
+                QMessageBox::warning(this, "Replace All",
+                                     QString("Stopped after %1 replacements (safety limit).").arg(count));
                 return;
             }
         }
-        
-        QMessageBox::information(this, "Replace All", 
-            QString("Replaced %1 occurrence(s).").arg(count));
+
+        QMessageBox::information(this, "Replace All",
+                                 QString("Replaced %1 occurrence(s).").arg(count));
     });
-    
+
     dialog->show();
 }
 
@@ -1247,10 +1146,10 @@ void MainWindow::onEditGotoLine() {
     if (!editor) {
         return;
     }
-    
+
     int maxLine = editor->lines();
     GotoLineDialog dialog(maxLine, this);
-    
+
     if (dialog.exec() == QDialog::Accepted) {
         int line = dialog.lineNumber();
         editor->gotoLine(line);
@@ -1264,16 +1163,16 @@ void MainWindow::onBuildCompile() {
         showBuildError("No file to compile. Please save your file first.");
         return;
     }
-    
+
     // Get selected compiler
     QString compilerId = m_compilerCombo->currentData().toString();
     auto compiler = CompilerRegistry::instance().getCompiler(compilerId);
-    
+
     if (!compiler) {
         showBuildError("No compiler selected.");
         return;
     }
-    
+
     // Prepare compilation request
     CompileRequest request;
     request.sourceFile = sourceFile;
@@ -1282,17 +1181,17 @@ void MainWindow::onBuildCompile() {
     request.additionalFlags = QStringList() << "-Wall" << "-Wextra";
     request.optimizationEnabled = false;
     request.optLevel = OptimizationLevel::O0;
-    
+
     // Clear previous output and show terminal
     m_outputPanel->terminal()->clear();
     m_outputPanel->showTerminalTab();
     m_outputPanel->problems()->clear();
-    
+
     m_statusLabel->setText("Building...");
-    
+
     // Compile
     CompileResult result = compiler->compile(request);
-    
+
     // Show output in terminal
     Theme theme = ThemeManager::instance()->currentTheme();
     if (!result.rawOutput.isEmpty()) {
@@ -1301,10 +1200,10 @@ void MainWindow::onBuildCompile() {
     if (!result.rawError.isEmpty()) {
         m_outputPanel->terminal()->appendText(result.rawError, QColor("#F48771"));
     }
-    
+
     // Show diagnostics
     m_outputPanel->problems()->setDiagnostics(result.diagnostics);
-    
+
     if (result.success) {
         m_currentExecutable = result.outputFile;
         m_statusLabel->setText(QString("Build succeeded (%1 ms)").arg(result.compilationTimeMs));
@@ -1318,11 +1217,11 @@ void MainWindow::onBuildCompile() {
 
 void MainWindow::onBuildRun() {
     if (m_currentExecutable.isEmpty() || !QFile::exists(m_currentExecutable)) {
-        QMessageBox::warning(this, "Error", 
-            "No executable to run. Please build first.");
+        QMessageBox::warning(this, "Error",
+                             "No executable to run. Please build first.");
         return;
     }
-    
+
     m_outputPanel->showTerminalTab();
     m_outputPanel->terminal()->runCommand(m_currentExecutable);
     m_statusLabel->setText("Running...");
@@ -1330,7 +1229,7 @@ void MainWindow::onBuildRun() {
 
 void MainWindow::onBuildCompileAndRun() {
     onBuildCompile();
-    
+
     // Check if compilation succeeded
     if (!m_currentExecutable.isEmpty() && QFile::exists(m_currentExecutable)) {
         onBuildRun();
@@ -1399,7 +1298,7 @@ void MainWindow::onNewFileRequested(const QString& directory) {
 void MainWindow::onEditorChanged(CodeEditor* editor) {
     updateStatusBar();
     updateWindowTitle();
-    
+
     if (editor) {
         connect(editor, &CodeEditor::cursorPositionChanged,
                 this, &MainWindow::updateStatusBar, Qt::UniqueConnection);
@@ -1430,10 +1329,10 @@ void MainWindow::onActiveEditorTextChanged() {
 // Problems slots
 void MainWindow::onDiagnosticClicked(const QString& file, int line, int column) {
     Q_UNUSED(column);
-    
+
     // Open file if not already open
     CodeEditor* editor = nullptr;
-    
+
     // Check if file is already open
     for (int i = 0; i < m_editorTabs->count(); ++i) {
         CodeEditor* ed = m_editorTabs->editorAt(i);
@@ -1443,12 +1342,12 @@ void MainWindow::onDiagnosticClicked(const QString& file, int line, int column) 
             break;
         }
     }
-    
+
     // Open file if not found
     if (!editor) {
         editor = m_editorTabs->openFile(file);
     }
-    
+
     // Go to line
     if (editor) {
         editor->gotoLine(line);
@@ -1523,10 +1422,10 @@ bool MainWindow::nativeEvent(const QByteArray &eventType, void *message, long *r
             // Enable resize from window edges
             RECT winrect;
             GetWindowRect(reinterpret_cast<HWND>(winId()), &winrect);
-            
+
             int x = GET_X_LPARAM(msg->lParam);
             int y = GET_Y_LPARAM(msg->lParam);
-            
+
             // Check corners first
             if (x < winrect.left + RESIZE_BORDER_WIDTH && y < winrect.top + RESIZE_BORDER_WIDTH) {
                 *result = HTTOPLEFT;
@@ -1581,9 +1480,9 @@ QString MainWindow::getCurrentSourceFile() {
     if (!editor) {
         return QString();
     }
-    
+
     QString filePath = editor->filePath();
-    
+
     // If file is not saved, save it first
     if (filePath.isEmpty()) {
         if (!m_editorTabs->saveCurrentFileAs()) {
@@ -1595,14 +1494,14 @@ QString MainWindow::getCurrentSourceFile() {
             return QString();
         }
     }
-    
+
     return filePath;
 }
 
 QString MainWindow::getExecutablePath(const QString& sourceFile) {
     QFileInfo info(sourceFile);
     QString baseName = info.completeBaseName();
-    
+
 #ifdef Q_OS_WIN
     return info.absolutePath() + "/" + baseName + ".exe";
 #else
@@ -1618,9 +1517,9 @@ void MainWindow::showBuildError(const QString& message) {
 
 void MainWindow::saveCurrentSession() {
     if (!ProjectManager::instance()->hasOpenProject()) return;
-    
+
     auto project = ProjectManager::instance()->currentProject();
-    
+
     QStringList openFiles;
     for (int i = 0; i < m_editorTabs->count(); ++i) {
         CodeEditor* editor = m_editorTabs->editorAt(i);
@@ -1628,14 +1527,14 @@ void MainWindow::saveCurrentSession() {
             openFiles.append(editor->filePath());
         }
     }
-    
+
     QString activeFile;
     if (m_editorTabs->currentEditor()) {
         activeFile = m_editorTabs->currentEditor()->filePath();
     }
-    
+
     QStringList expandedFolders;
-    
+
     project->saveSession(openFiles, activeFile, expandedFolders);
     project->save();
 }
@@ -1643,21 +1542,21 @@ void MainWindow::saveCurrentSession() {
 void MainWindow::showProjectLoadError(Project::LoadResult result) {
     QString message;
     switch (result) {
-        case Project::LoadResult::FileNotFound:
-            message = "Project file not found.";
-            break;
-        case Project::LoadResult::InvalidFormat:
-            message = "Invalid project file format.";
-            break;
-        case Project::LoadResult::VersionMismatch:
-            message = "Unsupported project file version.";
-            break;
-        case Project::LoadResult::PermissionDenied:
-            message = "Permission denied when reading project file.";
-            break;
-        default:
-            message = "Failed to load project.";
-            break;
+    case Project::LoadResult::FileNotFound:
+        message = "Project file not found.";
+        break;
+    case Project::LoadResult::InvalidFormat:
+        message = "Invalid project file format.";
+        break;
+    case Project::LoadResult::VersionMismatch:
+        message = "Unsupported project file version.";
+        break;
+    case Project::LoadResult::PermissionDenied:
+        message = "Permission denied when reading project file.";
+        break;
+    default:
+        message = "Failed to load project.";
+        break;
     }
     QMessageBox::warning(this, "Error", message);
 }

@@ -28,8 +28,6 @@ class NewFileDialog;
 class NewProjectDialog;
 class AnalysisPanel;
 class CodeEditor;
-class LoginDialog;
-class QuizModeWindow;
 
 class MainWindow : public QMainWindow
 {
@@ -62,7 +60,7 @@ private slots:
     void onFileOpenProject();
     void onFileCloseProject();
     void onFileExit();
-    
+
     // Edit menu
     void onEditUndo();
     void onEditRedo();
@@ -72,48 +70,43 @@ private slots:
     void onEditFind();
     void onEditReplace();
     void onEditGotoLine();
-    
+
     // Build menu
     void onBuildCompile();
     void onBuildRun();
     void onBuildCompileAndRun();
     void onBuildStop();
     void onBuildClean();
-    
+
     // View menu
     void onViewToggleFileTree();
     void onViewToggleOutputPanel();
     void onViewFullscreen();
-    
+
     // Toolbar
     void onCompilerChanged(int index);
     void onStandardChanged(int index);
-    
+
     // File tree
     void onFileTreeDoubleClicked(const QString& filePath);
     void onNewFileRequested(const QString& directory);
-    
+
     // Editor
     void onEditorChanged(class CodeEditor* editor);
     void onActiveEditorTextChanged();
-    
+
     // Problems
     void onDiagnosticClicked(const QString& file, int line, int column);
 
-    // Quiz mode
-    void onQuizModeRequested();
-    void onQuizModeExit();
-    void onSettingsRequested();
-
 private:
     Ui::MainWindow *ui;
-    
+
     // Title bar constants
     static constexpr int TITLE_BAR_HEIGHT = 32;
     static constexpr int WINDOW_BUTTON_WIDTH = 46;
     static constexpr int WINDOW_BUTTON_COUNT = 3;
     static constexpr int RESIZE_BORDER_WIDTH = 8;
-    
+
     // Custom title bar widgets
     QWidget* m_titleBar = nullptr;
     QLabel* m_titleLabel = nullptr;
@@ -121,11 +114,11 @@ private:
     QPushButton* m_minimizeBtn = nullptr;
     QPushButton* m_maximizeBtn = nullptr;
     QPushButton* m_closeBtn = nullptr;
-    
+
     // Drag handling
     QPoint m_dragPosition;
     bool m_dragging = false;
-    
+
     // Main widgets
     EditorTabWidget* m_editorTabs;
     OutputPanel* m_outputPanel;
@@ -134,34 +127,30 @@ private:
     Project* m_project;
     AnalysisPanel* m_analysisPanel = nullptr;
     CodeEditor* m_previousEditor = nullptr;
-    
+
     // Welcome screen
     WelcomeScreen* m_welcomeScreen = nullptr;
     QStackedWidget* m_centralStack = nullptr;
     bool m_analysisDockWasVisible = false;
-    QuizModeWindow* m_quizModeWindow = nullptr;
 
-    // Current user (set after login)
-    QString m_currentUsername;
-    
     // Dock widgets
     QDockWidget* m_fileTreeDock;
     QDockWidget* m_outputPanelDock;
     QDockWidget* m_analysisDock = nullptr;
-    
+
     // Toolbar widgets
     QComboBox* m_compilerCombo;
     QComboBox* m_standardCombo;
-    
+
     // Status bar
     QLabel* m_statusLabel;
     QLabel* m_cursorPosLabel;
     QLabel* m_standardLabel;
     QLabel* m_compilerLabel;
-    
+
     // Current compilation
     QString m_currentExecutable;
-    
+
     // Menus
     QMenu* m_buildMenu = nullptr;
     QMenu* m_editMenu = nullptr;
@@ -172,16 +161,15 @@ private:
     QAction* m_toggleFileTreeAction = nullptr;
     QAction* m_toggleOutputAction = nullptr;
     QAction* m_toggleAnalysisAction = nullptr;
-    QAction* m_settingsAction = nullptr;
-    
+
     // Edit menu actions that should be disabled in welcome screen
     QAction* m_findAction = nullptr;
     QAction* m_replaceAction = nullptr;
     QAction* m_gotoLineAction = nullptr;
-    
+
     // Main toolbar
     QToolBar* m_mainToolbar = nullptr;
-    
+
     void setupUi();
     void setupCustomTitleBar();
     void setupMenus();
@@ -200,15 +188,10 @@ private:
     void saveCurrentSession();
     void showProjectLoadError(Project::LoadResult result);
     void restoreProjectSession(Project* project);
-    void showQuizModeWindow();
-    void hideQuizModeWindow();
-    
+
     QString getCurrentSourceFile();
     QString getExecutablePath(const QString& sourceFile);
     void showBuildError(const QString& message);
-    void saveUserSession();
-    void loadUserSession();
-    void updateTitleBarUser();
 };
 
 #endif // MAINWINDOW_H
