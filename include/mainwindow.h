@@ -165,12 +165,13 @@ private:
     QString m_currentExecutable;
     
     // Menus
-    QMenu* m_buildMenu = nullptr;
-    QMenu* m_editMenu = nullptr;
-    QMenu* m_viewMenu = nullptr;
-    QMenu* m_toolsMenu = nullptr;
+    QMenu* m_fileMenu     = nullptr;
+    QMenu* m_buildMenu    = nullptr;
+    QMenu* m_editMenu     = nullptr;
+    QMenu* m_viewMenu     = nullptr;
+    QMenu* m_toolsMenu    = nullptr;
     QMenu* m_settingsMenu = nullptr;
-    QMenu* m_helpMenu = nullptr;
+    QMenu* m_helpMenu     = nullptr;
     QAction* m_closeProjectAction = nullptr;
     QAction* m_runAction = nullptr;
     QAction* m_toggleFileTreeAction = nullptr;

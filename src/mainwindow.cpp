@@ -215,49 +215,49 @@ void MainWindow::setupCustomTitleBar() {
 
 void MainWindow::setupMenus() {
     // File menu
-    QMenu* fileMenu = menuBar()->addMenu("&File");
+    m_fileMenu = menuBar()->addMenu("&File");
     
-    QAction* newAction = fileMenu->addAction("New &File");
+    QAction* newAction = m_fileMenu->addAction("New &File");
     newAction->setShortcut(QKeySequence::New);
     connect(newAction, &QAction::triggered, this, &MainWindow::onFileNew);
     
-    QAction* newProjectAction = fileMenu->addAction("New &Project...");
+    QAction* newProjectAction = m_fileMenu->addAction("New &Project...");
     newProjectAction->setShortcut(QKeySequence("Ctrl+Shift+N"));
     connect(newProjectAction, &QAction::triggered, this, &MainWindow::onFileNewProject);
     
-    fileMenu->addSeparator();
+    m_fileMenu->addSeparator();
     
-    QAction* openAction = fileMenu->addAction("&Open...");
+    QAction* openAction = m_fileMenu->addAction("&Open...");
     openAction->setShortcut(QKeySequence::Open);
     connect(openAction, &QAction::triggered, this, &MainWindow::onFileOpen);
     
-    fileMenu->addSeparator();
+    m_fileMenu->addSeparator();
     
-    QAction* saveAction = fileMenu->addAction("&Save");
+    QAction* saveAction = m_fileMenu->addAction("&Save");
     saveAction->setShortcut(QKeySequence::Save);
     connect(saveAction, &QAction::triggered, this, &MainWindow::onFileSave);
     
-    QAction* saveAsAction = fileMenu->addAction("Save &As...");
+    QAction* saveAsAction = m_fileMenu->addAction("Save &As...");
     saveAsAction->setShortcut(QKeySequence::SaveAs);
     connect(saveAsAction, &QAction::triggered, this, &MainWindow::onFileSaveAs);
     
-    fileMenu->addSeparator();
+    m_fileMenu->addSeparator();
     
-    QAction* openFolderAction = fileMenu->addAction("Open F&older...");
+    QAction* openFolderAction = m_fileMenu->addAction("Open F&older...");
     openFolderAction->setShortcut(QKeySequence("Ctrl+K"));
     connect(openFolderAction, &QAction::triggered, this, &MainWindow::onFileOpenFolder);
     
-    QAction* openProjectAction = fileMenu->addAction("Open Pro&ject...");
+    QAction* openProjectAction = m_fileMenu->addAction("Open Pro&ject...");
     connect(openProjectAction, &QAction::triggered, this, &MainWindow::onFileOpenProject);
 
-    fileMenu->addSeparator();
-    m_closeProjectAction = fileMenu->addAction(QStringLiteral("Close Project"));
+    m_fileMenu->addSeparator();
+    m_closeProjectAction = m_fileMenu->addAction(QStringLiteral("Close Project"));
     m_closeProjectAction->setEnabled(false);
     connect(m_closeProjectAction, &QAction::triggered, this, &MainWindow::onFileCloseProject);
     
-    fileMenu->addSeparator();
+    m_fileMenu->addSeparator();
     
-    QAction* exitAction = fileMenu->addAction("E&xit");
+    QAction* exitAction = m_fileMenu->addAction("E&xit");
     exitAction->setShortcut(QKeySequence::Quit);
     connect(exitAction, &QAction::triggered, this, &MainWindow::onFileExit);
     
@@ -714,11 +714,10 @@ void MainWindow::showWelcomeScreen() {
     
     m_centralStack->setCurrentWidget(m_welcomeScreen);
     
-    // Hide IDE-specific docks — deferred to avoid Wayland xdg_surface buffer mismatch
     m_fileTreeDock->hide();
     m_outputPanelDock->hide();
     m_analysisDockWasVisible = m_analysisDock->isVisible();
-    QTimer::singleShot(0, this, [this]{ m_analysisDock->hide(); });
+    m_analysisDock->hide();
     
     // Show "Return to Project" button if a project/folder is open
     bool hasOpenProject = ProjectManager::instance()->hasOpenProject();
@@ -730,10 +729,9 @@ void MainWindow::showWelcomeScreen() {
 void MainWindow::hideWelcomeScreen() {
     m_centralStack->setCurrentWidget(m_editorTabs);
     
-    // Show IDE docks — deferred to avoid Wayland xdg_surface buffer mismatch
     m_fileTreeDock->show();
     m_outputPanelDock->show();
-    QTimer::singleShot(0, this, [this]{ if (m_analysisDockWasVisible) m_analysisDock->show(); });
+    if (m_analysisDockWasVisible) m_analysisDock->show();
     
     if (m_closeProjectAction) m_closeProjectAction->setEnabled(true);
     updateMenuState(false);
@@ -777,33 +775,27 @@ void MainWindow::showQuizModeWindow()
     m_fileTreeDock->hide();
     m_outputPanelDock->hide();
     m_analysisDockWasVisible = m_analysisDock->isVisible();
-    QTimer::singleShot(0, this, [this]{ m_analysisDock->hide(); });
+    m_analysisDock->hide();
     updateMenuState(true);
     updateCustomTitleLabel("CppAtlas — Quiz Mode");
 }
 
 void MainWindow::hideQuizModeWindow()
 {
-    // Restore docks to their pre-quiz-mode state so that showWelcomeScreen()
-    // captures the correct visibility when it re-saves m_analysisDockWasVisible.
     m_fileTreeDock->show();
     m_outputPanelDock->show();
-    QTimer::singleShot(0, this, [this]{ if (m_analysisDockWasVisible) m_analysisDock->show(); });
+    if (m_analysisDockWasVisible) m_analysisDock->show();
 }
 
 void MainWindow::updateMenuState(bool isWelcomeVisible) {
-    QMenuBar* mb = menuBar();
-    if (!mb) return;
-
-    // Hide/show each menu by pointer identity:
-    // Settings and Help are always visible; all other menus hide in Welcome/Quiz mode
-    const QList<QAction*> menuActions = mb->actions();
-    for (QAction* act : menuActions) {
-        QMenu* menu = act->menu();
-        if (!menu) continue;
-        const bool alwaysVisible = (menu == m_settingsMenu || menu == m_helpMenu);
-        act->setVisible(alwaysVisible || !isWelcomeVisible);
+    // IDE-only menus: hidden in Welcome and Quiz mode
+    const QList<QMenu*> ideOnlyMenus = { m_fileMenu, m_editMenu, m_buildMenu, m_viewMenu, m_toolsMenu };
+    for (QMenu* menu : ideOnlyMenus) {
+        if (menu) menu->menuAction()->setVisible(!isWelcomeVisible);
     }
+    // Settings and Help: always visible
+    if (m_settingsMenu) m_settingsMenu->menuAction()->setVisible(true);
+    if (m_helpMenu)     m_helpMenu->menuAction()->setVisible(true);
 
     // Main toolbar — hide in Welcome/Quiz mode
     if (m_mainToolbar) {
