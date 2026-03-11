@@ -13,7 +13,7 @@ class WelcomeScreen : public QWidget
 public:
     explicit WelcomeScreen(QWidget *parent = nullptr);
     ~WelcomeScreen() = default;
-    
+
     /**
      * @brief Show/hide the Return to Project button
      * @param visible true if a project is open
@@ -36,17 +36,17 @@ signals:
     void openFileRequested();
     void openFolderRequested();
     void recentProjectSelected(const QString& projectPath);
-    
+
     // Project signals
     void createProjectRequested();
     void openProjectRequested();
-    
+
     // Quiz Mode signal (for future implementation)
     void quizModeRequested();
-    
+
     // Continue without project
     void continueWithoutProjectRequested();
-    
+
     // Return to open project
     void returnToProjectRequested();
 
@@ -67,23 +67,23 @@ private:
     QWidget* m_modeSelector;
     QPushButton* m_ideModeBtn;
     QPushButton* m_quizModeBtn;
-    
+
     // Quick actions (IDE mode)
     QPushButton* m_newFileBtn;
     QPushButton* m_openFileBtn;
     QPushButton* m_openFolderBtn;
     QPushButton* m_createProjectBtn;
     QPushButton* m_openProjectBtn;
-    
+
     // Recent projects
     QListWidget* m_recentProjectsList;
     QPushButton* m_clearRecentBtn;
-    
+
     // Labels
     QLabel* m_logoLabel;
     QLabel* m_titleLabel;
     QLabel* m_subtitleLabel;
-    
+
     // Return to project
     QPushButton* m_returnToProjectBtn;
 

@@ -22,12 +22,12 @@ if(Qt6_FOUND)
             ${Qt6Widgets_INCLUDE_DIRS}
         PATH_SUFFIXES Qsci
     )
-    
+
     if(NOT QSCINTILLA_INCLUDE_DIR)
         find_path(QSCINTILLA_INCLUDE_DIR Qsci/qsciscintilla.h)
     endif()
-    
-    find_library(QSCINTILLA_LIBRARY 
+
+    find_library(QSCINTILLA_LIBRARY
         NAMES qscintilla2_qt6 qscintilla2-qt6 libqscintilla2_qt6
         PATHS
             /usr/lib/x86_64-linux-gnu
@@ -48,8 +48,8 @@ else()
             /usr/include
             /usr/local/include
     )
-    
-    find_library(QSCINTILLA_LIBRARY 
+
+    find_library(QSCINTILLA_LIBRARY
         NAMES qscintilla2_qt5 qscintilla2-qt5
         PATHS
             /usr/lib/x86_64-linux-gnu
@@ -59,7 +59,7 @@ else()
 endif()
 
 if(NOT QSCINTILLA_INCLUDE_DIR OR NOT QSCINTILLA_LIBRARY)
-    message(FATAL_ERROR 
+    message(FATAL_ERROR
         "QScintilla for Qt${QT_VERSION_MAJOR} not found!\n"
         "Please install:\n"
         "  Qt6: Ubuntu/Debian: sudo apt install libqscintilla2-qt6-dev\n"

@@ -13,6 +13,7 @@ struct UserRecord {
     QString username;
     QString displayName;
     QString avatarColor  = "#007ACC";
+    QString avatarPath;          // empty = use color circle fallback
     bool    isAdmin      = false;
     QString lastLogin;
     QString createdAt;
@@ -97,6 +98,12 @@ public:
      * @brief Change the avatar color of the current user.
      */
     bool updateAvatarColor(const QString& hexColor);
+
+    /**
+     * @brief Change the avatar image path of the current user.
+     * @param avatarPath Path to avatar image, or empty string to clear.
+     */
+    bool updateAvatarPath(const QString& username, const QString& avatarPath);
 
     /**
      * @brief Change password for a user (admin can change any user; users change own only).

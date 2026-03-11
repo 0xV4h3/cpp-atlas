@@ -91,7 +91,7 @@ private:
     QsciScintilla* currentBenchEditor() const;
     QString        currentBenchFilePath() const;
     void           addBenchTab(const QString& title, const QString& filePath,
-                               const QString& content);
+                     const QString& content);
     bool           closeBenchTab(int index);
     void           loadTemplateInCurrentTab();
 

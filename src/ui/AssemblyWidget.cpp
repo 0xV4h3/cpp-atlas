@@ -182,9 +182,9 @@ void AssemblyWidget::runAssembly() {
     // Write current source to a temp file
     QString uuid = QUuid::createUuid().toString().remove('{').remove('}').remove('-');
     QString tmpPath = QDir::tempPath()
-        + QStringLiteral("/cppatlas_asmrun_")
-        + uuid
-        + QStringLiteral(".cpp");
+                      + QStringLiteral("/cppatlas_asmrun_")
+                      + uuid
+                      + QStringLiteral(".cpp");
 
     QFile tmpFile(tmpPath);
     if (!tmpFile.open(QIODevice::WriteOnly | QIODevice::Text)) {

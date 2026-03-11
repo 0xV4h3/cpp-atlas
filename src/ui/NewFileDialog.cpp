@@ -138,7 +138,7 @@ void NewFileDialog::onTemplateSelectionChanged() {
 
 void NewFileDialog::onBrowseClicked() {
     QString dir = QFileDialog::getExistingDirectory(this, "Select Location",
-                                                     m_locationEdit->text());
+                                                    m_locationEdit->text());
     if (!dir.isEmpty()) {
         m_locationEdit->setText(dir);
     }
@@ -325,8 +325,8 @@ QString NewFileDialog::generateHeaderGuard(const QString& fileName) const {
 }
 
 bool NewFileDialog::createFileFromTemplate(const QString& filePath,
-                                            const QString& templateContent,
-                                            const QString& className) const {
+                                           const QString& templateContent,
+                                           const QString& className) const {
     Q_UNUSED(className);
     QFile file(filePath);
     if (!file.open(QIODevice::WriteOnly | QIODevice::Text)) {

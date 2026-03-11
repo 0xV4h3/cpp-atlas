@@ -75,7 +75,7 @@ bool UserManager::login(const QString& username, const QString& password)
     QSqlQuery q(db);
     q.prepare(
         "SELECT id, username, display_name, password_hash, salt, "
-        "       avatar_color, is_admin, created_at "
+        "       avatar_color, avatar_path, is_admin, created_at "
         "FROM users WHERE username = :username COLLATE NOCASE"
     );
     q.bindValue(":username", username.trimmed());
@@ -99,6 +99,7 @@ bool UserManager::login(const QString& username, const QString& password)
     m_currentUser.username    = q.value("username").toString();
     m_currentUser.displayName = q.value("display_name").toString();
     m_currentUser.avatarColor = q.value("avatar_color").toString();
+    m_currentUser.avatarPath  = q.value("avatar_path").toString();
     m_currentUser.isAdmin     = q.value("is_admin").toInt() == 1;
     m_currentUser.createdAt   = q.value("created_at").toString();
     m_loggedIn = true;
@@ -203,6 +204,24 @@ bool UserManager::updateAvatarColor(const QString& hexColor)
     if (!q.exec()) return false;
     m_currentUser.avatarColor = hexColor;
     emit userDataChanged(m_currentUser);
+    return true;
+}
+
+bool UserManager::updateAvatarPath(const QString& username, const QString& avatarPath)
+{
+    QSqlDatabase db = QSqlDatabase::database(QuizDatabase::CONNECTION_NAME);
+    QSqlQuery q(db);
+    q.prepare("UPDATE users SET avatar_path = :path WHERE username = :user COLLATE NOCASE");
+    q.bindValue(":path", avatarPath);
+    q.bindValue(":user", username);
+    if (!q.exec()) {
+        qWarning() << "[UserManager] updateAvatarPath failed:" << q.lastError().text();
+        return false;
+    }
+    if (m_currentUser.username.compare(username, Qt::CaseInsensitive) == 0) {
+        m_currentUser.avatarPath = avatarPath;
+        emit userDataChanged(m_currentUser);
+    }
     return true;
 }
 

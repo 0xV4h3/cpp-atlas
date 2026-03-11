@@ -49,12 +49,6 @@ public:
     QString lastOpenedProject() const;
     void    setLastOpenedProject(const QString& path);
 
-    QByteArray windowGeometry() const;
-    void       setWindowGeometry(const QByteArray& geometry);
-
-    QByteArray windowState() const;
-    void       setWindowState(const QByteArray& state);
-
     // ── Generic access (for future extensibility) ────────────────────────────
     QVariant value(const QString& key, const QVariant& defaultValue = QVariant()) const;
     void     setValue(const QString& key, const QVariant& value);

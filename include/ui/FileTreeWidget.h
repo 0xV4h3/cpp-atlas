@@ -10,34 +10,34 @@
  */
 class FileTreeWidget : public QTreeView {
     Q_OBJECT
-    
+
 public:
     explicit FileTreeWidget(QWidget *parent = nullptr);
     ~FileTreeWidget() override = default;
-    
+
     /**
      * @brief Set root directory to display
      * @param path Directory path
      */
     void setRootPath(const QString& path);
-    
+
     /**
      * @brief Get current root directory
      * @return Directory path
      */
     QString rootPath() const;
-    
+
     /**
      * @brief Open folder and show file tree
      * @param path Directory path
      */
     void openFolder(const QString& path);
-    
+
     /**
      * @brief Close folder and hide file tree
      */
     void closeFolder();
-    
+
 signals:
     void fileDoubleClicked(const QString& filePath);
     void newFileRequested(const QString& directory);
@@ -48,18 +48,18 @@ signals:
     void folderOpened(const QString& path);
     void folderClosed();
     void fileCreated(const QString& filePath);
-    
+
 protected:
     void contextMenuEvent(QContextMenuEvent *event) override;
     void mouseDoubleClickEvent(QMouseEvent *event) override;
     void keyPressEvent(QKeyEvent *event) override;
-    
+
 private slots:
     void onNewFileAction();
     void onDeleteAction();
     void onRenameAction();
     void onOpenInExplorerAction();
-    
+
 private:
     QFileSystemModel* m_model;
     QMenu* m_contextMenu;
@@ -67,7 +67,7 @@ private:
     QAction* m_renameAction;
     QAction* m_openInExplorerAction;
     QModelIndex m_contextMenuIndex;
-    
+
     void setupModel();
     void setupContextMenu();
     QString selectedFilePath() const;

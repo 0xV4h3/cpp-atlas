@@ -126,9 +126,9 @@ void InsightsWidget::runInsights() {
     // Use a unique filename to avoid race conditions between concurrent instances.
     QString uuid = QUuid::createUuid().toString().remove('{').remove('}').remove('-');
     QString tmpPath = QDir::tempPath()
-        + QStringLiteral("/cppatlas_insights_")
-        + uuid
-        + QStringLiteral(".cpp");
+                      + QStringLiteral("/cppatlas_insights_")
+                      + uuid
+                      + QStringLiteral(".cpp");
     QFile tmpFile(tmpPath);
     if (!tmpFile.open(QIODevice::WriteOnly | QIODevice::Text)) {
         m_statusLabel->setText(QStringLiteral("Failed to create temp file."));
@@ -158,7 +158,7 @@ void InsightsWidget::onProgressMessage(const QString& msg) {
 }
 
 void InsightsWidget::onInsightsFinished(bool success, const QString& output,
-                                         const QString& error) {
+                                        const QString& error) {
     if (!m_tempInsightsFile.isEmpty()) {
         QFile::remove(m_tempInsightsFile);
         m_tempInsightsFile.clear();

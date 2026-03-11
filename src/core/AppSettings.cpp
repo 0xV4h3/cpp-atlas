@@ -74,26 +74,6 @@ void AppSettings::setLastOpenedProject(const QString& path)
     m_settings.setValue(key("session/lastProject"), path);
 }
 
-QByteArray AppSettings::windowGeometry() const
-{
-    return m_settings.value(key("session/windowGeometry"), QByteArray()).toByteArray();
-}
-
-void AppSettings::setWindowGeometry(const QByteArray& geometry)
-{
-    m_settings.setValue(key("session/windowGeometry"), geometry);
-}
-
-QByteArray AppSettings::windowState() const
-{
-    return m_settings.value(key("session/windowState"), QByteArray()).toByteArray();
-}
-
-void AppSettings::setWindowState(const QByteArray& state)
-{
-    m_settings.setValue(key("session/windowState"), state);
-}
-
 // ─────────────────────────────────────────────────────────────────────────────
 // Generic access
 // ─────────────────────────────────────────────────────────────────────────────

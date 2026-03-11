@@ -10,6 +10,14 @@
 #include <QApplication>
 #include <QDesktopServices>
 #include <QUrl>
+#include <QPainter>
+#include <QPainterPath>
+#include <QStandardPaths>
+#include <QFileDialog>
+#include <QDir>
+#include <QFile>
+#include <QFileInfo>
+#include <QMessageBox>
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Constructor
@@ -21,11 +29,18 @@ SettingsDialog::SettingsDialog(const QString& username, QWidget* parent)
     , m_username(username)
 {
     setWindowTitle("CppAtlas — Settings");
-    setModal(true);
+    setModal(false);  // Non-modal so it doesn't block main window
     setMinimumSize(480, 420);
 
     setupUi();
     applyTheme();
+
+    // Snapshot for Reset
+    m_initialTheme      = m_settings.theme();
+    m_initialFontFamily = m_settings.editorFontFamily();
+    m_initialFontSize   = m_settings.editorFontSize();
+    m_initialLineNums   = m_settings.showLineNumbers();
+    m_initialWordWrap   = m_settings.wordWrap();
 
     connect(ThemeManager::instance(), &ThemeManager::themeChanged,
             this, &SettingsDialog::applyTheme);
@@ -45,25 +60,34 @@ void SettingsDialog::setupUi()
 
     QWidget* appearanceTab = new QWidget(m_tabWidget);
     QWidget* accountTab    = new QWidget(m_tabWidget);
-    QWidget* aboutTab      = new QWidget(m_tabWidget);
 
     setupAppearanceTab(appearanceTab);
     setupAccountTab(accountTab);
-    setupAboutTab(aboutTab);
 
     m_tabWidget->addTab(appearanceTab, "Appearance");
     m_tabWidget->addTab(accountTab,    "Account");
-    m_tabWidget->addTab(aboutTab,      "About");
 
     mainLayout->addWidget(m_tabWidget, 1);
 
-    // Close button
+    // Bottom button row: Reset, Apply, Close
     QHBoxLayout* btnLayout = new QHBoxLayout();
     btnLayout->addStretch();
+
+    QPushButton* resetBtn = new QPushButton("Reset", this);
+    resetBtn->setObjectName("settingsResetBtn");
+    connect(resetBtn, &QPushButton::clicked, this, &SettingsDialog::onResetAppearance);
+    btnLayout->addWidget(resetBtn);
+
+    QPushButton* applyBtn = new QPushButton("Apply", this);
+    applyBtn->setObjectName("settingsApplyBtn");
+    connect(applyBtn, &QPushButton::clicked, this, &SettingsDialog::onApplyAppearance);
+    btnLayout->addWidget(applyBtn);
+
     QPushButton* closeBtn = new QPushButton("Close", this);
     closeBtn->setObjectName("settingsCloseBtn");
     connect(closeBtn, &QPushButton::clicked, this, &QDialog::accept);
     btnLayout->addWidget(closeBtn);
+
     mainLayout->addLayout(btnLayout);
 }
 
@@ -94,42 +118,22 @@ void SettingsDialog::setupAppearanceTab(QWidget* tab)
     m_fontFamilyCombo = new QFontComboBox(tab);
     m_fontFamilyCombo->setFontFilters(QFontComboBox::MonospacedFonts);
     m_fontFamilyCombo->setCurrentFont(QFont(m_settings.editorFontFamily()));
-    connect(m_fontFamilyCombo, &QFontComboBox::currentFontChanged,
-            this, [this](const QFont& f) {
-        m_settings.setEditorFontFamily(f.family());
-        emit settingsChanged();
-    });
     form->addRow("Editor Font:", m_fontFamilyCombo);
 
     // Font size
     m_fontSizeSpinBox = new QSpinBox(tab);
     m_fontSizeSpinBox->setRange(6, 32);
     m_fontSizeSpinBox->setValue(m_settings.editorFontSize());
-    connect(m_fontSizeSpinBox, QOverload<int>::of(&QSpinBox::valueChanged),
-            this, [this](int size) {
-        m_settings.setEditorFontSize(size);
-        emit settingsChanged();
-    });
     form->addRow("Font Size:", m_fontSizeSpinBox);
 
     // Line numbers
     m_lineNumbersCheck = new QCheckBox(tab);
     m_lineNumbersCheck->setChecked(m_settings.showLineNumbers());
-    connect(m_lineNumbersCheck, &QCheckBox::toggled,
-            this, [this](bool checked) {
-        m_settings.setShowLineNumbers(checked);
-        emit settingsChanged();
-    });
     form->addRow("Show Line Numbers:", m_lineNumbersCheck);
 
     // Word wrap
     m_wordWrapCheck = new QCheckBox(tab);
     m_wordWrapCheck->setChecked(m_settings.wordWrap());
-    connect(m_wordWrapCheck, &QCheckBox::toggled,
-            this, [this](bool checked) {
-        m_settings.setWordWrap(checked);
-        emit settingsChanged();
-    });
     form->addRow("Word Wrap:", m_wordWrapCheck);
 }
 
@@ -178,28 +182,50 @@ void SettingsDialog::setupAccountTab(QWidget* tab)
     nameRow->addWidget(applyNameBtn);
     layout->addLayout(nameRow);
 
-    // Avatar color
-    QFrame* colorSep = new QFrame(tab);
-    colorSep->setFrameShape(QFrame::HLine);
-    colorSep->setObjectName("settingsSeparator");
-    layout->addWidget(colorSep);
+    // Avatar section
+    QFrame* avatarSep = new QFrame(tab);
+    avatarSep->setFrameShape(QFrame::HLine);
+    avatarSep->setObjectName("settingsSeparator");
+    layout->addWidget(avatarSep);
 
-    QLabel* colorLabel = new QLabel("Avatar Color", tab);
-    colorLabel->setObjectName("settingsSectionLabel");
-    layout->addWidget(colorLabel);
+    QLabel* avatarLabel = new QLabel("Avatar", tab);
+    avatarLabel->setObjectName("settingsSectionLabel");
+    layout->addWidget(avatarLabel);
 
-    QHBoxLayout* colorRow = new QHBoxLayout();
+    // Preview
+    m_avatarPreviewLabel = new QLabel(tab);
+    m_avatarPreviewLabel->setObjectName("avatarPreview");
+    m_avatarPreviewLabel->setFixedSize(64, 64);
+    m_avatarPreviewLabel->setAlignment(Qt::AlignCenter);
+    updateAvatarPreview();
+    layout->addWidget(m_avatarPreviewLabel, 0, Qt::AlignHCenter);
+
+    // Buttons row
+    QHBoxLayout* avatarBtnRow = new QHBoxLayout();
+
+    m_uploadAvatarBtn = new QPushButton("Upload image...", tab);
+    m_uploadAvatarBtn->setObjectName("settingsApplyBtn");
+    connect(m_uploadAvatarBtn, &QPushButton::clicked, this, &SettingsDialog::onUploadAvatar);
+    avatarBtnRow->addWidget(m_uploadAvatarBtn);
+
+    m_removeAvatarBtn = new QPushButton("Remove avatar", tab);
+    m_removeAvatarBtn->setObjectName("settingsResetBtn");
+    // Only enabled when a custom image avatar is set; avatar color is always available as fallback
+    m_removeAvatarBtn->setEnabled(!user.avatarPath.isEmpty());
+    connect(m_removeAvatarBtn, &QPushButton::clicked, this, &SettingsDialog::onRemoveAvatar);
+    avatarBtnRow->addWidget(m_removeAvatarBtn);
+
     m_avatarColorBtn = new QPushButton(user.avatarColor, tab);
     m_avatarColorBtn->setObjectName("settingsAvatarColorBtn");
     m_avatarColorBtn->setFixedSize(120, 32);
     m_avatarColorBtn->setStyleSheet(
         QString("background-color: %1; color: white; border-radius: 4px;")
             .arg(user.avatarColor));
-    connect(m_avatarColorBtn, &QPushButton::clicked,
-            this, &SettingsDialog::onChangeAvatarColor);
-    colorRow->addWidget(m_avatarColorBtn);
-    colorRow->addStretch();
-    layout->addLayout(colorRow);
+    m_avatarColorBtn->setVisible(user.avatarPath.isEmpty());
+    connect(m_avatarColorBtn, &QPushButton::clicked, this, &SettingsDialog::onChangeAvatarColor);
+    avatarBtnRow->addWidget(m_avatarColorBtn);
+
+    layout->addLayout(avatarBtnRow);
 
     // Change password
     QFrame* passSep = new QFrame(tab);
@@ -246,48 +272,52 @@ void SettingsDialog::setupAccountTab(QWidget* tab)
     layout->addStretch();
 }
 
-void SettingsDialog::setupAboutTab(QWidget* tab)
+// ─────────────────────────────────────────────────────────────────────────────
+// Avatar helpers
+// ─────────────────────────────────────────────────────────────────────────────
+
+void SettingsDialog::updateAvatarPreview()
 {
-    QVBoxLayout* layout = new QVBoxLayout(tab);
-    layout->setContentsMargins(24, 24, 24, 24);
-    layout->setSpacing(12);
-    layout->setAlignment(Qt::AlignTop);
+    if (!m_avatarPreviewLabel) return;
+    const UserRecord& user = UserManager::instance().currentUser();
 
-    QLabel* logoLabel = new QLabel("C++", tab);
-    logoLabel->setObjectName("aboutLogo");
-    layout->addWidget(logoLabel, 0, Qt::AlignHCenter);
+    if (!user.avatarPath.isEmpty()) {
+        QPixmap pix(user.avatarPath);
+        if (!pix.isNull()) {
+            // Circular crop
+            QPixmap circle(64, 64);
+            circle.fill(Qt::transparent);
+            QPainter painter(&circle);
+            painter.setRenderHint(QPainter::Antialiasing);
+            QPainterPath path;
+            path.addEllipse(0, 0, 64, 64);
+            painter.setClipPath(path);
+            painter.drawPixmap(0, 0, 64, 64, pix.scaled(64, 64,
+                Qt::KeepAspectRatioByExpanding, Qt::SmoothTransformation));
+            m_avatarPreviewLabel->setPixmap(circle);
+            return;
+        }
+    }
 
-    QLabel* appNameLabel = new QLabel("CppAtlas", tab);
-    appNameLabel->setObjectName("aboutAppName");
-    layout->addWidget(appNameLabel, 0, Qt::AlignHCenter);
-
-    QLabel* versionLabel = new QLabel(
-        QString("Version %1").arg(QApplication::applicationVersion()), tab);
-    versionLabel->setObjectName("aboutVersion");
-    layout->addWidget(versionLabel, 0, Qt::AlignHCenter);
-
-    QFrame* sep = new QFrame(tab);
-    sep->setFrameShape(QFrame::HLine);
-    sep->setObjectName("settingsSeparator");
-    layout->addWidget(sep);
-
-    QLabel* descLabel = new QLabel(
-        "An educational Qt-based IDE and quiz engine\n"
-        "for learning modern C++.", tab);
-    descLabel->setObjectName("aboutDesc");
-    descLabel->setAlignment(Qt::AlignHCenter);
-    descLabel->setWordWrap(true);
-    layout->addWidget(descLabel);
-
-    QPushButton* githubBtn = new QPushButton("View on GitHub", tab);
-    githubBtn->setObjectName("settingsApplyBtn");
-    connect(githubBtn, &QPushButton::clicked, this, []() {
-        QDesktopServices::openUrl(
-            QUrl("https://github.com/0xV4h3/cpp-atlas"));
-    });
-    layout->addWidget(githubBtn, 0, Qt::AlignHCenter);
-
-    layout->addStretch();
+    // Fallback: colored circle with initial
+    QPixmap circle(64, 64);
+    circle.fill(Qt::transparent);
+    QPainter painter(&circle);
+    painter.setRenderHint(QPainter::Antialiasing);
+    const QColor color(user.avatarColor.isEmpty() ? "#007ACC" : user.avatarColor);
+    painter.setBrush(color);
+    painter.setPen(Qt::NoPen);
+    painter.drawEllipse(0, 0, 64, 64);
+    painter.setPen(Qt::white);
+    QFont f = painter.font();
+    f.setPointSize(24);
+    f.setBold(true);
+    painter.setFont(f);
+    const QString initial = user.displayName.isEmpty()
+        ? user.username.left(1).toUpper()
+        : user.displayName.left(1).toUpper();
+    painter.drawText(QRect(0, 0, 64, 64), Qt::AlignCenter, initial);
+    m_avatarPreviewLabel->setPixmap(circle);
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -298,6 +328,44 @@ void SettingsDialog::onThemeChanged(const QString& themeName)
 {
     ThemeManager::instance()->setTheme(themeName);
     m_settings.setTheme(themeName);
+}
+
+void SettingsDialog::onApplyAppearance()
+{
+    // Theme (already applied live via onThemeChanged, just save)
+    m_settings.setTheme(m_themeCombo->currentText());
+
+    // Font
+    m_settings.setEditorFontFamily(m_fontFamilyCombo->currentFont().family());
+    m_settings.setEditorFontSize(m_fontSizeSpinBox->value());
+
+    // Editor options
+    m_settings.setShowLineNumbers(m_lineNumbersCheck->isChecked());
+    m_settings.setWordWrap(m_wordWrapCheck->isChecked());
+
+    // Update snapshot (so next Reset goes to currently applied values)
+    m_initialTheme      = m_themeCombo->currentText();
+    m_initialFontFamily = m_fontFamilyCombo->currentFont().family();
+    m_initialFontSize   = m_fontSizeSpinBox->value();
+    m_initialLineNums   = m_lineNumbersCheck->isChecked();
+    m_initialWordWrap   = m_wordWrapCheck->isChecked();
+
+    emit settingsChanged();
+}
+
+void SettingsDialog::onResetAppearance()
+{
+    // Restore to snapshot (values when dialog was opened or last applied)
+    const int themeIdx = m_themeCombo->findText(m_initialTheme);
+    if (themeIdx >= 0) m_themeCombo->setCurrentIndex(themeIdx);
+    // onThemeChanged fires automatically and reverts the theme live
+
+    m_fontFamilyCombo->setCurrentFont(QFont(m_initialFontFamily));
+    m_fontSizeSpinBox->setValue(m_initialFontSize);
+    m_lineNumbersCheck->setChecked(m_initialLineNums);
+    m_wordWrapCheck->setChecked(m_initialWordWrap);
+
+    // Notify listeners so editors update to the reverted values
     emit settingsChanged();
 }
 
@@ -325,7 +393,42 @@ void SettingsDialog::onChangeAvatarColor()
         m_avatarColorBtn->setText(hex);
         m_avatarColorBtn->setStyleSheet(
             QString("background-color: %1; color: white; border-radius: 4px;").arg(hex));
+        updateAvatarPreview();
     }
+}
+
+void SettingsDialog::onUploadAvatar()
+{
+    const QString filePath = QFileDialog::getOpenFileName(
+        this, "Select Avatar Image", QString(),
+        "Images (*.png *.jpg *.jpeg *.bmp *.gif)");
+    if (filePath.isEmpty()) return;
+
+    // Copy to app data location
+    const QString destDir = QStandardPaths::writableLocation(
+        QStandardPaths::AppDataLocation) + "/avatars/";
+    QDir().mkpath(destDir);
+    const QString ext = QFileInfo(filePath).suffix();
+    const QString destPath = destDir + m_username + "." + ext;
+    QFile::remove(destPath);  // overwrite if exists
+    if (!QFile::copy(filePath, destPath)) {
+        QMessageBox::warning(this, "Upload Failed",
+            "Could not copy the image file.");
+        return;
+    }
+
+    UserManager::instance().updateAvatarPath(m_username, destPath);
+    updateAvatarPreview();
+    if (m_removeAvatarBtn) m_removeAvatarBtn->setEnabled(true);
+    if (m_avatarColorBtn)  m_avatarColorBtn->setVisible(false);
+}
+
+void SettingsDialog::onRemoveAvatar()
+{
+    UserManager::instance().updateAvatarPath(m_username, QString());
+    updateAvatarPreview();
+    if (m_removeAvatarBtn) m_removeAvatarBtn->setEnabled(false);
+    if (m_avatarColorBtn)  m_avatarColorBtn->setVisible(true);
 }
 
 void SettingsDialog::onChangePassword()
@@ -455,6 +558,17 @@ void SettingsDialog::applyTheme()
         #settingsApplyBtn:hover, #settingsCloseBtn:hover {
             background-color: %8;
         }
+        #settingsResetBtn {
+            background-color: %7;
+            color: %5;
+            border: 1px solid %3;
+            border-radius: 4px;
+            padding: 6px 16px;
+            font-size: 13px;
+        }
+        #settingsResetBtn:hover {
+            background-color: %3;
+        }
         #settingsSeparator {
             color: %3;
         }
@@ -465,25 +579,6 @@ void SettingsDialog::applyTheme()
         #settingsStatusLabel[status="success"] {
             color: %10;
             font-size: 12px;
-        }
-        #aboutLogo {
-            font-size: 36px;
-            font-weight: bold;
-            color: %6;
-            font-family: "Consolas", monospace;
-        }
-        #aboutAppName {
-            font-size: 22px;
-            font-weight: bold;
-            color: %5;
-        }
-        #aboutVersion {
-            font-size: 13px;
-            color: %11;
-        }
-        #aboutDesc {
-            font-size: 13px;
-            color: %5;
         }
     )")
     .arg(t.windowBackground.name())   // %1
@@ -496,6 +591,5 @@ void SettingsDialog::applyTheme()
     .arg(t.accent.darker(115).name()) // %8
     .arg(t.error.name())              // %9
     .arg(t.success.name())            // %10
-    .arg(t.textSecondary.name())      // %11
     );
 }

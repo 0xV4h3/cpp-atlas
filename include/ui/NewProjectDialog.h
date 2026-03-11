@@ -14,7 +14,7 @@ class NewProjectDialog : public QDialog {
 public:
     explicit NewProjectDialog(QWidget *parent = nullptr);
     ~NewProjectDialog() override = default;
-    
+
     QString projectName() const;
     QString projectLocation() const;
     QString projectFilePath() const;
@@ -32,7 +32,7 @@ private slots:
 private:
     void setupUI();
     void loadCompilers();
-    
+
     QLineEdit* m_nameEdit;
     QLineEdit* m_locationEdit;
     QPushButton* m_browseBtn;
@@ -44,7 +44,7 @@ private:
     QPushButton* m_createBtn;
     QPushButton* m_cancelBtn;
     QLabel* m_folderPreview;
-    
+
     QString m_projectFilePath;
 };
 

@@ -1,4 +1,5 @@
 #include "mainwindow.h"
+
 #include "quiz/QuizDatabase.h"
 #include "quiz/UserManager.h"
 #include "ui/LoginDialog.h"
@@ -13,16 +14,12 @@
 int main(int argc, char *argv[])
 {
     Q_INIT_RESOURCE(resources);
-    // Wayland: prevent native widget sibling issues that cause xdg_surface buffer mismatches
-    QApplication::setAttribute(Qt::AA_DontCreateNativeWidgetSiblings);
     QApplication a(argc, argv);
 
-    // App identity (used by QSettings)
     QApplication::setOrganizationName("CppAtlas");
     QApplication::setApplicationName("CppAtlas");
     QApplication::setApplicationVersion("0.2");
 
-    // Translations
     QTranslator translator;
     const QStringList uiLanguages = QLocale::system().uiLanguages();
     for (const QString& locale : uiLanguages) {
@@ -50,35 +47,17 @@ int main(int argc, char *argv[])
             "Path: " + QuizDatabase::instance().databasePath() + "\n"
             "Error: " + QuizDatabase::instance().lastError().text() + "\n\n"
             "The application will start without quiz features.");
-        // Non-fatal: continue without DB (IDE mode still works)
     }
 
     // ── Show Login Dialog ────────────────────────────────────────────────────
     if (QuizDatabase::instance().isOpen()) {
         LoginDialog loginDlg;
         if (loginDlg.exec() != QDialog::Accepted) {
-            // User closed the dialog without logging in — exit gracefully
             return 0;
         }
-        // UserManager now has the logged-in user available globally
     }
 
-    // ── Launch Main Window ───────────────────────────────────────────────────
     MainWindow w;
     w.show();
-
-    // Restore per-user window geometry (if available)
-    if (UserManager::instance().isLoggedIn()) {
-        AppSettings userSettings(UserManager::instance().currentUser().username);
-        const QByteArray geometry = userSettings.windowGeometry();
-        const QByteArray state    = userSettings.windowState();
-        if (!geometry.isEmpty() && !w.isMaximized() && !w.isFullScreen()) {
-            w.restoreGeometry(geometry);
-        }
-        if (!state.isEmpty()) {
-            w.restoreState(state);
-        }
-    }
-
     return a.exec();
 }
