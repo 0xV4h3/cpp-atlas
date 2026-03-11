@@ -69,6 +69,7 @@ private:
 
     bool openDatabase();
     bool applySchema();
+    bool applyMigrations();
     bool runSqlFile(const QString& resourcePath);
     bool needsSeed() const;
     bool applySeed();

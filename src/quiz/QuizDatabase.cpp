@@ -111,7 +111,42 @@ bool QuizDatabase::openDatabase()
 
 bool QuizDatabase::applySchema()
 {
-    return runSqlFile(":/db/schema.sql");
+    if (!runSqlFile(":/db/schema.sql")) return false;
+    return applyMigrations();
+}
+
+bool QuizDatabase::applyMigrations()
+{
+    QSqlDatabase db = QSqlDatabase::database(CONNECTION_NAME);
+
+    // Migration v2: add avatar_path column to users table.
+    // New installs already have it from schema.sql; this runs for existing DBs.
+    // Use PRAGMA table_info to check idempotently (safe to run every time).
+    {
+        QSqlQuery check(db);
+        check.exec("PRAGMA table_info(users)");
+        bool hasAvatarPath = false;
+        while (check.next()) {
+            if (check.value("name").toString() == "avatar_path") {
+                hasAvatarPath = true;
+                break;
+            }
+        }
+        if (!hasAvatarPath) {
+            QSqlQuery alter(db);
+            if (!alter.exec("ALTER TABLE users ADD COLUMN avatar_path TEXT DEFAULT NULL")) {
+                qWarning() << "[QuizDatabase] Migration v2 failed:"
+                           << alter.lastError().text();
+                return false;
+            }
+            qDebug() << "[QuizDatabase] Applied migration to schema v2";
+        }
+        QSqlQuery ver2(db);
+        ver2.prepare("INSERT OR IGNORE INTO schema_version (version, description) "
+                     "VALUES (2, 'Add avatar_path to users table')");
+        ver2.exec();
+    }
+    return true;
 }
 
 bool QuizDatabase::needsSeed() const

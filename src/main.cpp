@@ -13,6 +13,8 @@
 int main(int argc, char *argv[])
 {
     Q_INIT_RESOURCE(resources);
+    // Wayland: prevent native widget sibling issues that cause xdg_surface buffer mismatches
+    QApplication::setAttribute(Qt::AA_DontCreateNativeWidgetSiblings);
     QApplication a(argc, argv);
 
     // App identity (used by QSettings)
