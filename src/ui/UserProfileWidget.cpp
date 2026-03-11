@@ -331,6 +331,22 @@ void UserProfileWidget::buildAvatarCard(const UserRecord& user, int overallScore
     const double xpFrac = xpNeeded > 0
                           ? static_cast<double>(xpInLevel) / xpNeeded : 1.0;
 
+    // Apply avatar background: user's stored color, or accent as fallback
+    if (m_avatarLabel) {
+        const QString avatarBg = user.avatarColor.isEmpty()
+        ? ThemeManager::instance()->currentTheme().accent.name()
+        : user.avatarColor;
+        m_avatarLabel->setStyleSheet(QString(
+             "QLabel {"
+             "  background-color: %1;"
+             "  color: white;"
+             "  border-radius: 36px;"
+             "  font-size: 20px;"
+             "  font-weight: bold;"
+             "}"
+             ).arg(avatarBg));
+    }
+
     m_usernameLabel->setText(
         QString("%1%2  <span style='font-size:14px; font-weight:normal;'>%3</span>")
         .arg(user.displayName.isEmpty() ? user.username : user.displayName)

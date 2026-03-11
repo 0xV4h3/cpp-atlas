@@ -367,7 +367,13 @@ void QuizSessionWidget::onAbandonClicked()
 void QuizSessionWidget::renderQuestion(const QuestionDTO& q)
 {
     // Stars for difficulty
-    const QStringList stars = {"", "⭐", "⭐⭐", "⭐⭐⭐", "⭐⭐⭐⭐"};
+    const QStringList stars = {
+        "",
+        QString::fromUtf8(u8"\u2605"),
+        QString::fromUtf8(u8"\u2605\u2605"),
+        QString::fromUtf8(u8"\u2605\u2605\u2605"),
+        QString::fromUtf8(u8"\u2605\u2605\u2605\u2605")
+    };
     const int clamped = qBound(1, q.difficulty, 4);
     m_difficultyLabel->setText(stars[clamped]);
     m_questionText->setText(q.content);
