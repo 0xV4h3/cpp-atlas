@@ -103,6 +103,7 @@ private slots:
     // Quiz mode
     void onQuizModeRequested();
     void onQuizModeExit();
+    void onSettingsRequested();
 
 private:
     Ui::MainWindow *ui;
@@ -171,6 +172,7 @@ private:
     QAction* m_toggleFileTreeAction = nullptr;
     QAction* m_toggleOutputAction = nullptr;
     QAction* m_toggleAnalysisAction = nullptr;
+    QAction* m_settingsAction = nullptr;
     
     // Edit menu actions that should be disabled in welcome screen
     QAction* m_findAction = nullptr;

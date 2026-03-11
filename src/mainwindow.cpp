@@ -14,6 +14,7 @@
 #include "ui/NewProjectDialog.h"
 #include "ui/AnalysisPanel.h"
 #include "ui/QuizModeWindow.h"
+#include "ui/SettingsDialog.h"
 #include "core/FileManager.h"
 #include "core/Project.h"
 #include "core/ProjectManager.h"
@@ -39,6 +40,7 @@
 #include <QHBoxLayout>
 #include <QPushButton>
 #include <QToolButton>
+#include <QTimer>
 
 #ifdef Q_OS_WIN
 #include <windows.h>
@@ -398,6 +400,12 @@ void MainWindow::setupMenus() {
     // Tools menu — Analysis Panel + tab shortcuts
     m_toolsMenu = menuBar()->addMenu(QStringLiteral("&Tools"));
 
+    m_settingsAction = m_toolsMenu->addAction(QStringLiteral("&Settings..."));
+    m_settingsAction->setShortcut(QKeySequence(Qt::CTRL | Qt::Key_Comma));
+    connect(m_settingsAction, &QAction::triggered, this, &MainWindow::onSettingsRequested);
+
+    m_toolsMenu->addSeparator();
+
     m_toggleAnalysisAction = m_toolsMenu->addAction(
         QStringLiteral("Toggle &Analysis Panel"));
     m_toggleAnalysisAction->setShortcut(
@@ -687,11 +695,11 @@ void MainWindow::showWelcomeScreen() {
     
     m_centralStack->setCurrentWidget(m_welcomeScreen);
     
-    // Hide IDE-specific docks
+    // Hide IDE-specific docks — deferred to avoid Wayland xdg_surface buffer mismatch
     m_fileTreeDock->hide();
     m_outputPanelDock->hide();
     m_analysisDockWasVisible = m_analysisDock->isVisible();
-    m_analysisDock->hide();
+    QTimer::singleShot(0, this, [this]{ m_analysisDock->hide(); });
     
     // Show "Return to Project" button if a project/folder is open
     bool hasOpenProject = ProjectManager::instance()->hasOpenProject();
@@ -703,10 +711,10 @@ void MainWindow::showWelcomeScreen() {
 void MainWindow::hideWelcomeScreen() {
     m_centralStack->setCurrentWidget(m_editorTabs);
     
-    // Show IDE docks
+    // Show IDE docks — deferred to avoid Wayland xdg_surface buffer mismatch
     m_fileTreeDock->show();
     m_outputPanelDock->show();
-    if (m_analysisDockWasVisible) m_analysisDock->show();
+    QTimer::singleShot(0, this, [this]{ if (m_analysisDockWasVisible) m_analysisDock->show(); });
     
     if (m_closeProjectAction) m_closeProjectAction->setEnabled(true);
     updateMenuState(false);
@@ -723,13 +731,23 @@ void MainWindow::onQuizModeExit()
     showWelcomeScreen();
 }
 
+void MainWindow::onSettingsRequested()
+{
+    const QString username = UserManager::instance().currentUser().username;
+    SettingsDialog dlg(username, this);
+    connect(&dlg, &SettingsDialog::settingsChanged, this, [this](){
+        updateWindowTitle();
+    });
+    dlg.exec();
+}
+
 void MainWindow::showQuizModeWindow()
 {
     m_centralStack->setCurrentWidget(m_quizModeWindow);
     m_fileTreeDock->hide();
     m_outputPanelDock->hide();
     m_analysisDockWasVisible = m_analysisDock->isVisible();
-    m_analysisDock->hide();
+    QTimer::singleShot(0, this, [this]{ m_analysisDock->hide(); });
     updateMenuState(true);
     updateCustomTitleLabel("CppAtlas — Quiz Mode");
 }
@@ -740,7 +758,7 @@ void MainWindow::hideQuizModeWindow()
     // captures the correct visibility when it re-saves m_analysisDockWasVisible.
     m_fileTreeDock->show();
     m_outputPanelDock->show();
-    if (m_analysisDockWasVisible) m_analysisDock->show();
+    QTimer::singleShot(0, this, [this]{ if (m_analysisDockWasVisible) m_analysisDock->show(); });
 }
 
 void MainWindow::updateMenuState(bool isWelcomeVisible) {
