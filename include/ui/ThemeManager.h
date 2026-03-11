@@ -12,7 +12,7 @@
 struct Theme {
     QString name;
     QString displayName;
-    
+
     // Editor colors
     QColor editorBackground;
     QColor editorForeground;
@@ -25,7 +25,7 @@ struct Theme {
     QColor syntaxNumber;
     QColor syntaxFunction;
     QColor cursorColor;
-    
+
     // UI colors
     QColor windowBackground;
     QColor panelBackground;
@@ -41,7 +41,7 @@ struct Theme {
     QColor error;
     QColor warning;
     QColor success;
-    
+
     // Fonts
     QString editorFontFamily;
     int editorFontSize;
@@ -52,58 +52,58 @@ struct Theme {
  */
 class ThemeManager : public QObject {
     Q_OBJECT
-    
+
 public:
     static ThemeManager* instance();
-    
+
     /**
      * @brief Get list of available theme names
      * @return List of theme names
      */
     QStringList availableThemes() const;
-    
+
     /**
      * @brief Set current theme
      * @param themeName Theme name
      */
     void setTheme(const QString& themeName);
-    
+
     /**
      * @brief Get current theme
      * @return Current theme
      */
     Theme currentTheme() const;
-    
+
     /**
      * @brief Get current theme name
      * @return Theme name
      */
     QString currentThemeName() const;
-    
+
     /**
      * @brief Generate QSS stylesheet from current theme
      * @return Stylesheet string
      */
     QString generateStylesheet() const;
-    
+
     /**
      * @brief Get Dark theme
      * @return Dark theme
      */
     static Theme darkTheme();
-    
+
     /**
      * @brief Get Light theme
      * @return Light theme
      */
     static Theme lightTheme();
-    
+
     /**
      * @brief Get Dracula theme
      * @return Dracula theme
      */
     static Theme draculaTheme();
-    
+
     /**
      * @brief Get Monokai theme
      * @return Monokai theme
@@ -118,15 +118,15 @@ public:
 
 signals:
     void themeChanged(const QString& themeName);
-    
+
 private:
     ThemeManager();
     ~ThemeManager() override = default;
-    
+
     static ThemeManager* s_instance;
     QString m_currentThemeName;
     QMap<QString, Theme> m_themes;
-    
+
     void loadThemes();
 };
 

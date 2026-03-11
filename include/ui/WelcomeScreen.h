@@ -13,12 +13,22 @@ class WelcomeScreen : public QWidget
 public:
     explicit WelcomeScreen(QWidget *parent = nullptr);
     ~WelcomeScreen() = default;
-    
+
     /**
      * @brief Show/hide the Return to Project button
      * @param visible true if a project is open
      */
     void setReturnToProjectVisible(bool visible);
+
+    /**
+     * @brief Update the displayed current user info on the welcome screen.
+     * @param displayName The user's display name
+     * @param username The user's username
+     * @param isAdmin true if user is admin
+     */
+    void setCurrentUser(const QString& displayName,
+                        const QString& username,
+                        bool isAdmin);
 
 signals:
     // IDE Mode signals
@@ -26,17 +36,17 @@ signals:
     void openFileRequested();
     void openFolderRequested();
     void recentProjectSelected(const QString& projectPath);
-    
+
     // Project signals
     void createProjectRequested();
     void openProjectRequested();
-    
+
     // Quiz Mode signal (for future implementation)
     void quizModeRequested();
-    
+
     // Continue without project
     void continueWithoutProjectRequested();
-    
+
     // Return to open project
     void returnToProjectRequested();
 
@@ -57,25 +67,28 @@ private:
     QWidget* m_modeSelector;
     QPushButton* m_ideModeBtn;
     QPushButton* m_quizModeBtn;
-    
+
     // Quick actions (IDE mode)
     QPushButton* m_newFileBtn;
     QPushButton* m_openFileBtn;
     QPushButton* m_openFolderBtn;
     QPushButton* m_createProjectBtn;
     QPushButton* m_openProjectBtn;
-    
+
     // Recent projects
     QListWidget* m_recentProjectsList;
     QPushButton* m_clearRecentBtn;
-    
+
     // Labels
     QLabel* m_logoLabel;
     QLabel* m_titleLabel;
     QLabel* m_subtitleLabel;
-    
+
     // Return to project
     QPushButton* m_returnToProjectBtn;
+
+    // Current user info display
+    QLabel* m_userInfoLabel = nullptr;
 };
 
 #endif // WELCOMESCREEN_H

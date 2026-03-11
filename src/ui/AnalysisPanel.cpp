@@ -24,7 +24,7 @@ AnalysisPanel::AnalysisPanel(QWidget* parent)
 }
 
 void AnalysisPanel::setSourceCode(const QString& code,
-                                   const QString& filePath) {
+                                  const QString& filePath) {
     m_insights->setSourceCode(code, filePath);
     m_assembly->setSourceCode(code, filePath);
     // BenchmarkWidget has its own independent editor — not forwarded.

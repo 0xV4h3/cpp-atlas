@@ -435,6 +435,7 @@ void MainWindow::setupMenus() {
 
 void MainWindow::setupToolbar() {
     m_mainToolbar = addToolBar("Main Toolbar");
+    m_mainToolbar->setObjectName("mainToolbar");
     m_mainToolbar->setMovable(false);
     
     // New button with dropdown menu
@@ -497,18 +498,21 @@ void MainWindow::setupToolbar() {
 void MainWindow::setupDockWidgets() {
     // File tree dock
     m_fileTreeDock = new QDockWidget("File Tree", this);
+    m_fileTreeDock->setObjectName("fileTreeDock");
     m_fileTree = new FileTreeWidget(m_fileTreeDock);
     m_fileTreeDock->setWidget(m_fileTree);
     addDockWidget(Qt::LeftDockWidgetArea, m_fileTreeDock);
     
     // Output panel dock
     m_outputPanelDock = new QDockWidget("Output", this);
+    m_outputPanelDock->setObjectName("outputPanelDock");
     m_outputPanel = new OutputPanel(m_outputPanelDock);
     m_outputPanelDock->setWidget(m_outputPanel);
     addDockWidget(Qt::BottomDockWidgetArea, m_outputPanelDock);
 
     // Analysis dock (right side — Insights | Assembly | Benchmark tabs)
     m_analysisDock  = new QDockWidget(QStringLiteral("Analysis"), this);
+    m_analysisDock->setObjectName("analysisDock");
     m_analysisPanel = new AnalysisPanel(m_analysisDock);
     m_analysisDock->setWidget(m_analysisPanel);
     addDockWidget(Qt::RightDockWidgetArea, m_analysisDock);

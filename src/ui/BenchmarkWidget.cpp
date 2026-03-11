@@ -36,13 +36,13 @@ BenchmarkWidget::BenchmarkWidget(QWidget* parent)
     loadTemplate();
 
     connect(m_runner, &BenchmarkRunner::benchmarkResultReady,
-        this, &BenchmarkWidget::onBenchmarkResultReady);
+            this, &BenchmarkWidget::onBenchmarkResultReady);
     connect(m_runner, &BenchmarkRunner::compilationFinished,
-        this, &BenchmarkWidget::onCompilationFinished);
+            this, &BenchmarkWidget::onCompilationFinished);
     connect(m_runner, &BenchmarkRunner::progressMessage,
-        this, &BenchmarkWidget::onProgressMessage);
+            this, &BenchmarkWidget::onProgressMessage);
     connect(ThemeManager::instance(), &ThemeManager::themeChanged,
-        this, &BenchmarkWidget::onThemeChanged);
+            this, &BenchmarkWidget::onThemeChanged);
 
     onThemeChanged(ThemeManager::instance()->currentThemeName());
 }
@@ -97,7 +97,7 @@ void BenchmarkWidget::setupToolbar(QWidget* parent, QHBoxLayout* tbLayout) {
     m_openFileButton->setShortcut(QKeySequence(Qt::CTRL | Qt::SHIFT | Qt::Key_O));
     m_openFileButton->setToolTip(QStringLiteral("Open benchmark file (Ctrl+Shift+O)"));
     connect(m_openFileButton, &QPushButton::clicked,
-        this, &BenchmarkWidget::openBenchmarkFile);
+            this, &BenchmarkWidget::openBenchmarkFile);
     tbLayout->addWidget(m_openFileButton);
 
     m_saveFileButton = new QPushButton(QStringLiteral("Save"), parent);
@@ -105,14 +105,14 @@ void BenchmarkWidget::setupToolbar(QWidget* parent, QHBoxLayout* tbLayout) {
     m_saveFileButton->setShortcut(QKeySequence(Qt::CTRL | Qt::SHIFT | Qt::Key_S));
     m_saveFileButton->setToolTip(QStringLiteral("Save benchmark file (Ctrl+Shift+S)"));
     connect(m_saveFileButton, &QPushButton::clicked,
-        this, &BenchmarkWidget::saveBenchmarkFile);
+            this, &BenchmarkWidget::saveBenchmarkFile);
     tbLayout->addWidget(m_saveFileButton);
 
     m_importButton = new QPushButton(QStringLiteral("Import..."), parent);
     m_importButton->setShortcut(QKeySequence(Qt::CTRL | Qt::SHIFT | Qt::Key_I));
     m_importButton->setToolTip(QStringLiteral("Import results (Ctrl+Shift+I)"));
     connect(m_importButton, &QPushButton::clicked,
-        this, &BenchmarkWidget::importResults);
+            this, &BenchmarkWidget::importResults);
     tbLayout->addWidget(m_importButton);
 
     // Run button — educational tooltip about DoNotOptimize
@@ -129,14 +129,14 @@ void BenchmarkWidget::setupToolbar(QWidget* parent, QHBoxLayout* tbLayout) {
             "Reference: https://github.com/google/benchmark"
             "#preventing-optimisation"));
     connect(m_runButton, &QPushButton::clicked,
-        this, &BenchmarkWidget::runBenchmark);
+            this, &BenchmarkWidget::runBenchmark);
     tbLayout->addWidget(m_runButton);
 
     m_stopButton = new QPushButton(QStringLiteral("■ Stop"), parent);
     m_stopButton->setEnabled(false);
     m_stopButton->setShortcut(QKeySequence(Qt::CTRL | Qt::SHIFT | Qt::Key_F9));
     connect(m_stopButton, &QPushButton::clicked,
-        this, &BenchmarkWidget::stopProcess);
+            this, &BenchmarkWidget::stopProcess);
     tbLayout->addWidget(m_stopButton);
 
     m_exportButton = new QPushButton(QStringLiteral("Export..."), parent);
@@ -144,17 +144,17 @@ void BenchmarkWidget::setupToolbar(QWidget* parent, QHBoxLayout* tbLayout) {
     m_exportButton->setShortcut(QKeySequence(Qt::CTRL | Qt::SHIFT | Qt::Key_E));
     m_exportButton->setToolTip(QStringLiteral("Export results (Ctrl+Shift+E)"));
     connect(m_exportButton, &QPushButton::clicked,
-        this, &BenchmarkWidget::exportResults);
+            this, &BenchmarkWidget::exportResults);
     tbLayout->addWidget(m_exportButton);
 
     m_compareButton = new QPushButton(QStringLiteral("Compare"), parent);
     m_compareButton->setShortcut(QKeySequence(Qt::CTRL | Qt::SHIFT | Qt::Key_C));
     m_compareButton->setToolTip(
         QStringLiteral("Compare saved results (Ctrl+Shift+C) — max %1 runs.")
-        .arg(MAX_COMPARE));
+            .arg(MAX_COMPARE));
     m_compareButton->setEnabled(false);
     connect(m_compareButton, &QPushButton::clicked,
-        this, &BenchmarkWidget::onCompareClicked);
+            this, &BenchmarkWidget::onCompareClicked);
     tbLayout->addWidget(m_compareButton);
 
     m_statusLabel = new QLabel(QStringLiteral("Ready"), parent);
@@ -183,8 +183,8 @@ void BenchmarkWidget::setupCodeEditor() {
             this, &BenchmarkWidget::closeBenchTab);
     connect(m_editorTabs, &QTabWidget::currentChanged,
             this, [this](int) {
-        m_saveFileButton->setEnabled(!currentBenchFilePath().isEmpty());
-    });
+                m_saveFileButton->setEnabled(!currentBenchFilePath().isEmpty());
+            });
 
     // Create the first tab
     addBenchTab(QStringLiteral("benchmark-1.cpp"), QString(), QString());
@@ -202,8 +202,8 @@ QString BenchmarkWidget::currentBenchFilePath() const {
 }
 
 void BenchmarkWidget::addBenchTab(const QString& title,
-                                   const QString& filePath,
-                                   const QString& content) {
+                                  const QString& filePath,
+                                  const QString& content) {
     auto* editor = new QsciScintilla(m_editorTabs);
     auto* lexer  = new QsciLexerCPP(editor);
     QFont font(QStringLiteral("Monospace"), 10);
@@ -281,7 +281,7 @@ void BenchmarkWidget::setupResultsTabs() {
         QStringLiteral("Real Time"),
         QStringLiteral("CPU Time"),
         QStringLiteral("Iterations")
-        });
+    });
     m_tableWidget->horizontalHeader()->setSectionResizeMode(0, QHeaderView::Stretch);
     m_tableWidget->horizontalHeader()->setStretchLastSection(false);
     m_tableWidget->setEditTriggers(QAbstractItemView::NoEditTriggers);
@@ -364,18 +364,18 @@ void BenchmarkWidget::exportResults() {
     }
 
     const bool ok = path.endsWith(QStringLiteral(".csv"), Qt::CaseInsensitive)
-        ? m_runner->exportToCsv(path)
-        : m_runner->exportToJson(path);
+                        ? m_runner->exportToCsv(path)
+                        : m_runner->exportToJson(path);
 
     m_statusLabel->setText(
         ok ? QStringLiteral("Exported to %1").arg(path)
-        : QStringLiteral("Export failed."));
+           : QStringLiteral("Export failed."));
 }
 
 // ── Slots ─────────────────────────────────────────────────────────────────────
 
 void BenchmarkWidget::onCompilationFinished(bool success,
-    const QString& error) {
+                                            const QString& error) {
     if (!success) {
         m_tempBenchSource.reset(); // cleanup on compile failure
         m_runButton->setEnabled(true);
@@ -446,8 +446,8 @@ void BenchmarkWidget::updateResultsView(const BenchmarkResult& result) {
     // Raw JSON tab
     QString rawContent;
     rawContent += QStringLiteral("// Benchmark completed: %1\n// %2 benchmark(s)\n\n")
-        .arg(result.date)
-        .arg(result.benchmarks.size());
+                      .arg(result.date)
+                      .arg(result.benchmarks.size());
     if (!result.rawJson.isEmpty()) {
         rawContent += result.rawJson;
     } else {

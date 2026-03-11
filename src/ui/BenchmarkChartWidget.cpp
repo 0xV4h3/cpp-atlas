@@ -66,13 +66,13 @@ void BenchmarkChartWidget::setupUi() {
 void BenchmarkChartWidget::setResult(const BenchmarkResult& result) {
 #ifdef CPPATLAS_CHARTS_AVAILABLE
     switch (m_chartType) {
-        case ChartType::Bar:
-        case ChartType::SpeedupRatio:
-            buildBarChart(result);
-            break;
-        case ChartType::Line:
-            buildLineChart(result);
-            break;
+    case ChartType::Bar:
+    case ChartType::SpeedupRatio:
+        buildBarChart(result);
+        break;
+    case ChartType::Line:
+        buildLineChart(result);
+        break;
     }
 #else
     Q_UNUSED(result);
@@ -101,8 +101,8 @@ namespace {
 /** Shorten a benchmark name to at most maxLen characters. */
 QString shortName(const QString& name, int maxLen = 30) {
     return name.length() > maxLen
-        ? name.left(maxLen - 3) + QStringLiteral("...")
-        : name;
+               ? name.left(maxLen - 3) + QStringLiteral("...")
+               : name;
 }
 
 /** Apply theme colours to a single chart axis. */
