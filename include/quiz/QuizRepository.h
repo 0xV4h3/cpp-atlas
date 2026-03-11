@@ -126,6 +126,7 @@ public:
     QList<QuizDTO>     quizzesByTopic(int topicId) const;
     QList<QuizDTO>     quizzesByDifficulty(int difficulty) const;
     QList<QuizDTO>     quizzesByTag(const QString& tagName) const;
+    QStringList        loadTagsForQuiz(int quizId) const;
     QuizDTO            quizById(int id) const;
 
     // ── Questions ────────────────────────────────────────────────────────────

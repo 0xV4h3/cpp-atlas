@@ -240,6 +240,18 @@ QList<TagDTO> QuizRepository::tagsForQuiz(int quizId) const
 // ─────────────────────────────────────────────────────────────────────────────
 // Quizzes
 // ─────────────────────────────────────────────────────────────────────────────
+QStringList QuizRepository::loadTagsForQuiz(int quizId) const {
+    QStringList tags;
+    QSqlQuery q(db());
+    q.prepare("SELECT t.name FROM tags t "
+              "JOIN quiz_tags qt ON qt.tag_id = t.id WHERE qt.quiz_id = :id");
+    q.bindValue(":id", quizId);
+    if (q.exec())
+        while (q.next())
+            tags << q.value(0).toString();
+    return tags;
+}
+
 QList<QuizDTO> QuizRepository::allActiveQuizzes() const
 {
     QList<QuizDTO> list;
@@ -255,15 +267,7 @@ QList<QuizDTO> QuizRepository::allActiveQuizzes() const
     while (q.next()) {
         QuizDTO qz = quizFromQuery(q);
         qz.questionCount = q.value("qcount").toInt();
-        qz.tags = [&]() -> QStringList {
-            QStringList t;
-            QSqlQuery tq(db());
-            tq.prepare("SELECT tg.name FROM tags tg "
-                       "JOIN quiz_tags qt ON qt.tag_id = tg.id WHERE qt.quiz_id = :id");
-            tq.bindValue(":id", qz.id);
-            if (tq.exec()) while (tq.next()) t << tq.value(0).toString();
-            return t;
-        }();
+        qz.tags = loadTagsForQuiz(qz.id);
         list << qz;
     }
     return list;
@@ -286,15 +290,7 @@ QList<QuizDTO> QuizRepository::quizzesByTopic(int topicId) const
     while (q.next()) {
         QuizDTO qz = quizFromQuery(q);
         qz.questionCount = q.value("qcount").toInt();
-        qz.tags = [&]() -> QStringList {
-            QStringList t;
-            QSqlQuery tq(db());
-            tq.prepare("SELECT tg.name FROM tags tg "
-                       "JOIN quiz_tags qt ON qt.tag_id = tg.id WHERE qt.quiz_id = :id");
-            tq.bindValue(":id", qz.id);
-            if (tq.exec()) while (tq.next()) t << tq.value(0).toString();
-            return t;
-        }();
+        qz.tags = loadTagsForQuiz(qz.id);
         list << qz;
     }
     return list;
@@ -306,7 +302,13 @@ QList<QuizDTO> QuizRepository::quizzesByDifficulty(int difficulty) const
     QSqlQuery q(db());
     q.prepare("SELECT * FROM quizzes WHERE difficulty = :d AND is_active = 1");
     q.bindValue(":d", difficulty);
-    if (q.exec()) while (q.next()) list << quizFromQuery(q);
+    if (q.exec()) {
+        while (q.next()) {
+            QuizDTO qz = quizFromQuery(q);
+            qz.tags = loadTagsForQuiz(qz.id);
+            list << qz;
+        }
+    }
     return list;
 }
 
@@ -319,7 +321,13 @@ QList<QuizDTO> QuizRepository::quizzesByTag(const QString& tagName) const
               "JOIN tags t ON t.id = qt.tag_id "
               "WHERE t.name = :name AND qz.is_active = 1");
     q.bindValue(":name", tagName);
-    if (q.exec()) while (q.next()) list << quizFromQuery(q);
+    if (q.exec()) {
+        while (q.next()) {
+            QuizDTO qz = quizFromQuery(q);
+            qz.tags = loadTagsForQuiz(qz.id);
+            list << qz;
+        }
+    }
     return list;
 }
 
@@ -328,7 +336,11 @@ QuizDTO QuizRepository::quizById(int id) const
     QSqlQuery q(db());
     q.prepare("SELECT * FROM quizzes WHERE id = :id");
     q.bindValue(":id", id);
-    if (q.exec() && q.next()) return quizFromQuery(q);
+    if (q.exec() && q.next()) {
+        QuizDTO qz = quizFromQuery(q);
+        qz.tags = loadTagsForQuiz(qz.id);
+        return qz;
+    }
     return QuizDTO{};
 }
 
@@ -687,6 +699,7 @@ QList<QuizDTO> QuizRepository::customTestsForUser(int userId) const
         qz.type          = "custom";
         qz.isActive      = true;
         qz.questionCount = q.value("qcount").toInt();
+        qz.tags          = loadTagsForQuiz(qz.id);
         list << qz;
     }
     return list;

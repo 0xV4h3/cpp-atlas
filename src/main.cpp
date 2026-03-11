@@ -70,8 +70,12 @@ int main(int argc, char *argv[])
         AppSettings userSettings(UserManager::instance().currentUser().username);
         const QByteArray geometry = userSettings.windowGeometry();
         const QByteArray state    = userSettings.windowState();
-        if (!geometry.isEmpty()) w.restoreGeometry(geometry);
-        if (!state.isEmpty())    w.restoreState(state);
+        if (!geometry.isEmpty() && !w.isMaximized() && !w.isFullScreen()) {
+            w.restoreGeometry(geometry);
+        }
+        if (!state.isEmpty()) {
+            w.restoreState(state);
+        }
     }
 
     return a.exec();

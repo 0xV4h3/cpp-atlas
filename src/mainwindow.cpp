@@ -91,23 +91,13 @@ MainWindow::MainWindow(QWidget *parent)
     ThemeManager::instance()->setTheme("dark");
     
     updateWindowTitle();
-    
-    // Restore window state
-    QSettings settings("CppAtlas", "CppAtlas");
-    restoreGeometry(settings.value("geometry").toByteArray());
-    restoreState(settings.value("windowState").toByteArray());
-    
+        
     // Show Welcome Screen on startup
     showWelcomeScreen();
 }
 
 MainWindow::~MainWindow()
-{
-    // Save window state
-    QSettings settings("CppAtlas", "CppAtlas");
-    settings.setValue("geometry", saveGeometry());
-    settings.setValue("windowState", saveState());
-    
+{   
     delete ui;
 }
 
@@ -453,6 +443,7 @@ void MainWindow::setupMenus() {
 
 void MainWindow::setupToolbar() {
     m_mainToolbar = addToolBar("Main Toolbar");
+    m_mainToolbar->setObjectName("mainToolbar");
     m_mainToolbar->setMovable(false);
     
     // New button with dropdown menu
@@ -515,22 +506,25 @@ void MainWindow::setupToolbar() {
 void MainWindow::setupDockWidgets() {
     // File tree dock
     m_fileTreeDock = new QDockWidget("File Tree", this);
+    m_fileTreeDock->setObjectName("fileTreeDock");
     m_fileTree = new FileTreeWidget(m_fileTreeDock);
     m_fileTreeDock->setWidget(m_fileTree);
     addDockWidget(Qt::LeftDockWidgetArea, m_fileTreeDock);
-    
+
     // Output panel dock
     m_outputPanelDock = new QDockWidget("Output", this);
+    m_outputPanelDock->setObjectName("outputPanelDock");
     m_outputPanel = new OutputPanel(m_outputPanelDock);
     m_outputPanelDock->setWidget(m_outputPanel);
     addDockWidget(Qt::BottomDockWidgetArea, m_outputPanelDock);
 
     // Analysis dock (right side — Insights | Assembly | Benchmark tabs)
     m_analysisDock  = new QDockWidget(QStringLiteral("Analysis"), this);
+    m_analysisDock->setObjectName("analysisDock");
     m_analysisPanel = new AnalysisPanel(m_analysisDock);
     m_analysisDock->setWidget(m_analysisPanel);
     addDockWidget(Qt::RightDockWidgetArea, m_analysisDock);
-    m_analysisDock->hide(); // Hidden by default; open via Tools menu
+    m_analysisDock->hide();
 }
 
 void MainWindow::setupStatusBar() {
@@ -881,12 +875,18 @@ void MainWindow::saveUserSession()
 
 void MainWindow::loadUserSession()
 {
-    if (UserManager::instance().isLoggedIn()) {
-        AppSettings userSettings(UserManager::instance().currentUser().username);
-        const QByteArray geometry = userSettings.windowGeometry();
-        const QByteArray state    = userSettings.windowState();
-        if (!geometry.isEmpty()) restoreGeometry(geometry);
-        if (!state.isEmpty())    restoreState(state);
+    if (!UserManager::instance().isLoggedIn())
+        return;
+
+    AppSettings userSettings(UserManager::instance().currentUser().username);
+    const QByteArray geometry = userSettings.windowGeometry();
+    const QByteArray state    = userSettings.windowState();
+
+    if (!geometry.isEmpty() && !isMaximized() && !isFullScreen()) {
+        restoreGeometry(geometry);
+    }
+    if (!state.isEmpty()) {
+        restoreState(state);
     }
 }
 

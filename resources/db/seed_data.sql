@@ -665,3 +665,12 @@ INSERT OR IGNORE INTO question_tags (question_id, tag_id) VALUES
 -- Modern C++
 (40, 19), (40, 22), (41, 20), (41, 22), (42, 24), (43, 24),
 (44, 24), (45, 22);
+
+-- ─────────────────────────────────────────────
+-- QUIZ-TAGS (derived from question_tags)
+-- ─────────────────────────────────────────────
+INSERT OR IGNORE INTO quiz_tags (quiz_id, tag_id)
+SELECT DISTINCT q.quiz_id, qt.tag_id
+FROM questions q
+JOIN question_tags qt ON qt.question_id = q.id
+WHERE q.quiz_id IS NOT NULL;
