@@ -17,10 +17,9 @@
  *
  * Tabs:
  *  - Appearance: theme, editor font family/size, line numbers, word wrap
- *  - Account:    display name, avatar color, change password
- *  - About:      app info and version
+ *  - Account:    display name, avatar color/image, change password
  *
- * Emits settingsChanged() when font/theme settings are modified so that
+ * Emits settingsChanged() when font/theme settings are applied so that
  * MainWindow can react (e.g., update window title, re-apply fonts).
  */
 class SettingsDialog : public QDialog
@@ -32,7 +31,7 @@ public:
     ~SettingsDialog() = default;
 
 signals:
-    /** Emitted when appearance settings (font, theme) change. */
+    /** Emitted when appearance settings (font, theme) are applied. */
     void settingsChanged();
 
 private slots:
@@ -40,13 +39,24 @@ private slots:
     void onThemeChanged(const QString& themeName);
     void onApplyDisplayName();
     void onChangeAvatarColor();
+    void onUploadAvatar();
+    void onRemoveAvatar();
     void onChangePassword();
+    void onApplyAppearance();
+    void onResetAppearance();
 
 private:
     void setupUi();
     void setupAppearanceTab(QWidget* tab);
     void setupAccountTab(QWidget* tab);
-    void setupAboutTab(QWidget* tab);
+    void updateAvatarPreview();
+
+    // Appearance tab: snapshot for Reset
+    QString        m_initialTheme;
+    QString        m_initialFontFamily;
+    int            m_initialFontSize   = 10;
+    bool           m_initialLineNums   = true;
+    bool           m_initialWordWrap   = false;
 
     // ── Appearance tab widgets ────────────────────────────────────────────
     QComboBox*     m_themeCombo         = nullptr;
@@ -58,7 +68,10 @@ private:
     // ── Account tab widgets ───────────────────────────────────────────────
     QLabel*        m_displayNameLabel   = nullptr;
     QLineEdit*     m_displayNameEdit    = nullptr;
+    QLabel*        m_avatarPreviewLabel = nullptr;
     QPushButton*   m_avatarColorBtn     = nullptr;
+    QPushButton*   m_uploadAvatarBtn    = nullptr;
+    QPushButton*   m_removeAvatarBtn    = nullptr;
     QLineEdit*     m_currentPassEdit    = nullptr;
     QLineEdit*     m_newPassEdit        = nullptr;
     QLineEdit*     m_confirmPassEdit    = nullptr;

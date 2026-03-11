@@ -13,8 +13,6 @@
 int main(int argc, char *argv[])
 {
     Q_INIT_RESOURCE(resources);
-    // Wayland: prevent native widget sibling issues that cause xdg_surface buffer mismatches
-    QApplication::setAttribute(Qt::AA_DontCreateNativeWidgetSiblings);
     QApplication a(argc, argv);
 
     // App identity (used by QSettings)
@@ -63,22 +61,9 @@ int main(int argc, char *argv[])
         // UserManager now has the logged-in user available globally
     }
 
-    // ── Launch Main Window ───────────────────────────────────────────────────
+    // ── Launch Main Window — always maximized ────────────────────────────────
     MainWindow w;
-    w.show();
-
-    // Restore per-user window geometry (if available)
-    if (UserManager::instance().isLoggedIn()) {
-        AppSettings userSettings(UserManager::instance().currentUser().username);
-        const QByteArray geometry = userSettings.windowGeometry();
-        const QByteArray state    = userSettings.windowState();
-        if (!geometry.isEmpty() && !w.isMaximized() && !w.isFullScreen()) {
-            w.restoreGeometry(geometry);
-        }
-        if (!state.isEmpty()) {
-            w.restoreState(state);
-        }
-    }
+    w.showMaximized();
 
     return a.exec();
 }

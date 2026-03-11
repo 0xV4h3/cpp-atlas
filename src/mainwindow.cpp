@@ -41,6 +41,7 @@
 #include <QPushButton>
 #include <QToolButton>
 #include <QTimer>
+#include <QShortcut>
 
 #ifdef Q_OS_WIN
 #include <windows.h>
@@ -96,6 +97,9 @@ MainWindow::MainWindow(QWidget *parent)
         
     // Show Welcome Screen on startup
     showWelcomeScreen();
+
+    // Apply per-user editor settings (font, line numbers, word wrap)
+    applyEditorSettings();
 }
 
 MainWindow::~MainWindow()
@@ -380,6 +384,11 @@ void MainWindow::setupMenus() {
     QAction* fullscreenAction = m_viewMenu->addAction("&Fullscreen");
     fullscreenAction->setShortcut(Qt::Key_F11);
     connect(fullscreenAction, &QAction::triggered, this, &MainWindow::onViewFullscreen);
+
+    // Make F11 work even when View menu is hidden (Welcome/Quiz mode)
+    QShortcut* f11Shortcut = new QShortcut(QKeySequence(Qt::Key_F11), this);
+    f11Shortcut->setContext(Qt::ApplicationShortcut);
+    connect(f11Shortcut, &QShortcut::activated, this, &MainWindow::onViewFullscreen);
     
     m_viewMenu->addSeparator();
     
@@ -387,24 +396,8 @@ void MainWindow::setupMenus() {
     showWelcomeAction->setShortcut(QKeySequence("Ctrl+Shift+W"));
     connect(showWelcomeAction, &QAction::triggered, this, &MainWindow::showWelcomeScreen);
     
-    // Help menu
-    QMenu* helpMenu = menuBar()->addMenu("&Help");
-    QAction* aboutAction = helpMenu->addAction("&About");
-    connect(aboutAction, &QAction::triggered, this, [this]() {
-        QMessageBox::about(this, "About CppAtlas",
-            "CppAtlas - C++ Learning IDE\n\n"
-            "Version 0.1\n\n"
-            "An educational Qt-based environment for learning C++.");
-    });
-
     // Tools menu — Analysis Panel + tab shortcuts
     m_toolsMenu = menuBar()->addMenu(QStringLiteral("&Tools"));
-
-    m_settingsAction = m_toolsMenu->addAction(QStringLiteral("&Settings..."));
-    m_settingsAction->setShortcut(QKeySequence(Qt::CTRL | Qt::Key_Comma));
-    connect(m_settingsAction, &QAction::triggered, this, &MainWindow::onSettingsRequested);
-
-    m_toolsMenu->addSeparator();
 
     m_toggleAnalysisAction = m_toolsMenu->addAction(
         QStringLiteral("Toggle &Analysis Panel"));
@@ -446,6 +439,24 @@ void MainWindow::setupMenus() {
         m_analysisDock->setVisible(true);
         m_analysisPanel->setCurrentIndex(AnalysisPanel::TabBenchmark);
         m_analysisDock->raise();
+    });
+
+    // Settings menu (top-level, between Tools and Help)
+    m_settingsMenu = menuBar()->addMenu(QStringLiteral("&Settings"));
+    QAction* prefsAction = m_settingsMenu->addAction(QStringLiteral("&Preferences..."));
+    prefsAction->setShortcut(QKeySequence(Qt::CTRL | Qt::Key_Comma));
+    connect(prefsAction, &QAction::triggered, this, &MainWindow::onSettingsRequested);
+
+    // Help menu (last)
+    m_helpMenu = menuBar()->addMenu("&Help");
+    QAction* aboutAction = m_helpMenu->addAction("&About CppAtlas");
+    connect(aboutAction, &QAction::triggered, this, [this]() {
+        QMessageBox::about(this, "About CppAtlas",
+            "<h2>CppAtlas</h2>"
+            "<p>Version " + QApplication::applicationVersion() + "</p>"
+            "<p>An educational Qt-based IDE and quiz engine<br>"
+            "for learning modern C++.</p>"
+            "<p><a href='https://github.com/0xV4h3/cpp-atlas'>View on GitHub</a></p>");
     });
 }
 
@@ -518,6 +529,7 @@ void MainWindow::setupDockWidgets() {
     m_fileTree = new FileTreeWidget(m_fileTreeDock);
     m_fileTreeDock->setWidget(m_fileTree);
     addDockWidget(Qt::LeftDockWidgetArea, m_fileTreeDock);
+    m_fileTreeDock->hide();  // Ensure hidden on startup
 
     // Output panel dock
     m_outputPanelDock = new QDockWidget("Output", this);
@@ -525,6 +537,7 @@ void MainWindow::setupDockWidgets() {
     m_outputPanel = new OutputPanel(m_outputPanelDock);
     m_outputPanelDock->setWidget(m_outputPanel);
     addDockWidget(Qt::BottomDockWidgetArea, m_outputPanelDock);
+    m_outputPanelDock->hide();  // Ensure hidden on startup
 
     // Analysis dock (right side — Insights | Assembly | Benchmark tabs)
     m_analysisDock  = new QDockWidget(QStringLiteral("Analysis"), this);
@@ -596,6 +609,12 @@ void MainWindow::setupConnections() {
     connect(m_standardCombo, QOverload<int>::of(&QComboBox::currentIndexChanged),
             this, [this](int) {
         m_analysisPanel->setStandard(m_standardCombo->currentText());
+    });
+
+    // Apply editor settings when a new file is opened
+    connect(m_editorTabs, &EditorTabWidget::fileOpened,
+            this, [this](const QString&) {
+        applyEditorSettings();
     });
 }
 
@@ -733,12 +752,23 @@ void MainWindow::onQuizModeExit()
 
 void MainWindow::onSettingsRequested()
 {
+    // If already open, raise it instead of creating a second instance
+    if (m_settingsDialog) {
+        m_settingsDialog->raise();
+        m_settingsDialog->activateWindow();
+        return;
+    }
     const QString username = UserManager::instance().currentUser().username;
-    SettingsDialog dlg(username, this);
-    connect(&dlg, &SettingsDialog::settingsChanged, this, [this](){
+    m_settingsDialog = new SettingsDialog(username, this);
+    m_settingsDialog->setAttribute(Qt::WA_DeleteOnClose);
+    connect(m_settingsDialog, &SettingsDialog::destroyed, this, [this]() {
+        m_settingsDialog = nullptr;
+    });
+    connect(m_settingsDialog, &SettingsDialog::settingsChanged, this, [this]() {
+        applyEditorSettings();
         updateWindowTitle();
     });
-    dlg.exec();
+    m_settingsDialog->show();
 }
 
 void MainWindow::showQuizModeWindow()
@@ -762,42 +792,26 @@ void MainWindow::hideQuizModeWindow()
 }
 
 void MainWindow::updateMenuState(bool isWelcomeVisible) {
-    // Build menu - disable entirely in welcome screen
-    if (m_buildMenu) {
-        m_buildMenu->setEnabled(!isWelcomeVisible);
+    QMenuBar* mb = menuBar();
+    if (!mb) return;
+
+    // Hide/show each menu by pointer identity:
+    // Settings and Help are always visible; all other menus hide in Welcome/Quiz mode
+    const QList<QAction*> menuActions = mb->actions();
+    for (QAction* act : menuActions) {
+        QMenu* menu = act->menu();
+        if (!menu) continue;
+        const bool alwaysVisible = (menu == m_settingsMenu || menu == m_helpMenu);
+        act->setVisible(alwaysVisible || !isWelcomeVisible);
     }
-    if (m_runAction) {
-        m_runAction->setEnabled(!isWelcomeVisible);
-    }
-    
-    // Edit menu - disable Find, Replace, Go to Line in welcome screen
-    if (m_findAction) {
-        m_findAction->setEnabled(!isWelcomeVisible);
-    }
-    if (m_replaceAction) {
-        m_replaceAction->setEnabled(!isWelcomeVisible);
-    }
-    if (m_gotoLineAction) {
-        m_gotoLineAction->setEnabled(!isWelcomeVisible);
-    }
-    
-    // View menu - disable Toggle File Tree and Toggle Output Panel
-    if (m_toggleFileTreeAction) {
-        m_toggleFileTreeAction->setEnabled(!isWelcomeVisible);
-    }
-    if (m_toggleOutputAction) {
-        m_toggleOutputAction->setEnabled(!isWelcomeVisible);
-    }
-    
-    // Tools menu - disable entirely in welcome screen
-    if (m_toolsMenu) {
-        m_toolsMenu->setEnabled(!isWelcomeVisible);
-    }
-    
-    // Main toolbar - hide/show
+
+    // Main toolbar — hide in Welcome/Quiz mode
     if (m_mainToolbar) {
         m_mainToolbar->setVisible(!isWelcomeVisible);
     }
+
+    // Keep run action enabled state in sync
+    if (m_runAction) m_runAction->setEnabled(!isWelcomeVisible);
 }
 
 void MainWindow::loadCompilers() {
@@ -884,27 +898,50 @@ void MainWindow::updateTitleBarUser()
 
 void MainWindow::saveUserSession()
 {
-    if (UserManager::instance().isLoggedIn()) {
-        AppSettings userSettings(UserManager::instance().currentUser().username);
-        userSettings.setWindowGeometry(saveGeometry());
-        userSettings.setWindowState(saveState());
-    }
+    // Window geometry/state is NOT saved — Wayland incompatibility.
+    // AppSettings only stores theme, font, and editor preferences.
 }
 
 void MainWindow::loadUserSession()
 {
-    if (!UserManager::instance().isLoggedIn())
-        return;
+    // Window geometry restore intentionally removed — incompatible with Wayland.
+    // Theme is applied in main.cpp before MainWindow is created.
+}
 
-    AppSettings userSettings(UserManager::instance().currentUser().username);
-    const QByteArray geometry = userSettings.windowGeometry();
-    const QByteArray state    = userSettings.windowState();
+void MainWindow::applyEditorSettings()
+{
+    if (!UserManager::instance().isLoggedIn()) return;
+    AppSettings s(UserManager::instance().currentUser().username);
 
-    if (!geometry.isEmpty() && !isMaximized() && !isFullScreen()) {
-        restoreGeometry(geometry);
-    }
-    if (!state.isEmpty()) {
-        restoreState(state);
+    const QFont font(s.editorFontFamily(), s.editorFontSize());
+    const bool showLineNums = s.showLineNumbers();
+    const bool wordWrap     = s.wordWrap();
+
+    for (int i = 0; i < m_editorTabs->count(); ++i) {
+        CodeEditor* editor = m_editorTabs->editorAt(i);
+        if (!editor) continue;
+
+        editor->setFont(font);
+        if (auto* lexer = qobject_cast<QsciLexerCPP*>(editor->lexer())) {
+            lexer->setDefaultFont(font);
+            // QsciLexerCPP uses style indices 0–128; iterate all to ensure
+            // every token type (keyword, string, comment, etc.) gets the font.
+            for (int style = 0; style <= 128; ++style)
+                lexer->setFont(font, style);
+        }
+        // Margin font is slightly smaller; 7pt is the practical minimum for legibility
+        QFont marginFont(font.family(), qMax(7, s.editorFontSize() - 1));
+        editor->setMarginsFont(marginFont);
+
+        if (showLineNums) {
+            editor->setMarginWidth(0, QString("0%1").arg(editor->lines()));
+        } else {
+            editor->setMarginWidth(0, 0);
+        }
+
+        editor->setWrapMode(wordWrap ?
+            QsciScintilla::WrapWord :
+            QsciScintilla::WrapNone);
     }
 }
 

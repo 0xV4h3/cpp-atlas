@@ -30,6 +30,7 @@ class AnalysisPanel;
 class CodeEditor;
 class LoginDialog;
 class QuizModeWindow;
+class SettingsDialog;
 
 class MainWindow : public QMainWindow
 {
@@ -140,6 +141,7 @@ private:
     QStackedWidget* m_centralStack = nullptr;
     bool m_analysisDockWasVisible = false;
     QuizModeWindow* m_quizModeWindow = nullptr;
+    SettingsDialog* m_settingsDialog = nullptr;  // non-owning; WA_DeleteOnClose handles lifetime
 
     // Current user (set after login)
     QString m_currentUsername;
@@ -167,12 +169,13 @@ private:
     QMenu* m_editMenu = nullptr;
     QMenu* m_viewMenu = nullptr;
     QMenu* m_toolsMenu = nullptr;
+    QMenu* m_settingsMenu = nullptr;
+    QMenu* m_helpMenu = nullptr;
     QAction* m_closeProjectAction = nullptr;
     QAction* m_runAction = nullptr;
     QAction* m_toggleFileTreeAction = nullptr;
     QAction* m_toggleOutputAction = nullptr;
     QAction* m_toggleAnalysisAction = nullptr;
-    QAction* m_settingsAction = nullptr;
     
     // Edit menu actions that should be disabled in welcome screen
     QAction* m_findAction = nullptr;
@@ -209,6 +212,7 @@ private:
     void saveUserSession();
     void loadUserSession();
     void updateTitleBarUser();
+    void applyEditorSettings();
 };
 
 #endif // MAINWINDOW_H
