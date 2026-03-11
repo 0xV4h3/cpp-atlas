@@ -1,4 +1,5 @@
 #include "ui/SettingsDialog.h"
+#include "ui/AvatarUtils.h"
 #include "core/AppSettings.h"
 #include "ui/ThemeManager.h"
 #include "quiz/UserManager.h"
@@ -23,10 +24,6 @@
 #include <QPixmap>
 #include <QPainter>
 #include <QDialogButtonBox>
-
-#ifdef CPPATLAS_SVG_AVAILABLE
-#  include <QSvgRenderer>
-#endif
 
 SettingsDialog::SettingsDialog(const QString& username, QWidget* parent)
     : QDialog(parent)
@@ -144,18 +141,12 @@ void SettingsDialog::setupAccountTab(QTabWidget* tabs)
         QPushButton* btn = new QPushButton(avatarGroup);
         btn->setFixedSize(32, 32);
         btn->setFlat(true);
-        // Render SVG to pixmap for button icon
-        QPixmap px(32, 32);
-        px.fill(Qt::transparent);
-#ifdef CPPATLAS_SVG_AVAILABLE
-        QSvgRenderer renderer(builtinPaths[i]);
-        if (renderer.isValid()) {
-            QPainter painter(&px);
-            renderer.render(&painter);
+        // Render avatar as thumbnail for button icon
+        const QPixmap px = loadAvatarPixmap(builtinPaths[i], 28);
+        if (!px.isNull()) {
+            btn->setIcon(QIcon(px));
+            btn->setIconSize(QSize(28, 28));
         }
-#endif
-        btn->setIcon(QIcon(px));
-        btn->setIconSize(QSize(28, 28));
         const QString path = builtinPaths[i];
         connect(btn, &QPushButton::clicked, this, [this, path]() {
             m_currentAvatarPath = path;
@@ -297,11 +288,6 @@ void SettingsDialog::onThemeChanged(int index)
     ThemeManager::instance()->setTheme(theme);
 }
 
-void SettingsDialog::onAvatarBuiltinClicked(int index)
-{
-    Q_UNUSED(index)
-}
-
 void SettingsDialog::onAvatarUploadClicked()
 {
     const QString filePath = QFileDialog::getOpenFileName(
@@ -381,34 +367,17 @@ void SettingsDialog::updateAvatarPreview(const QString& path)
     if (!m_avatarPreview) return;
 
     if (path.isEmpty()) {
+        m_avatarPreview->setPixmap(QPixmap());
         m_avatarPreview->setText(QStringLiteral("C++"));
         return;
     }
 
-    QPixmap px;
-    if (path.startsWith(QStringLiteral(":/"))) {
-        // Resource path — may be SVG
-#ifdef CPPATLAS_SVG_AVAILABLE
-        QSvgRenderer renderer(path);
-        if (renderer.isValid()) {
-            px = QPixmap(64, 64);
-            px.fill(Qt::transparent);
-            QPainter painter(&px);
-            renderer.render(&painter);
-        } else {
-            px.load(path);
-        }
-#else
-        px.load(path);
-#endif
-    } else {
-        px.load(path);
-    }
-
+    const QPixmap px = loadAvatarPixmap(path, 64);
     if (!px.isNull()) {
-        m_avatarPreview->setPixmap(px.scaled(64, 64, Qt::KeepAspectRatio,
-                                             Qt::SmoothTransformation));
+        m_avatarPreview->setPixmap(px);
+        m_avatarPreview->setText(QString());
     } else {
+        m_avatarPreview->setPixmap(QPixmap());
         m_avatarPreview->setText(QStringLiteral("C++"));
     }
 }

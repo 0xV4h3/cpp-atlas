@@ -39,7 +39,6 @@ private slots:
     void onApply();
     void onReset();
     void onThemeChanged(int index);
-    void onAvatarBuiltinClicked(int index);
     void onAvatarUploadClicked();
     void onDisplayNameSave();
     void onPasswordChange();

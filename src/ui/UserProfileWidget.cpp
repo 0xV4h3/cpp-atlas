@@ -1,6 +1,7 @@
 #include "ui/UserProfileWidget.h"
 #include "ui/QuizResultsWidget.h"
 #include "ui/ThemeManager.h"
+#include "ui/AvatarUtils.h"
 
 #include <QVBoxLayout>
 #include <QHBoxLayout>
@@ -17,10 +18,6 @@
 #include <QDate>
 #include <QPixmap>
 #include "quiz/QuizDatabase.h"
-
-#ifdef CPPATLAS_SVG_AVAILABLE
-#  include <QSvgRenderer>
-#endif
 
 // ─────────────────────────────────────────────────────────────────────────────
 // ProgressRingWidget
@@ -337,37 +334,13 @@ void UserProfileWidget::buildAvatarCard(const UserRecord& user, int overallScore
                           ? static_cast<double>(xpInLevel) / xpNeeded : 1.0;
 
     if (m_avatarLabel) {
-        bool avatarSet = false;
-        if (!user.avatarPath.isEmpty()) {
-            QPixmap px;
-            if (user.avatarPath.startsWith(QLatin1String(":/"))) {
-                // Resource path — try SVG first
-#ifdef CPPATLAS_SVG_AVAILABLE
-                QSvgRenderer renderer(user.avatarPath);
-                if (renderer.isValid()) {
-                    px = QPixmap(72, 72);
-                    px.fill(Qt::transparent);
-                    QPainter painter(&px);
-                    renderer.render(&painter);
-                } else {
-                    px.load(user.avatarPath);
-                }
-#else
-                px.load(user.avatarPath);
-#endif
-            } else {
-                px.load(user.avatarPath);
-            }
-            if (!px.isNull()) {
-                m_avatarLabel->setPixmap(px.scaled(72, 72, Qt::KeepAspectRatio,
-                                                   Qt::SmoothTransformation));
-                m_avatarLabel->setText(QString());
-                m_avatarLabel->setStyleSheet(
-                    "QLabel { border-radius: 36px; background: transparent; }");
-                avatarSet = true;
-            }
-        }
-        if (!avatarSet) {
+        const QPixmap px = loadAvatarPixmap(user.avatarPath, 72);
+        if (!px.isNull()) {
+            m_avatarLabel->setPixmap(px);
+            m_avatarLabel->setText(QString());
+            m_avatarLabel->setStyleSheet(
+                QStringLiteral("QLabel { border-radius: 36px; background: transparent; }"));
+        } else {
             // Fall back to colored circle with monogram
             const QString avatarBg = user.avatarColor.isEmpty()
                 ? ThemeManager::instance()->currentTheme().accent.name()

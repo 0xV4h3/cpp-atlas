@@ -1712,7 +1712,8 @@ void MainWindow::applyEditorSettings()
         editor->setMarginsFont(font);
         // Line numbers: margin 0
         if (showLineNumbers) {
-            editor->setMarginWidth(0, QString("0%1").arg(editor->lines()));
+            // Width sized to fit the line count with a small pad (e.g. " 123 ")
+            editor->setMarginWidth(0, QStringLiteral(" ") + QString::number(editor->lines()) + QStringLiteral(" "));
         } else {
             editor->setMarginWidth(0, 0);
         }
