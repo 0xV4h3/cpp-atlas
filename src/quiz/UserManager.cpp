@@ -75,7 +75,7 @@ bool UserManager::login(const QString& username, const QString& password)
     QSqlQuery q(db);
     q.prepare(
         "SELECT id, username, display_name, password_hash, salt, "
-        "       avatar_color, is_admin, created_at "
+        "       avatar_color, avatar_path, is_admin, created_at "
         "FROM users WHERE username = :username COLLATE NOCASE"
     );
     q.bindValue(":username", username.trimmed());
@@ -99,6 +99,7 @@ bool UserManager::login(const QString& username, const QString& password)
     m_currentUser.username    = q.value("username").toString();
     m_currentUser.displayName = q.value("display_name").toString();
     m_currentUser.avatarColor = q.value("avatar_color").toString();
+    m_currentUser.avatarPath  = q.value("avatar_path").toString();
     m_currentUser.isAdmin     = q.value("is_admin").toInt() == 1;
     m_currentUser.createdAt   = q.value("created_at").toString();
     m_loggedIn = true;
@@ -144,7 +145,7 @@ QList<UserRecord> UserManager::allUsers() const
     QList<UserRecord> users;
     QSqlDatabase db = QSqlDatabase::database(QuizDatabase::CONNECTION_NAME);
     QSqlQuery q(db);
-    q.exec("SELECT id, username, display_name, avatar_color, is_admin, "
+    q.exec("SELECT id, username, display_name, avatar_color, avatar_path, is_admin, "
            "       created_at, last_login FROM users ORDER BY id");
     while (q.next()) {
         UserRecord r;
@@ -152,6 +153,7 @@ QList<UserRecord> UserManager::allUsers() const
         r.username    = q.value("username").toString();
         r.displayName = q.value("display_name").toString();
         r.avatarColor = q.value("avatar_color").toString();
+        r.avatarPath  = q.value("avatar_path").toString();
         r.isAdmin     = q.value("is_admin").toInt() == 1;
         r.createdAt   = q.value("created_at").toString();
         r.lastLogin   = q.value("last_login").toString();
@@ -206,6 +208,25 @@ bool UserManager::updateAvatarColor(const QString& hexColor)
     return true;
 }
 
+bool UserManager::updateAvatarPath(const QString& username, const QString& path)
+{
+    QSqlDatabase db = QSqlDatabase::database(QuizDatabase::CONNECTION_NAME);
+    QSqlQuery q(db);
+    q.prepare("UPDATE users SET avatar_path = :path WHERE username = :user COLLATE NOCASE");
+    q.bindValue(":path", path);
+    q.bindValue(":user", username);
+    if (!q.exec()) {
+        qWarning() << "[UserManager] updateAvatarPath failed:" << q.lastError().text();
+        return false;
+    }
+    // Update cached user
+    if (m_currentUser.username == username) {
+        m_currentUser.avatarPath = path;
+        emit userDataChanged(m_currentUser);
+    }
+    return true;
+}
+
 bool UserManager::changePassword(const QString& username,
                                   const QString& oldPassword,
                                   const QString& newPassword)
@@ -257,7 +278,7 @@ UserRecord UserManager::userByUsername(const QString& username) const
 {
     QSqlDatabase db = QSqlDatabase::database(QuizDatabase::CONNECTION_NAME);
     QSqlQuery q(db);
-    q.prepare("SELECT id, username, display_name, avatar_color, is_admin, "
+    q.prepare("SELECT id, username, display_name, avatar_color, avatar_path, is_admin, "
               "       created_at, last_login FROM users "
               "WHERE username = :u COLLATE NOCASE");
     q.bindValue(":u", username);
@@ -269,6 +290,7 @@ UserRecord UserManager::userByUsername(const QString& username) const
     r.username    = q.value("username").toString();
     r.displayName = q.value("display_name").toString();
     r.avatarColor = q.value("avatar_color").toString();
+    r.avatarPath  = q.value("avatar_path").toString();
     r.isAdmin     = q.value("is_admin").toInt() == 1;
     r.createdAt   = q.value("created_at").toString();
     r.lastLogin   = q.value("last_login").toString();

@@ -48,6 +48,7 @@ set(UI_SOURCES
     ${CMAKE_CURRENT_SOURCE_DIR}/ui/QuizResultsWidget.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/ui/UserProfileWidget.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/ui/CustomTestBuilderWidget.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/ui/SettingsDialog.cpp
 )
 
 # Tools module - runners and configuration
@@ -123,6 +124,12 @@ else()
         Qt${QT_VERSION_MAJOR}::Sql
         ${QSCINTILLA_LIBRARY}
     )
+endif()
+
+# Qt Svg — optional, for SVG avatar rendering
+if(QT_SVG_AVAILABLE)
+    target_compile_definitions(CppAtlasLib PUBLIC CPPATLAS_SVG_AVAILABLE)
+    target_link_libraries(CppAtlasLib PUBLIC Qt${QT_VERSION_MAJOR}::Svg)
 endif()
 
 # CppInsights default path compile-time hint

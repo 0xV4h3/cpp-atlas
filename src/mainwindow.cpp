@@ -14,6 +14,7 @@
 #include "ui/NewProjectDialog.h"
 #include "ui/AnalysisPanel.h"
 #include "ui/QuizModeWindow.h"
+#include "ui/SettingsDialog.h"
 #include "core/FileManager.h"
 #include "core/Project.h"
 #include "core/ProjectManager.h"
@@ -39,6 +40,8 @@
 #include <QHBoxLayout>
 #include <QPushButton>
 #include <QToolButton>
+#include <QGuiApplication>
+#include <Qsci/qsciscintilla.h>
 
 #ifdef Q_OS_WIN
 #include <windows.h>
@@ -58,8 +61,17 @@ MainWindow::MainWindow(QWidget *parent)
     // Enable Windows Aero Snap, resize from edges
     setAttribute(Qt::WA_NativeWindow);
 #else
-    // On Linux/macOS
-    setWindowFlags(Qt::FramelessWindowHint);
+    // On Wayland, FramelessWindowHint causes fatal xdg_surface buffer
+    // mismatch errors when the compositor sends a maximize configure.
+    // Only apply on X11; on Wayland use native window decorations.
+    const bool isWayland = QGuiApplication::platformName().startsWith(
+        QLatin1String("wayland"), Qt::CaseInsensitive);
+    if (!isWayland) {
+        setWindowFlags(Qt::FramelessWindowHint);
+    }
+    // On Wayland: keep default window flags (native title bar).
+    // The custom title bar widget (m_titleBar) will still be created
+    // but will be hidden on Wayland since native decorations are used.
 #endif
     
     setAttribute(Qt::WA_TranslucentBackground, false);
@@ -205,53 +217,63 @@ void MainWindow::setupCustomTitleBar() {
     
     // Set title bar as menu widget (replaces default)
     setMenuWidget(m_titleBar);
+
+    // On Wayland with native decorations, hide the custom title bar
+    // (minimize/maximize/close are provided by the compositor)
+#ifndef Q_OS_WIN
+    const bool isWayland = QGuiApplication::platformName().startsWith(
+        QLatin1String("wayland"), Qt::CaseInsensitive);
+    if (isWayland) {
+        m_titleBar->hide();
+    }
+#endif
 }
 
 void MainWindow::setupMenus() {
     // File menu
-    QMenu* fileMenu = menuBar()->addMenu("&File");
+    m_fileMenu = menuBar()->addMenu("&File");
     
-    QAction* newAction = fileMenu->addAction("New &File");
+    QAction* newAction = m_fileMenu->addAction("New &File");
     newAction->setShortcut(QKeySequence::New);
     connect(newAction, &QAction::triggered, this, &MainWindow::onFileNew);
     
-    QAction* newProjectAction = fileMenu->addAction("New &Project...");
+    QAction* newProjectAction = m_fileMenu->addAction("New &Project...");
     newProjectAction->setShortcut(QKeySequence("Ctrl+Shift+N"));
     connect(newProjectAction, &QAction::triggered, this, &MainWindow::onFileNewProject);
     
-    fileMenu->addSeparator();
+    m_fileMenu->addSeparator();
     
-    QAction* openAction = fileMenu->addAction("&Open...");
+    QAction* openAction = m_fileMenu->addAction("&Open...");
     openAction->setShortcut(QKeySequence::Open);
     connect(openAction, &QAction::triggered, this, &MainWindow::onFileOpen);
     
-    fileMenu->addSeparator();
+    m_fileMenu->addSeparator();
     
-    QAction* saveAction = fileMenu->addAction("&Save");
+    QAction* saveAction = m_fileMenu->addAction("&Save");
     saveAction->setShortcut(QKeySequence::Save);
     connect(saveAction, &QAction::triggered, this, &MainWindow::onFileSave);
     
-    QAction* saveAsAction = fileMenu->addAction("Save &As...");
+    QAction* saveAsAction = m_fileMenu->addAction("Save &As...");
     saveAsAction->setShortcut(QKeySequence::SaveAs);
     connect(saveAsAction, &QAction::triggered, this, &MainWindow::onFileSaveAs);
     
-    fileMenu->addSeparator();
+    m_fileMenu->addSeparator();
     
-    QAction* openFolderAction = fileMenu->addAction("Open F&older...");
+    QAction* openFolderAction = m_fileMenu->addAction("Open F&older...");
     openFolderAction->setShortcut(QKeySequence("Ctrl+K"));
     connect(openFolderAction, &QAction::triggered, this, &MainWindow::onFileOpenFolder);
     
-    QAction* openProjectAction = fileMenu->addAction("Open Pro&ject...");
+    QAction* openProjectAction = m_fileMenu->addAction("Open Pro&ject...");
     connect(openProjectAction, &QAction::triggered, this, &MainWindow::onFileOpenProject);
 
-    fileMenu->addSeparator();
-    m_closeProjectAction = fileMenu->addAction(QStringLiteral("Close Project"));
+    m_fileMenu->addSeparator();
+    m_closeProjectAction = m_fileMenu->addAction(QStringLiteral("Close Project"));
     m_closeProjectAction->setEnabled(false);
     connect(m_closeProjectAction, &QAction::triggered, this, &MainWindow::onFileCloseProject);
     
-    fileMenu->addSeparator();
+    m_fileMenu->addSeparator();
     
-    QAction* exitAction = fileMenu->addAction("E&xit");
+    QAction* exitAction = m_fileMenu->addAction("E&xit");
     exitAction->setShortcut(QKeySequence::Quit);
     connect(exitAction, &QAction::triggered, this, &MainWindow::onFileExit);
     
@@ -375,9 +397,13 @@ void MainWindow::setupMenus() {
     
     m_viewMenu->addSeparator();
     
-    QAction* fullscreenAction = m_viewMenu->addAction("&Fullscreen");
-    fullscreenAction->setShortcut(Qt::Key_F11);
-    connect(fullscreenAction, &QAction::triggered, this, &MainWindow::onViewFullscreen);
+    m_fullscreenAction = m_viewMenu->addAction("&Full Screen");
+    m_fullscreenAction->setShortcut(Qt::Key_F11);
+    m_fullscreenAction->setCheckable(true);
+    connect(m_fullscreenAction, &QAction::triggered, this, [this](bool checked) {
+        if (checked) showFullScreen();
+        else showNormal();
+    });
     
     m_viewMenu->addSeparator();
     
@@ -385,16 +411,6 @@ void MainWindow::setupMenus() {
     showWelcomeAction->setShortcut(QKeySequence("Ctrl+Shift+W"));
     connect(showWelcomeAction, &QAction::triggered, this, &MainWindow::showWelcomeScreen);
     
-    // Help menu
-    QMenu* helpMenu = menuBar()->addMenu("&Help");
-    QAction* aboutAction = helpMenu->addAction("&About");
-    connect(aboutAction, &QAction::triggered, this, [this]() {
-        QMessageBox::about(this, "About CppAtlas",
-            "CppAtlas - C++ Learning IDE\n\n"
-            "Version 0.1\n\n"
-            "An educational Qt-based environment for learning C++.");
-    });
-
     // Tools menu — Analysis Panel + tab shortcuts
     m_toolsMenu = menuBar()->addMenu(QStringLiteral("&Tools"));
 
@@ -438,6 +454,23 @@ void MainWindow::setupMenus() {
         m_analysisDock->setVisible(true);
         m_analysisPanel->setCurrentIndex(AnalysisPanel::TabBenchmark);
         m_analysisDock->raise();
+    });
+
+    // Settings menu (between Tools and Help)
+    m_settingsMenu = menuBar()->addMenu(QStringLiteral("&Settings"));
+    QAction* settingsAction = m_settingsMenu->addAction(QStringLiteral("&Preferences..."));
+    settingsAction->setShortcut(QKeySequence(Qt::CTRL | Qt::Key_Comma));
+    connect(settingsAction, &QAction::triggered, this, &MainWindow::onSettingsRequested);
+
+    // Help menu (last)
+    m_helpMenu = menuBar()->addMenu("&Help");
+    QAction* aboutAction = m_helpMenu->addAction("&About");
+    connect(aboutAction, &QAction::triggered, this, [this]() {
+        QMessageBox::about(this, "About CppAtlas",
+            "CppAtlas - C++ Learning IDE\n\n"
+            "Version 0.2\n\n"
+            "An educational Qt-based environment for learning C++.\n\n"
+            "Features: Code editor, quiz mode, C++ Insights, Assembly view, Benchmark.");
     });
 }
 
@@ -510,6 +543,7 @@ void MainWindow::setupDockWidgets() {
     m_fileTree = new FileTreeWidget(m_fileTreeDock);
     m_fileTreeDock->setWidget(m_fileTree);
     addDockWidget(Qt::LeftDockWidgetArea, m_fileTreeDock);
+    m_fileTreeDock->hide();
 
     // Output panel dock
     m_outputPanelDock = new QDockWidget("Output", this);
@@ -517,6 +551,7 @@ void MainWindow::setupDockWidgets() {
     m_outputPanel = new OutputPanel(m_outputPanelDock);
     m_outputPanelDock->setWidget(m_outputPanel);
     addDockWidget(Qt::BottomDockWidgetArea, m_outputPanelDock);
+    m_outputPanelDock->hide();
 
     // Analysis dock (right side — Insights | Assembly | Benchmark tabs)
     m_analysisDock  = new QDockWidget(QStringLiteral("Analysis"), this);
@@ -744,41 +779,26 @@ void MainWindow::hideQuizModeWindow()
 }
 
 void MainWindow::updateMenuState(bool isWelcomeVisible) {
-    // Build menu - disable entirely in welcome screen
-    if (m_buildMenu) {
-        m_buildMenu->setEnabled(!isWelcomeVisible);
-    }
-    if (m_runAction) {
-        m_runAction->setEnabled(!isWelcomeVisible);
-    }
-    
-    // Edit menu - disable Find, Replace, Go to Line in welcome screen
-    if (m_findAction) {
-        m_findAction->setEnabled(!isWelcomeVisible);
-    }
-    if (m_replaceAction) {
-        m_replaceAction->setEnabled(!isWelcomeVisible);
-    }
-    if (m_gotoLineAction) {
-        m_gotoLineAction->setEnabled(!isWelcomeVisible);
-    }
-    
-    // View menu - disable Toggle File Tree and Toggle Output Panel
-    if (m_toggleFileTreeAction) {
-        m_toggleFileTreeAction->setEnabled(!isWelcomeVisible);
-    }
-    if (m_toggleOutputAction) {
-        m_toggleOutputAction->setEnabled(!isWelcomeVisible);
-    }
-    
-    // Tools menu - disable entirely in welcome screen
-    if (m_toolsMenu) {
-        m_toolsMenu->setEnabled(!isWelcomeVisible);
-    }
-    
+    // In welcome/quiz mode: hide IDE menus (File, Edit, Build, View, Tools)
+    // Settings and Help always remain visible
+    if (m_fileMenu)  m_fileMenu->menuAction()->setVisible(!isWelcomeVisible);
+    if (m_editMenu)  m_editMenu->menuAction()->setVisible(!isWelcomeVisible);
+    if (m_buildMenu) m_buildMenu->menuAction()->setVisible(!isWelcomeVisible);
+    if (m_viewMenu)  m_viewMenu->menuAction()->setVisible(!isWelcomeVisible);
+    if (m_toolsMenu) m_toolsMenu->menuAction()->setVisible(!isWelcomeVisible);
+    // m_settingsMenu and m_helpMenu are always visible (no setVisible call)
+
+    // Full Screen action is always enabled regardless of mode
+    if (m_fullscreenAction) m_fullscreenAction->setEnabled(true);
+
     // Main toolbar - hide/show
     if (m_mainToolbar) {
         m_mainToolbar->setVisible(!isWelcomeVisible);
+    }
+
+    // Run action state
+    if (m_runAction) {
+        m_runAction->setEnabled(!isWelcomeVisible);
     }
 }
 
@@ -1661,4 +1681,65 @@ void MainWindow::restoreProjectSession(Project* project) {
             m_editorTabs->openFile(project->activeFile());
         }
     }
+}
+
+void MainWindow::enforceCurrentScreenDockPolicy()
+{
+    // Re-apply dock visibility for whatever screen is currently shown.
+    // In IDE mode (editor tabs visible), show IDE docks.
+    // In Welcome / Quiz mode, hide them.
+    const bool isIdeMode = (m_centralStack->currentWidget() == m_editorTabs);
+    if (!isIdeMode) {
+        m_fileTreeDock->hide();
+        m_outputPanelDock->hide();
+        m_analysisDock->hide();
+    }
+}
+
+void MainWindow::applyEditorSettings()
+{
+    if (m_currentUsername.isEmpty()) return;
+
+    AppSettings settings(m_currentUsername);
+    const QFont font(settings.editorFontFamily(), settings.editorFontSize());
+    const bool  showLineNumbers = settings.showLineNumbers();
+    const bool  wordWrap        = settings.wordWrap();
+
+    for (int i = 0; i < m_editorTabs->count(); ++i) {
+        CodeEditor* editor = m_editorTabs->editorAt(i);
+        if (!editor) continue;
+        editor->setFont(font);
+        editor->setMarginsFont(font);
+        // Line numbers: margin 0
+        if (showLineNumbers) {
+            editor->setMarginWidth(0, QString("0%1").arg(editor->lines()));
+        } else {
+            editor->setMarginWidth(0, 0);
+        }
+        // Word wrap
+        editor->setWrapMode(wordWrap
+            ? QsciScintilla::WrapWord
+            : QsciScintilla::WrapNone);
+    }
+}
+
+void MainWindow::onSettingsRequested()
+{
+    // If dialog already open, raise it
+    if (m_settingsDialog && m_settingsDialog->isVisible()) {
+        m_settingsDialog->raise();
+        m_settingsDialog->activateWindow();
+        return;
+    }
+    const QString username = UserManager::instance().currentUser().username;
+    m_settingsDialog = new SettingsDialog(username, this);
+    m_settingsDialog->setAttribute(Qt::WA_DeleteOnClose);
+    connect(m_settingsDialog, &QDialog::finished, this, [this]() {
+        m_settingsDialog = nullptr;
+    });
+    connect(m_settingsDialog, &SettingsDialog::settingsChanged, this, [this]() {
+        updateWindowTitle();
+        applyEditorSettings();
+    });
+    m_settingsDialog->show();
 }

@@ -14,4 +14,12 @@
         <file>db/schema.sql</file>
         <file>db/seed_data.sql</file>
     </qresource>
+    <qresource prefix="/avatars">
+        <file alias="avatar_blue.svg">avatars/avatar_blue.svg</file>
+        <file alias="avatar_green.svg">avatars/avatar_green.svg</file>
+        <file alias="avatar_red.svg">avatars/avatar_red.svg</file>
+        <file alias="avatar_purple.svg">avatars/avatar_purple.svg</file>
+        <file alias="avatar_orange.svg">avatars/avatar_orange.svg</file>
+        <file alias="avatar_teal.svg">avatars/avatar_teal.svg</file>
+    </qresource>
 </RCC>

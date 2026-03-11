@@ -11,6 +11,7 @@ CREATE TABLE IF NOT EXISTS users (
     password_hash TEXT     NOT NULL,
     salt          TEXT     NOT NULL,
     avatar_color  TEXT     DEFAULT '#007ACC',
+    avatar_path   TEXT     DEFAULT '',
     created_at    DATETIME DEFAULT CURRENT_TIMESTAMP,
     last_login    DATETIME,
     is_admin      INTEGER  DEFAULT 0

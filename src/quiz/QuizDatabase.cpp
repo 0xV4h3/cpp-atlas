@@ -32,6 +32,14 @@ bool QuizDatabase::initialize()
         return false;
     }
 
+    // Run incremental migrations for columns added after initial schema
+    {
+        QSqlDatabase db = QSqlDatabase::database(CONNECTION_NAME);
+        QSqlQuery migQ(db);
+        // Migration: add avatar_path column to users (ignore error if column exists)
+        migQ.exec("ALTER TABLE users ADD COLUMN avatar_path TEXT DEFAULT ''");
+    }
+
     if (needsSeed()) {
         qDebug() << "[QuizDatabase] Seeding initial data...";
         if (!applySeed()) {

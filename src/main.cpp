@@ -9,6 +9,7 @@
 #include <QLocale>
 #include <QTranslator>
 #include <QMessageBox>
+#include <QTimer>
 
 int main(int argc, char *argv[])
 {
@@ -63,19 +64,30 @@ int main(int argc, char *argv[])
 
     // ── Launch Main Window ───────────────────────────────────────────────────
     MainWindow w;
-    w.show();
 
-    // Restore per-user window geometry (if available)
     if (UserManager::instance().isLoggedIn()) {
         AppSettings userSettings(UserManager::instance().currentUser().username);
         const QByteArray geometry = userSettings.windowGeometry();
         const QByteArray state    = userSettings.windowState();
-        if (!geometry.isEmpty() && !w.isMaximized() && !w.isFullScreen()) {
-            w.restoreGeometry(geometry);
+
+        if (geometry.isEmpty()) {
+            // First run or cleared settings — show maximized
+            w.showMaximized();
+        } else {
+            w.show();
+            // Defer geometry+state restore to after Wayland configure round-trip
+            QTimer::singleShot(0, &w, [&w, geometry, state]() {
+                if (!w.isMaximized() && !w.isFullScreen()) {
+                    w.restoreGeometry(geometry);
+                }
+                if (!state.isEmpty()) {
+                    w.restoreState(state);
+                }
+                w.enforceCurrentScreenDockPolicy();
+            });
         }
-        if (!state.isEmpty()) {
-            w.restoreState(state);
-        }
+    } else {
+        w.showMaximized();
     }
 
     return a.exec();

@@ -30,6 +30,7 @@ class AnalysisPanel;
 class CodeEditor;
 class LoginDialog;
 class QuizModeWindow;
+class SettingsDialog;
 
 class MainWindow : public QMainWindow
 {
@@ -38,6 +39,8 @@ class MainWindow : public QMainWindow
 public:
     MainWindow(QWidget *parent = nullptr);
     ~MainWindow();
+
+    void enforceCurrentScreenDockPolicy();
 
 protected:
     void closeEvent(QCloseEvent *event) override;
@@ -104,6 +107,9 @@ private slots:
     void onQuizModeRequested();
     void onQuizModeExit();
 
+    // Settings
+    void onSettingsRequested();
+
 private:
     Ui::MainWindow *ui;
     
@@ -162,15 +168,19 @@ private:
     QString m_currentExecutable;
     
     // Menus
+    QMenu* m_fileMenu = nullptr;
     QMenu* m_buildMenu = nullptr;
     QMenu* m_editMenu = nullptr;
     QMenu* m_viewMenu = nullptr;
     QMenu* m_toolsMenu = nullptr;
+    QMenu* m_settingsMenu = nullptr;
+    QMenu* m_helpMenu = nullptr;
     QAction* m_closeProjectAction = nullptr;
     QAction* m_runAction = nullptr;
     QAction* m_toggleFileTreeAction = nullptr;
     QAction* m_toggleOutputAction = nullptr;
     QAction* m_toggleAnalysisAction = nullptr;
+    QAction* m_fullscreenAction = nullptr;
     
     // Edit menu actions that should be disabled in welcome screen
     QAction* m_findAction = nullptr;
@@ -179,6 +189,9 @@ private:
     
     // Main toolbar
     QToolBar* m_mainToolbar = nullptr;
+
+    // Settings dialog (non-modal)
+    SettingsDialog* m_settingsDialog = nullptr;
     
     void setupUi();
     void setupCustomTitleBar();
@@ -200,6 +213,7 @@ private:
     void restoreProjectSession(Project* project);
     void showQuizModeWindow();
     void hideQuizModeWindow();
+    void applyEditorSettings();
     
     QString getCurrentSourceFile();
     QString getExecutablePath(const QString& sourceFile);
