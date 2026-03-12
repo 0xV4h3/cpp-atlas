@@ -11,6 +11,7 @@
 #include <QFile>
 #include <QJsonDocument>
 #include <QJsonObject>
+#include <QShortcut>
 
 WelcomeScreen::WelcomeScreen(QWidget *parent)
     : QWidget(parent)
@@ -22,6 +23,15 @@ WelcomeScreen::WelcomeScreen(QWidget *parent)
     // Connect to theme changes
     connect(ThemeManager::instance(), &ThemeManager::themeChanged,
             this, &WelcomeScreen::applyTheme);
+
+    // F11 fullscreen toggle — bubbles up to MainWindow
+    QShortcut* fullscreenShortcut = new QShortcut(QKeySequence(Qt::Key_F11), this);
+    connect(fullscreenShortcut, &QShortcut::activated, this, [this]() {
+        if (QWidget* mw = window()) {
+            if (mw->isFullScreen()) mw->showNormal();
+            else mw->showFullScreen();
+        }
+    });
 }
 
 void WelcomeScreen::setupUI() {

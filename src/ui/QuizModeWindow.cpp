@@ -9,6 +9,7 @@
 
 #include <QVBoxLayout>
 #include <QHBoxLayout>
+#include <QShortcut>
 
 QuizModeWindow::QuizModeWindow(QWidget* parent)
     : QWidget(parent)
@@ -17,6 +18,15 @@ QuizModeWindow::QuizModeWindow(QWidget* parent)
     applyTheme();
     connect(ThemeManager::instance(), &ThemeManager::themeChanged,
             this, &QuizModeWindow::applyTheme);
+
+    // F11 fullscreen toggle — bubbles up to MainWindow
+    QShortcut* fullscreenShortcut = new QShortcut(QKeySequence(Qt::Key_F11), this);
+    connect(fullscreenShortcut, &QShortcut::activated, this, [this]() {
+        if (QWidget* mw = window()) {
+            if (mw->isFullScreen()) mw->showNormal();
+            else mw->showFullScreen();
+        }
+    });
 }
 
 void QuizModeWindow::setCurrentUser(const UserRecord& user)

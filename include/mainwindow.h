@@ -5,11 +5,13 @@
 #include <QDockWidget>
 #include <QComboBox>
 #include <QLabel>
+#include <QMenu>
 #include <QProcess>
 #include <QPushButton>
 #include <QPoint>
 #include <QSplitter>
 #include <QStackedWidget>
+#include <QToolBar>
 #include "core/Project.h"
 
 QT_BEGIN_NAMESPACE
@@ -30,6 +32,7 @@ class NewFileDialog;
 class NewProjectDialog;
 class AnalysisPanel;
 class CodeEditor;
+class SettingsDialog;
 
 class MainWindow : public QMainWindow
 {
@@ -104,6 +107,10 @@ private slots:
     void onQuizModeRequested();
     void onQuizModeExit();
 
+    // Settings
+    void onOpenSettings();
+    void onSettingsChanged();
+
 private:
     Ui::MainWindow *ui;
 
@@ -159,10 +166,13 @@ private:
     QString m_currentExecutable;
 
     // Menus
+    QMenu* m_fileMenu = nullptr;
     QMenu* m_buildMenu = nullptr;
     QMenu* m_editMenu = nullptr;
     QMenu* m_viewMenu = nullptr;
     QMenu* m_toolsMenu = nullptr;
+    QMenu* m_settingsMenu = nullptr;
+    QMenu* m_helpMenu = nullptr;
     QAction* m_closeProjectAction = nullptr;
     QAction* m_runAction = nullptr;
     QAction* m_toggleFileTreeAction = nullptr;
@@ -176,6 +186,9 @@ private:
 
     // Main toolbar
     QToolBar* m_mainToolbar = nullptr;
+
+    // Settings dialog (modeless, persisted between opens)
+    SettingsDialog* m_settingsDialog = nullptr;
 
     void setupUi();
     void setupCustomTitleBar();

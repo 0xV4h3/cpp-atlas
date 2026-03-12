@@ -14,6 +14,9 @@
 #include "ui/NewProjectDialog.h"
 #include "ui/AnalysisPanel.h"
 #include "ui/QuizModeWindow.h"
+#include "ui/SettingsDialog.h"
+#include "quiz/UserManager.h"
+#include "core/AppSettings.h"
 #include "core/FileManager.h"
 #include "core/Project.h"
 #include "core/ProjectManager.h"
@@ -27,7 +30,6 @@
 #include <QFileDialog>
 #include <QMessageBox>
 #include <QCloseEvent>
-#include <QSettings>
 #include <QDir>
 #include <QActionGroup>
 #include <QInputDialog>
@@ -87,22 +89,12 @@ MainWindow::MainWindow(QWidget *parent)
 
     updateWindowTitle();
 
-    // Restore window state
-    QSettings settings("CppAtlas", "CppAtlas");
-    restoreGeometry(settings.value("geometry").toByteArray());
-    restoreState(settings.value("windowState").toByteArray());
-
     // Show Welcome Screen on startup
     showWelcomeScreen();
 }
 
 MainWindow::~MainWindow()
 {
-    // Save window state
-    QSettings settings("CppAtlas", "CppAtlas");
-    settings.setValue("geometry", saveGeometry());
-    settings.setValue("windowState", saveState());
-
     delete ui;
 }
 
@@ -113,6 +105,7 @@ void MainWindow::setupUi() {
     // --- IDE splitter ---
     m_editorTabs = new EditorTabWidget(this);
     m_analysisPanel = new AnalysisPanel(this);
+    m_analysisPanel->hide(); // hidden by default, shown via Toggle Analysis Panel
 
     m_mainSplitter = new QSplitter(Qt::Horizontal, this);
     m_mainSplitter->addWidget(m_editorTabs);
@@ -120,19 +113,16 @@ void MainWindow::setupUi() {
     m_mainSplitter->setStretchFactor(0, 3);
     m_mainSplitter->setStretchFactor(1, 1);
 
-    // --- WelcomeScreen ---
-    m_welcomeScreen = new WelcomeScreen(this);
-
-    // --- QuizMode ---
+    // --- QuizMode (created early; added to stack in setupWelcomeScreen) ---
     m_quizModeWindow = new QuizModeWindow(this);
     connect(m_quizModeWindow, &QuizModeWindow::exitRequested,
             this, &MainWindow::onQuizModeExit);
 
-    // --- mode stack ---
+    // --- mode stack: only IDE splitter (index 0) added here.
+    // WelcomeScreen (index 1) and QuizModeWindow (index 2) are added
+    // in setupWelcomeScreen() so signals are wired before stack insertion. ---
     m_modeStack = new QStackedWidget(this);
-    m_modeStack->addWidget(m_mainSplitter);     // index 0: IDE
-    m_modeStack->addWidget(m_welcomeScreen);    // index 1: Welcome
-    m_modeStack->addWidget(m_quizModeWindow);   // index 2: QuizMode
+    m_modeStack->addWidget(m_mainSplitter); // index 0: IDE
 
     setCentralWidget(m_modeStack);
 }
@@ -222,49 +212,49 @@ void MainWindow::setupCustomTitleBar() {
 
 void MainWindow::setupMenus() {
     // File menu
-    QMenu* fileMenu = menuBar()->addMenu("&File");
+    m_fileMenu = menuBar()->addMenu("&File");
 
-    QAction* newAction = fileMenu->addAction("New &File");
+    QAction* newAction = m_fileMenu->addAction("New &File");
     newAction->setShortcut(QKeySequence::New);
     connect(newAction, &QAction::triggered, this, &MainWindow::onFileNew);
 
-    QAction* newProjectAction = fileMenu->addAction("New &Project...");
+    QAction* newProjectAction = m_fileMenu->addAction("New &Project...");
     newProjectAction->setShortcut(QKeySequence("Ctrl+Shift+N"));
     connect(newProjectAction, &QAction::triggered, this, &MainWindow::onFileNewProject);
 
-    fileMenu->addSeparator();
+    m_fileMenu->addSeparator();
 
-    QAction* openAction = fileMenu->addAction("&Open...");
+    QAction* openAction = m_fileMenu->addAction("&Open...");
     openAction->setShortcut(QKeySequence::Open);
     connect(openAction, &QAction::triggered, this, &MainWindow::onFileOpen);
 
-    fileMenu->addSeparator();
+    m_fileMenu->addSeparator();
 
-    QAction* saveAction = fileMenu->addAction("&Save");
+    QAction* saveAction = m_fileMenu->addAction("&Save");
     saveAction->setShortcut(QKeySequence::Save);
     connect(saveAction, &QAction::triggered, this, &MainWindow::onFileSave);
 
-    QAction* saveAsAction = fileMenu->addAction("Save &As...");
+    QAction* saveAsAction = m_fileMenu->addAction("Save &As...");
     saveAsAction->setShortcut(QKeySequence::SaveAs);
     connect(saveAsAction, &QAction::triggered, this, &MainWindow::onFileSaveAs);
 
-    fileMenu->addSeparator();
+    m_fileMenu->addSeparator();
 
-    QAction* openFolderAction = fileMenu->addAction("Open F&older...");
+    QAction* openFolderAction = m_fileMenu->addAction("Open F&older...");
     openFolderAction->setShortcut(QKeySequence("Ctrl+K"));
     connect(openFolderAction, &QAction::triggered, this, &MainWindow::onFileOpenFolder);
 
-    QAction* openProjectAction = fileMenu->addAction("Open Pro&ject...");
+    QAction* openProjectAction = m_fileMenu->addAction("Open Pro&ject...");
     connect(openProjectAction, &QAction::triggered, this, &MainWindow::onFileOpenProject);
 
-    fileMenu->addSeparator();
-    m_closeProjectAction = fileMenu->addAction(QStringLiteral("Close Project"));
+    m_fileMenu->addSeparator();
+    m_closeProjectAction = m_fileMenu->addAction(QStringLiteral("Close Project"));
     m_closeProjectAction->setEnabled(false);
     connect(m_closeProjectAction, &QAction::triggered, this, &MainWindow::onFileCloseProject);
 
-    fileMenu->addSeparator();
+    m_fileMenu->addSeparator();
 
-    QAction* exitAction = fileMenu->addAction("E&xit");
+    QAction* exitAction = m_fileMenu->addAction("E&xit");
     exitAction->setShortcut(QKeySequence::Quit);
     connect(exitAction, &QAction::triggered, this, &MainWindow::onFileExit);
 
@@ -398,16 +388,6 @@ void MainWindow::setupMenus() {
     showWelcomeAction->setShortcut(QKeySequence("Ctrl+Shift+W"));
     connect(showWelcomeAction, &QAction::triggered, this, &MainWindow::showWelcomeScreen);
 
-    // Help menu
-    QMenu* helpMenu = menuBar()->addMenu("&Help");
-    QAction* aboutAction = helpMenu->addAction("&About");
-    connect(aboutAction, &QAction::triggered, this, [this]() {
-        QMessageBox::about(this, "About CppAtlas",
-                           "CppAtlas - C++ Learning IDE\n\n"
-                           "Version 0.1\n\n"
-                           "An educational Qt-based environment for learning C++.");
-    });
-
     // Tools menu — Analysis Panel + tab shortcuts
     m_toolsMenu = menuBar()->addMenu(QStringLiteral("&Tools"));
 
@@ -418,6 +398,10 @@ void MainWindow::setupMenus() {
     connect(m_toggleAnalysisAction, &QAction::triggered, this, [this]() {
         bool visible = m_analysisPanel->isVisible();
         m_analysisPanel->setVisible(!visible);
+        if (m_analysisPanel->isVisible()) {
+            m_mainSplitter->setSizes({m_mainSplitter->width() * 3 / 4,
+                                      m_mainSplitter->width() / 4});
+        }
     });
 
     m_toolsMenu->addSeparator();
@@ -447,6 +431,23 @@ void MainWindow::setupMenus() {
     connect(showBenchmarkAction, &QAction::triggered, this, [this]() {
         m_analysisPanel->setVisible(true);
         m_analysisPanel->setCurrentIndex(AnalysisPanel::TabBenchmark);
+    });
+
+    // Settings menu — always visible (shown in Welcome/Quiz mode too)
+    m_settingsMenu = menuBar()->addMenu(QStringLiteral("&Settings"));
+    QAction* openSettingsAction = m_settingsMenu->addAction(QStringLiteral("&Preferences..."));
+    openSettingsAction->setShortcut(QKeySequence(Qt::CTRL | Qt::Key_Comma));
+    connect(openSettingsAction, &QAction::triggered, this, &MainWindow::onOpenSettings);
+
+    // Help menu — always visible (last in menu bar)
+    m_helpMenu = menuBar()->addMenu(QStringLiteral("&Help"));
+    QAction* aboutAction = m_helpMenu->addAction("&About CppAtlas");
+    connect(aboutAction, &QAction::triggered, this, [this]() {
+        QMessageBox::about(this, "About CppAtlas",
+                           "CppAtlas — C++ Learning IDE\n\n"
+                           "Version 0.2\n\n"
+                           "An educational Qt-based environment for C++ development and learning.\n\n"
+                           "Built with Qt and QScintilla.");
     });
 }
 
@@ -671,6 +672,10 @@ void MainWindow::setupWelcomeScreen() {
             this, [this]() {
                 hideWelcomeScreen();
             });
+
+    // Register into mode stack AFTER all connections are wired
+    m_modeStack->addWidget(m_welcomeScreen);  // index 1
+    m_modeStack->addWidget(m_quizModeWindow); // index 2
 }
 
 void MainWindow::showIDE() {
@@ -713,6 +718,45 @@ void MainWindow::onQuizModeExit()
     showWelcomeScreen();
 }
 
+void MainWindow::onOpenSettings()
+{
+    if (!UserManager::instance().isLoggedIn()) return;
+    const QString username = UserManager::instance().currentUser().username;
+
+    if (!m_settingsDialog) {
+        m_settingsDialog = new SettingsDialog(username, this);
+        m_settingsDialog->setAttribute(Qt::WA_DeleteOnClose, false);
+        connect(m_settingsDialog, &SettingsDialog::settingsChanged,
+                this, &MainWindow::onSettingsChanged);
+    }
+    if (m_settingsDialog->isVisible()) {
+        m_settingsDialog->raise();
+        m_settingsDialog->activateWindow();
+    } else {
+        m_settingsDialog->show();
+    }
+}
+
+void MainWindow::onSettingsChanged()
+{
+    if (!UserManager::instance().isLoggedIn()) return;
+    AppSettings s(UserManager::instance().currentUser().username);
+
+    const QString fontFamily = s.editorFontFamily();
+    const int fontSize = s.editorFontSize();
+    const bool showLineNums = s.showLineNumbers();
+    const bool wordWrap = s.wordWrap();
+
+    for (int i = 0; i < m_editorTabs->count(); ++i) {
+        CodeEditor* editor = m_editorTabs->editorAt(i);
+        if (!editor) continue;
+        editor->setFont(QFont(fontFamily.isEmpty() ? "Monospace" : fontFamily,
+                              fontSize > 0 ? fontSize : 12));
+        editor->setMarginLineNumbers(1, showLineNums);
+        editor->setWrapMode(wordWrap ? QsciScintilla::WrapWord : QsciScintilla::WrapNone);
+    }
+}
+
 void MainWindow::showQuizModeWindow() {
     m_modeStack->setCurrentIndex(2);
 
@@ -728,42 +772,19 @@ void MainWindow::hideQuizModeWindow() {
 }
 
 void MainWindow::updateMenuState(bool isWelcomeVisible) {
-    // Build menu - disable entirely in welcome screen
-    if (m_buildMenu) {
-        m_buildMenu->setEnabled(!isWelcomeVisible);
-    }
-    if (m_runAction) {
-        m_runAction->setEnabled(!isWelcomeVisible);
-    }
+    // In Welcome and Quiz modes: hide File, Edit, Build, View, Tools menus
+    // Settings and Help are ALWAYS visible
+    const bool showIDEMenus = !isWelcomeVisible;
 
-    // Edit menu - disable Find, Replace, Go to Line in welcome screen
-    if (m_findAction) {
-        m_findAction->setEnabled(!isWelcomeVisible);
-    }
-    if (m_replaceAction) {
-        m_replaceAction->setEnabled(!isWelcomeVisible);
-    }
-    if (m_gotoLineAction) {
-        m_gotoLineAction->setEnabled(!isWelcomeVisible);
-    }
+    if (m_fileMenu)  m_fileMenu->menuAction()->setVisible(showIDEMenus);
+    if (m_editMenu)  m_editMenu->menuAction()->setVisible(showIDEMenus);
+    if (m_buildMenu) m_buildMenu->menuAction()->setVisible(showIDEMenus);
+    if (m_viewMenu)  m_viewMenu->menuAction()->setVisible(showIDEMenus);
+    if (m_toolsMenu) m_toolsMenu->menuAction()->setVisible(showIDEMenus);
+    // m_settingsMenu and m_helpMenu: always visible, no change needed
 
-    // View menu - disable Toggle File Tree and Toggle Output Panel
-    if (m_toggleFileTreeAction) {
-        m_toggleFileTreeAction->setEnabled(!isWelcomeVisible);
-    }
-    if (m_toggleOutputAction) {
-        m_toggleOutputAction->setEnabled(!isWelcomeVisible);
-    }
-
-    // Tools menu - disable entirely in welcome screen
-    if (m_toolsMenu) {
-        m_toolsMenu->setEnabled(!isWelcomeVisible);
-    }
-
-    // Main toolbar - hide/show
-    if (m_mainToolbar) {
-        m_mainToolbar->setVisible(!isWelcomeVisible);
-    }
+    // Main toolbar: hide in Welcome/Quiz, show in IDE
+    if (m_mainToolbar) m_mainToolbar->setVisible(showIDEMenus);
 }
 
 void MainWindow::loadCompilers() {
@@ -838,8 +859,10 @@ void MainWindow::updateCustomTitleLabel(const QString& title) {
 }
 
 void MainWindow::closeEvent(QCloseEvent *event) {
-    // Save project session before closing
-    saveCurrentSession();
+    // Save project session before closing (geometry/windowState not saved — Wayland compatibility)
+    if (ProjectManager::instance()->hasOpenProject()) {
+        saveCurrentSession();
+    }
 
     if (m_editorTabs->closeAll()) {
         ProjectManager::instance()->closeCurrentProject();
