@@ -11,6 +11,7 @@ EditorTabWidget::EditorTabWidget(QWidget *parent)
     setTabsClosable(true);
     setMovable(true);
     setDocumentMode(true);
+    setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
     
     connect(this, &QTabWidget::currentChanged, this, &EditorTabWidget::onTabChanged);
     connect(this, &QTabWidget::tabCloseRequested, this, &EditorTabWidget::onTabCloseRequested);

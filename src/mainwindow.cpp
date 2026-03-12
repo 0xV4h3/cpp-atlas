@@ -13,6 +13,7 @@
 #include "ui/NewFileDialog.h"
 #include "ui/NewProjectDialog.h"
 #include "ui/AnalysisPanel.h"
+#include "ui/QuizModeWindow.h"
 #include "core/FileManager.h"
 #include "core/Project.h"
 #include "core/ProjectManager.h"
@@ -36,6 +37,9 @@
 #include <QHBoxLayout>
 #include <QPushButton>
 #include <QToolButton>
+#include <QTimer>
+#include <QGuiApplication>
+#include <QOperatingSystemVersion>
 
 #ifdef Q_OS_WIN
 #include <windows.h>
@@ -106,14 +110,31 @@ void MainWindow::setupUi() {
     setWindowTitle("CppAtlas - C++ Learning IDE");
     resize(1200, 800);
 
-    // Create stacked widget for Welcome/IDE switching
-    m_centralStack = new QStackedWidget(this);
-
-    // Create central widget - editor tabs
+    // --- IDE splitter ---
     m_editorTabs = new EditorTabWidget(this);
-    m_centralStack->addWidget(m_editorTabs);
+    m_analysisPanel = new AnalysisPanel(this);
 
-    setCentralWidget(m_centralStack);
+    m_mainSplitter = new QSplitter(Qt::Horizontal, this);
+    m_mainSplitter->addWidget(m_editorTabs);
+    m_mainSplitter->addWidget(m_analysisPanel);
+    m_mainSplitter->setStretchFactor(0, 3);
+    m_mainSplitter->setStretchFactor(1, 1);
+
+    // --- WelcomeScreen ---
+    m_welcomeScreen = new WelcomeScreen(this);
+
+    // --- QuizMode ---
+    m_quizModeWindow = new QuizModeWindow(this);
+    connect(m_quizModeWindow, &QuizModeWindow::exitRequested,
+            this, &MainWindow::onQuizModeExit);
+
+    // --- mode stack ---
+    m_modeStack = new QStackedWidget(this);
+    m_modeStack->addWidget(m_mainSplitter);     // index 0: IDE
+    m_modeStack->addWidget(m_welcomeScreen);    // index 1: Welcome
+    m_modeStack->addWidget(m_quizModeWindow);   // index 2: QuizMode
+
+    setCentralWidget(m_modeStack);
 }
 
 void MainWindow::setupCustomTitleBar() {
@@ -395,9 +416,8 @@ void MainWindow::setupMenus() {
     m_toggleAnalysisAction->setShortcut(
         QKeySequence(Qt::CTRL | Qt::SHIFT | Qt::Key_A));
     connect(m_toggleAnalysisAction, &QAction::triggered, this, [this]() {
-        const bool visible = !m_analysisDock->isVisible();
-        m_analysisDock->setVisible(visible);
-        if (visible) m_analysisDock->raise();
+        bool visible = m_analysisPanel->isVisible();
+        m_analysisPanel->setVisible(!visible);
     });
 
     m_toolsMenu->addSeparator();
@@ -407,9 +427,8 @@ void MainWindow::setupMenus() {
     showInsightsAction->setShortcut(
         QKeySequence(Qt::CTRL | Qt::SHIFT | Qt::Key_I));
     connect(showInsightsAction, &QAction::triggered, this, [this]() {
-        m_analysisDock->setVisible(true);
-        m_analysisPanel->setCurrentIndex(AnalysisPanel::TabInsights);
-        m_analysisDock->raise();
+        m_analysisPanel->setVisible(true);
+        m_analysisPanel->setCurrentIndex(AnalysisPanel::TabAssembly);
     });
 
     QAction* showAssemblyAction = m_toolsMenu->addAction(
@@ -417,9 +436,8 @@ void MainWindow::setupMenus() {
     showAssemblyAction->setShortcut(
         QKeySequence(Qt::CTRL | Qt::SHIFT | Qt::Key_S));
     connect(showAssemblyAction, &QAction::triggered, this, [this]() {
-        m_analysisDock->setVisible(true);
-        m_analysisPanel->setCurrentIndex(AnalysisPanel::TabAssembly);
-        m_analysisDock->raise();
+        m_analysisPanel->setVisible(true);
+        m_analysisPanel->setCurrentIndex(AnalysisPanel::TabBenchmark);
     });
 
     QAction* showBenchmarkAction = m_toolsMenu->addAction(
@@ -427,9 +445,8 @@ void MainWindow::setupMenus() {
     showBenchmarkAction->setShortcut(
         QKeySequence(Qt::CTRL | Qt::SHIFT | Qt::Key_B));
     connect(showBenchmarkAction, &QAction::triggered, this, [this]() {
-        m_analysisDock->setVisible(true);
+        m_analysisPanel->setVisible(true);
         m_analysisPanel->setCurrentIndex(AnalysisPanel::TabBenchmark);
-        m_analysisDock->raise();
     });
 }
 
@@ -509,14 +526,6 @@ void MainWindow::setupDockWidgets() {
     m_outputPanel = new OutputPanel(m_outputPanelDock);
     m_outputPanelDock->setWidget(m_outputPanel);
     addDockWidget(Qt::BottomDockWidgetArea, m_outputPanelDock);
-
-    // Analysis dock (right side — Insights | Assembly | Benchmark tabs)
-    m_analysisDock  = new QDockWidget(QStringLiteral("Analysis"), this);
-    m_analysisDock->setObjectName("analysisDock");
-    m_analysisPanel = new AnalysisPanel(m_analysisDock);
-    m_analysisDock->setWidget(m_analysisPanel);
-    addDockWidget(Qt::RightDockWidgetArea, m_analysisDock);
-    m_analysisDock->hide(); // Hidden by default; open via Tools menu
 }
 
 void MainWindow::setupStatusBar() {
@@ -585,7 +594,6 @@ void MainWindow::setupConnections() {
 
 void MainWindow::setupWelcomeScreen() {
     m_welcomeScreen = new WelcomeScreen(this);
-    m_centralStack->addWidget(m_welcomeScreen);
 
     // Connect Welcome Screen signals
     connect(m_welcomeScreen, &WelcomeScreen::newFileRequested, this, [this]() {
@@ -650,14 +658,8 @@ void MainWindow::setupWelcomeScreen() {
                 }
             });
 
-    connect(m_welcomeScreen, &WelcomeScreen::quizModeRequested, this, [this]() {
-        QMessageBox::information(this, "Quiz Mode",
-                                 "Quiz Mode will be available in a future update.\n\n"
-                                 "This will include:\n"
-                                 "- C++ knowledge assessments\n"
-                                 "- Interactive coding challenges\n"
-                                 "- Progress tracking");
-    });
+    connect(m_welcomeScreen, &WelcomeScreen::quizModeRequested,
+            this, &MainWindow::onQuizModeRequested);
 
     connect(m_welcomeScreen, &WelcomeScreen::continueWithoutProjectRequested,
             this, [this]() {
@@ -671,37 +673,58 @@ void MainWindow::setupWelcomeScreen() {
             });
 }
 
+void MainWindow::showIDE() {
+    m_modeStack->setCurrentIndex(0);
+    m_fileTreeDock->show();
+    m_outputPanelDock->show();
+    updateMenuState(false);
+    updateCustomTitleLabel("CppAtlas — C++ Learning IDE");
+}
+
 void MainWindow::showWelcomeScreen() {
-    // Save current project session before showing welcome
     if (ProjectManager::instance()->hasOpenProject()) {
         saveCurrentSession();
     }
 
-    m_centralStack->setCurrentWidget(m_welcomeScreen);
-
-    // Hide IDE-specific docks
+    m_modeStack->setCurrentIndex(1);
     m_fileTreeDock->hide();
     m_outputPanelDock->hide();
-    m_analysisDockWasVisible = m_analysisDock->isVisible();
-    m_analysisDock->hide();
 
-    // Show "Return to Project" button if a project/folder is open
     bool hasOpenProject = ProjectManager::instance()->hasOpenProject();
     m_welcomeScreen->setReturnToProjectVisible(hasOpenProject);
 
     updateMenuState(true);
+    updateCustomTitleLabel("CppAtlas — Welcome");
 }
 
 void MainWindow::hideWelcomeScreen() {
-    m_centralStack->setCurrentWidget(m_editorTabs);
-
-    // Show IDE docks
-    m_fileTreeDock->show();
-    m_outputPanelDock->show();
-    if (m_analysisDockWasVisible) m_analysisDock->show();
-
+    showIDE();
     if (m_closeProjectAction) m_closeProjectAction->setEnabled(true);
-    updateMenuState(false);
+}
+
+void MainWindow::onQuizModeRequested()
+{
+    showQuizModeWindow();
+}
+
+void MainWindow::onQuizModeExit()
+{
+    hideQuizModeWindow();
+    showWelcomeScreen();
+}
+
+void MainWindow::showQuizModeWindow() {
+    m_modeStack->setCurrentIndex(2);
+
+    m_fileTreeDock->hide();
+    m_outputPanelDock->hide();
+
+    updateMenuState(true);
+    updateCustomTitleLabel("CppAtlas — Quiz Mode");
+}
+
+void MainWindow::hideQuizModeWindow() {
+    showIDE();
 }
 
 void MainWindow::updateMenuState(bool isWelcomeVisible) {

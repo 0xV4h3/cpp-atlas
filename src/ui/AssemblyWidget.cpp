@@ -19,6 +19,7 @@ AssemblyWidget::AssemblyWidget(QWidget* parent)
     : QWidget(parent)
     , m_runner(new AssemblyRunner(this))
 {
+    setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Expanding);
     setupUi();
 
     connect(m_runner, &AssemblyRunner::started,

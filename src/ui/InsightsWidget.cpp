@@ -18,6 +18,7 @@ InsightsWidget::InsightsWidget(QWidget* parent)
     : QWidget(parent)
     , m_runner(new CppInsightsRunner(this))
 {
+    setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Expanding);
     setupUi();
 
     connect(m_runner, &CppInsightsRunner::started,

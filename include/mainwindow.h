@@ -8,6 +8,7 @@
 #include <QProcess>
 #include <QPushButton>
 #include <QPoint>
+#include <QSplitter>
 #include <QStackedWidget>
 #include "core/Project.h"
 
@@ -24,6 +25,7 @@ class FileManager;
 class Project;
 class ICompiler;
 class WelcomeScreen;
+class QuizModeWindow;
 class NewFileDialog;
 class NewProjectDialog;
 class AnalysisPanel;
@@ -98,6 +100,10 @@ private slots:
     // Problems
     void onDiagnosticClicked(const QString& file, int line, int column);
 
+    // Quiz mode
+    void onQuizModeRequested();
+    void onQuizModeExit();
+
 private:
     Ui::MainWindow *ui;
 
@@ -130,13 +136,14 @@ private:
 
     // Welcome screen
     WelcomeScreen* m_welcomeScreen = nullptr;
-    QStackedWidget* m_centralStack = nullptr;
+    QStackedWidget* m_modeStack = nullptr;
+    QSplitter*      m_mainSplitter;
     bool m_analysisDockWasVisible = false;
+    QuizModeWindow* m_quizModeWindow = nullptr;
 
     // Dock widgets
     QDockWidget* m_fileTreeDock;
     QDockWidget* m_outputPanelDock;
-    QDockWidget* m_analysisDock = nullptr;
 
     // Toolbar widgets
     QComboBox* m_compilerCombo;
@@ -175,6 +182,7 @@ private:
     void setupMenus();
     void setupToolbar();
     void setupDockWidgets();
+    void showIDE();
     void setupStatusBar();
     void setupConnections();
     void setupWelcomeScreen();
@@ -188,6 +196,8 @@ private:
     void saveCurrentSession();
     void showProjectLoadError(Project::LoadResult result);
     void restoreProjectSession(Project* project);
+    void showQuizModeWindow();
+    void hideQuizModeWindow();
 
     QString getCurrentSourceFile();
     QString getExecutablePath(const QString& sourceFile);

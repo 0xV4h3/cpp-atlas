@@ -32,6 +32,7 @@ BenchmarkWidget::BenchmarkWidget(QWidget* parent)
     : QWidget(parent)
     , m_runner(new BenchmarkRunner(this))
 {
+    setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Expanding);
     setupUi();
     loadTemplate();
 

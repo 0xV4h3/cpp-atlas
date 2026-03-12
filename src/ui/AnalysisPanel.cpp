@@ -15,6 +15,10 @@ AnalysisPanel::AnalysisPanel(QWidget* parent)
     addTab(m_assembly,  QStringLiteral("Assembly"));
     addTab(m_benchmark, QStringLiteral("Benchmark"));
 
+    setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Expanding);
+    setMinimumWidth(100);
+    setMaximumWidth(2000);
+
     // Forward AssemblyWidget line-activation signal to MainWindow
     connect(m_assembly, &AssemblyWidget::sourceLineActivated,
             this,       &AnalysisPanel::sourceLineActivated);
