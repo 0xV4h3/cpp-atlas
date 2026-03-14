@@ -42,6 +42,14 @@
 #include <QTimer>
 #include <QGuiApplication>
 #include <QOperatingSystemVersion>
+#include <QDialog>
+#include <QVBoxLayout>
+#include <QLabel>
+#include <QFrame>
+#include <QDesktopServices>
+#include <QUrl>
+#include <QApplication>
+#include <QStyle>
 
 #ifdef Q_OS_WIN
 #include <windows.h>
@@ -442,13 +450,7 @@ void MainWindow::setupMenus() {
     // Help menu — always visible (last in menu bar)
     m_helpMenu = menuBar()->addMenu(QStringLiteral("&Help"));
     QAction* aboutAction = m_helpMenu->addAction("&About CppAtlas");
-    connect(aboutAction, &QAction::triggered, this, [this]() {
-        QMessageBox::about(this, "About CppAtlas",
-                           "CppAtlas — C++ Learning IDE\n\n"
-                           "Version 0.2\n\n"
-                           "An educational Qt-based environment for C++ development and learning.\n\n"
-                           "Built with Qt and QScintilla.");
-    });
+    connect(aboutAction, &QAction::triggered, this, &MainWindow::showAboutDialog);
 }
 
 void MainWindow::setupToolbar() {
@@ -1316,6 +1318,84 @@ void MainWindow::onViewFullscreen() {
     } else {
         showFullScreen();
     }
+}
+
+// Help menu slots
+void MainWindow::showAboutDialog()
+{
+    Qt::WindowFlags flags = Qt::Dialog | Qt::WindowStaysOnTopHint | Qt::WindowTitleHint | Qt::WindowCloseButtonHint | Qt::CustomizeWindowHint;
+
+    flags &= ~Qt::WindowMinimizeButtonHint;
+    flags &= ~Qt::WindowMaximizeButtonHint;
+
+#ifdef Q_OS_WIN
+    flags |= Qt::MSWindowsFixedSizeDialogHint;
+#endif
+
+    QDialog* dlg = new QDialog(this, flags);
+
+    dlg->setWindowTitle("About CppAtlas");
+    dlg->setAttribute(Qt::WA_DeleteOnClose);
+    dlg->setWindowModality(Qt::NonModal);
+
+    QVBoxLayout* layout = new QVBoxLayout(dlg);
+    layout->setContentsMargins(24, 24, 24, 24);
+    layout->setSpacing(12);
+
+    QLabel* logoLabel = new QLabel("C++", dlg);
+    logoLabel->setObjectName("aboutLogo");
+    logoLabel->setAlignment(Qt::AlignHCenter);
+    QFont logoFont = logoLabel->font();
+    logoFont.setPointSize(28);
+    logoFont.setBold(true);
+    logoLabel->setFont(logoFont);
+    layout->addWidget(logoLabel, 0, Qt::AlignHCenter);
+
+    QLabel* appNameLabel = new QLabel("CppAtlas", dlg);
+    appNameLabel->setObjectName("aboutAppName");
+    appNameLabel->setAlignment(Qt::AlignHCenter);
+    QFont appFont = appNameLabel->font();
+    appFont.setPointSize(16);
+    appFont.setBold(true);
+    appNameLabel->setFont(appFont);
+    layout->addWidget(appNameLabel, 0, Qt::AlignHCenter);
+
+    QLabel* versionLabel = new QLabel(
+        QString("Version %1").arg(QApplication::applicationVersion()), dlg);
+    versionLabel->setObjectName("aboutVersion");
+    versionLabel->setAlignment(Qt::AlignHCenter);
+    layout->addWidget(versionLabel, 0, Qt::AlignHCenter);
+
+    QFrame* sep = new QFrame(dlg);
+    sep->setFrameShape(QFrame::HLine);
+    sep->setObjectName("aboutSeparator");
+    layout->addWidget(sep);
+
+    QLabel* descLabel = new QLabel(
+        "CppAtlas — C++ Learning IDE\n\n"
+        "An educational Qt-based environment for C++ development and learning.\n\n"
+        "Built with Qt and QScintilla.",
+        dlg);
+    descLabel->setObjectName("aboutDesc");
+    descLabel->setAlignment(Qt::AlignHCenter);
+    descLabel->setWordWrap(true);
+    layout->addWidget(descLabel);
+
+    QPushButton* githubBtn = new QPushButton("View on GitHub", dlg);
+    githubBtn->setObjectName("aboutGithubBtn");
+    connect(githubBtn, &QPushButton::clicked, dlg, []() {
+        QDesktopServices::openUrl(QUrl("https://github.com/0xV4h3/cpp-atlas"));
+    });
+    layout->addWidget(githubBtn, 0, Qt::AlignHCenter);
+
+    QPushButton* closeBtn = new QPushButton("Close", dlg);
+    closeBtn->setObjectName("aboutCloseBtn");
+    connect(closeBtn, &QPushButton::clicked, dlg, &QDialog::accept);
+    layout->addWidget(closeBtn, 0, Qt::AlignHCenter);
+
+    dlg->setFixedSize(410, dlg->layout()->sizeHint().height());
+
+    dlg->show();
 }
 
 // Toolbar slots

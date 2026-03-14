@@ -88,6 +88,9 @@ private slots:
     void onViewToggleOutputPanel();
     void onViewFullscreen();
 
+    // Help menu
+    void showAboutDialog();
+
     // Toolbar
     void onCompilerChanged(int index);
     void onStandardChanged(int index);
