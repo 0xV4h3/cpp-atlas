@@ -228,5 +228,5 @@ private slots:
     }
 };
 
-QTEST_APPLESS_MAIN(ContentPatchServiceTest)
+QTEST_MAIN(ContentPatchServiceTest)
 #include "test_content_patch_service.moc"

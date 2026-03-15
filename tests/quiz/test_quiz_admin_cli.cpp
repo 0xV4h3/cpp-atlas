@@ -276,5 +276,5 @@ private slots:
     }
 };
 
-QTEST_APPLESS_MAIN(QuizAdminCliTest)
+QTEST_MAIN(QuizAdminCliTest)
 #include "test_quiz_admin_cli.moc"

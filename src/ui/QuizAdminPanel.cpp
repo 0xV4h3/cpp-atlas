@@ -2,6 +2,7 @@
 
 #include "quiz/ContentPatchService.h"
 #include "quiz/QuizDatabase.h"
+#include "quiz/QuizContentExporter.h"
 
 #include <QLabel>
 #include <QTabWidget>
@@ -15,12 +16,10 @@
 #include <QStatusBar>
 #include <QFileDialog>
 #include <QMessageBox>
+#include <QSettings>
 #include <QSqlDatabase>
 #include <QSqlQuery>
 #include <QSqlError>
-#include <QSqlRecord>
-#include <QFile>
-#include <QVariant>
 
 QuizAdminPanel::QuizAdminPanel(QWidget* parent)
     : QMainWindow(parent)
@@ -182,16 +181,20 @@ void QuizAdminPanel::setupStatsTab(QWidget* tab)
 
 void QuizAdminPanel::onApplyContentUpdates()
 {
+    QSettings settings;
+    const QString lastPatchDir = settings.value("admin/patchDir").toString();
+
     const QString dir = QFileDialog::getExistingDirectory(
         this,
         tr("Select Content Patches Directory"),
-        QString(),
+        lastPatchDir,
         QFileDialog::ShowDirsOnly | QFileDialog::DontResolveSymlinks
     );
     if (dir.isEmpty()) {
         log(tr("[Content] Operation cancelled."));
         return;
     }
+    settings.setValue("admin/patchDir", dir);
 
     log(tr("[Content] Discovering patches in: %1").arg(dir));
 
@@ -294,86 +297,12 @@ void QuizAdminPanel::onExportBackup()
 
     log(tr("[Export] Exporting to: %1").arg(outFile));
 
-    QFile f(outFile);
-    if (!f.open(QIODevice::WriteOnly | QIODevice::Text | QIODevice::Truncate)) {
-        const QString msg = tr("Cannot open output file: %1").arg(outFile);
-        log(tr("[Export] ERROR: %1").arg(msg));
-        statusBar()->showMessage(tr("Export failed."));
-        QMessageBox::critical(this, tr("Export Backup"), msg);
-        return;
-    }
-    QTextStream out(&f);
-
-    out << "-- CppAtlas quiz content export\n";
-    out << "-- Generated: " << QDateTime::currentDateTime().toString(Qt::ISODate) << "\n\n";
-
-    QSqlDatabase db = QSqlDatabase::database(QuizDatabase::CONNECTION_NAME);
-
-    struct TableSpec { QString name; QString orderBy; };
-    const QList<TableSpec> tables = {
-        { "topics",        "ORDER BY id" },
-        { "tags",          "ORDER BY id" },
-        { "quizzes",       "ORDER BY id" },
-        { "questions",     "ORDER BY id" },
-        { "options",       "ORDER BY id" },
-        { "question_tags", "ORDER BY question_id, tag_id" },
-        { "quiz_tags",     "ORDER BY quiz_id, tag_id" },
-    };
-
     int totalRows = 0;
-    bool exportError = false;
-
-    for (const TableSpec& spec : tables) {
-        out << "-- Table: " << spec.name << "\n";
-        QSqlQuery q(db);
-        if (!q.exec("SELECT * FROM " + spec.name + " " + spec.orderBy)) {
-            const QString msg = tr("Failed to query table '%1': %2")
-                                    .arg(spec.name, q.lastError().text());
-            log(tr("[Export] ERROR: %1").arg(msg));
-            exportError = true;
-            break;
-        }
-
-        const QSqlRecord rec = q.record();
-        const int fieldCount = rec.count();
-        int tableRows = 0;
-
-        while (q.next()) {
-            out << "INSERT INTO " << spec.name << " (";
-            for (int i = 0; i < fieldCount; ++i) {
-                if (i > 0) out << ", ";
-                out << rec.fieldName(i);
-            }
-            out << ") VALUES (";
-            for (int i = 0; i < fieldCount; ++i) {
-                if (i > 0) out << ", ";
-                const QVariant val = q.value(i);
-                if (val.isNull()) {
-                    out << "NULL";
-                } else {
-                    const QMetaType::Type mt =
-                        static_cast<QMetaType::Type>(val.typeId());
-                    if (mt == QMetaType::Int || mt == QMetaType::LongLong
-                            || mt == QMetaType::UInt || mt == QMetaType::ULongLong) {
-                        out << val.toLongLong();
-                    } else {
-                        out << "'" << val.toString().replace("'", "''") << "'";
-                    }
-                }
-            }
-            out << ");\n";
-            ++tableRows;
-        }
-        out << "\n";
-        totalRows += tableRows;
-        log(tr("[Export]   %1: %2 row(s)").arg(spec.name).arg(tableRows));
-    }
-
-    out.flush();
-    f.close();
-
-    if (exportError) {
+    QString exportError;
+    if (!QuizContentExporter::exportToFile(outFile, &totalRows, &exportError)) {
+        log(tr("[Export] ERROR: %1").arg(exportError));
         statusBar()->showMessage(tr("Export failed."));
+        QMessageBox::critical(this, tr("Export Backup"), exportError);
         return;
     }
 
@@ -397,6 +326,7 @@ void QuizAdminPanel::refreshStats()
     };
 
     log(tr("[Stats] === Database Statistics ==="));
+    log(tr("[Stats] Database path  : %1").arg(QuizDatabase::instance().databasePath()));
     log(tr("[Stats] Schema version : %1").arg(qi("SELECT MAX(version) FROM schema_version")));
     log(tr("[Stats] Topics         : %1").arg(qi("SELECT COUNT(*) FROM topics")));
     log(tr("[Stats] Quizzes        : %1").arg(qi("SELECT COUNT(*) FROM quizzes WHERE is_active = 1")));

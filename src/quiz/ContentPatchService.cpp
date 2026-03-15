@@ -149,6 +149,7 @@ bool ContentPatchService::applyPendingPatches(const QList<ContentPatch>& patches
         }
 
         if (!db.commit()) {
+            db.rollback();
             const QString msg = QString("Failed to commit patch '%1': %2")
                                     .arg(patch.id, db.lastError().text());
             if (error) *error = msg;

@@ -2,6 +2,7 @@
 
 #include "quiz/QuizDatabase.h"
 #include "quiz/UserManager.h"
+#include "quiz/AdminAccessController.h"
 #include "ui/LoginDialog.h"
 #include "ui/ThemeManager.h"
 #include "core/AppSettings.h"
@@ -11,6 +12,7 @@
 #include <QLocale>
 #include <QTranslator>
 #include <QMessageBox>
+#include <QTimer>
 
 int main(int argc, char *argv[])
 {
@@ -65,6 +67,17 @@ int main(int argc, char *argv[])
             "The application will start without quiz features.");
     }
 
+    // ── Load optional release-admin password hash from environment ───────────
+    // Set CPPATLAS_ADMIN_HASH to a SHA-256 hex digest of the admin password
+    // before launching in release mode.  See docs/admin_workflow.md.
+    {
+        const QString adminHash =
+            QString::fromUtf8(qgetenv("CPPATLAS_ADMIN_HASH")).trimmed();
+        if (!adminHash.isEmpty()) {
+            AdminAccessController::instance().setReleaseAdminPasswordHash(adminHash);
+        }
+    }
+
     // ── Show Login Dialog ────────────────────────────────────────────────────
     if (QuizDatabase::instance().isOpen()) {
         LoginDialog loginDlg;
@@ -76,5 +89,13 @@ int main(int argc, char *argv[])
     MainWindow w;
     w.setStartupAdminRequested(startupAdminRequested);
     w.showMaximized();
+
+    // Fire the admin panel after the window is shown and the flag is set.
+    // Using QTimer::singleShot here (not in the constructor) ensures the flag
+    // has been set before tryOpenAdminPanelFromStartupRequest() runs.
+    if (startupAdminRequested) {
+        QTimer::singleShot(0, &w, &MainWindow::tryOpenAdminPanelFromStartupRequest);
+    }
+
     return a.exec();
 }

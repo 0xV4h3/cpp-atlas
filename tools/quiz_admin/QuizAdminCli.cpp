@@ -2,17 +2,16 @@
 
 #include "quiz/QuizDatabase.h"
 #include "quiz/ContentPatchService.h"
+#include "quiz/QuizContentExporter.h"
 
 #include <QSqlDatabase>
 #include <QSqlQuery>
 #include <QSqlError>
-#include <QSqlRecord>
 #include <QStandardPaths>
 #include <QDir>
 #include <QFile>
 #include <QFileInfo>
-#include <QDateTime>
-#include <QVariant>
+#include <QTextStream>
 #include <QDebug>
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -230,6 +229,12 @@ int QuizAdminCli::cmdValidate(const QString& contentDir)
     m_out << "Content directory : " << contentDir << "\n\n";
 
     // ── Patch status ──────────────────────────────────────────────────────────
+    if (!QFileInfo::exists(contentDir)) {
+        m_out << "Directory does not exist: " << contentDir << "\n";
+        m_out.flush();
+        return 0;
+    }
+
     ContentPatchService svc;
     const QList<ContentPatch> patches = svc.discoverPatches(contentDir);
 
@@ -340,86 +345,17 @@ int QuizAdminCli::cmdExport(const QString& outFile)
 {
     m_out << "\n=== CppAtlas Content Export ===\n\n";
 
-    QFile f(outFile);
-    if (!f.open(QIODevice::WriteOnly | QIODevice::Text | QIODevice::Truncate)) {
-        m_err << "error: cannot open output file: " << outFile << "\n";
+    int totalRows = 0;
+    QString exportError;
+    if (!QuizContentExporter::exportToFile(outFile, &totalRows, &exportError)) {
+        m_err << "error: " << exportError << "\n";
         m_err.flush();
         return 2;
     }
-    QTextStream out(&f);
 
-    // Header
-    out << "-- CppAtlas quiz content export\n";
-    out << "-- Generated: "
-        << QDateTime::currentDateTime().toString(Qt::ISODate) << "\n\n";
-
-    QSqlDatabase db = QSqlDatabase::database(QuizDatabase::CONNECTION_NAME);
-
-    // Tables to export with their ORDER BY clause (deterministic ordering)
-    struct TableSpec {
-        QString name;
-        QString orderBy;
-    };
-    const QList<TableSpec> tables = {
-        { "topics",        "ORDER BY id" },
-        { "tags",          "ORDER BY id" },
-        { "quizzes",       "ORDER BY id" },
-        { "questions",     "ORDER BY id" },
-        { "options",       "ORDER BY id" },
-        { "question_tags", "ORDER BY question_id, tag_id" },
-        { "quiz_tags",     "ORDER BY quiz_id, tag_id" },
-    };
-
-    int totalRows = 0;
-    for (const TableSpec& spec : tables) {
-        out << "-- Table: " << spec.name << "\n";
-
-        QSqlQuery q(db);
-        if (!q.exec("SELECT * FROM " + spec.name + " " + spec.orderBy)) {
-            m_err << "error: failed to query table '" << spec.name << "': "
-                  << q.lastError().text() << "\n";
-            m_err.flush();
-            return 2;
-        }
-
-        const QSqlRecord rec = q.record();
-        const int fieldCount = rec.count();
-        int tableRows = 0;
-
-        while (q.next()) {
-            out << "INSERT INTO " << spec.name << " (";
-            for (int i = 0; i < fieldCount; ++i) {
-                if (i > 0) out << ", ";
-                out << rec.fieldName(i);
-            }
-            out << ") VALUES (";
-            for (int i = 0; i < fieldCount; ++i) {
-                if (i > 0) out << ", ";
-                const QVariant val = q.value(i);
-                if (val.isNull()) {
-                    out << "NULL";
-                } else {
-                    const QMetaType::Type mt = static_cast<QMetaType::Type>(val.typeId());
-                    if (mt == QMetaType::Int || mt == QMetaType::LongLong
-                            || mt == QMetaType::UInt || mt == QMetaType::ULongLong) {
-                        out << val.toLongLong();
-                    } else {
-                        out << "'" << val.toString().replace("'", "''") << "'";
-                    }
-                }
-            }
-            out << ");\n";
-            ++tableRows;
-        }
-        out << "\n";
-        totalRows += tableRows;
-        m_out << "  " << spec.name << ": " << tableRows << " row(s)\n";
-    }
-
-    out.flush();
-    f.close();
-
-    m_out << "\nTotal rows exported : " << totalRows << "\n";
+    // Per-table row counts are logged by QuizContentExporter at debug level;
+    // the CLI just shows the summary.
+    m_out << "Total rows exported : " << totalRows << "\n";
     m_out << "Output file         : " << outFile << "\n";
     m_out << "\nResult: OK\n";
     m_out.flush();

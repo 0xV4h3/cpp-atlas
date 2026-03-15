@@ -117,10 +117,9 @@ MainWindow::MainWindow(QWidget *parent)
     m_adminShortcut = new QShortcut(QKeySequence(Qt::CTRL | Qt::ALT | Qt::SHIFT | Qt::Key_M), this);
     connect(m_adminShortcut, &QShortcut::activated, this, &MainWindow::showQuizAdminPanel);
 
-    // Handle --admin startup flag after the window is fully constructed
-    if (m_startupAdminRequested) {
-        QTimer::singleShot(0, this, &MainWindow::tryOpenAdminPanelFromStartupRequest);
-    }
+    // Note: --admin startup trigger is fired from main() via QTimer::singleShot
+    // AFTER setStartupAdminRequested() has been called and the window is shown,
+    // so m_startupAdminRequested is guaranteed to be set at that point.
 }
 
 MainWindow::~MainWindow()
