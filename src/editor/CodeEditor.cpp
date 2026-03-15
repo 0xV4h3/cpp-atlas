@@ -297,6 +297,30 @@ void CodeEditor::applyTheme(const QString& themeName) {
     recolor();
 }
 
+void CodeEditor::applyEditorSettings(const QFont& font, bool showLineNumbers, bool wordWrap)
+{
+    // Base font on the editor widget itself
+    setFont(font);
+    setMarginsFont(font);
+
+    // Apply font to all lexer styles so the code area actually changes
+    if (m_lexer) {
+        m_lexer->setDefaultFont(font);
+        for (int style = 0; style < 128; ++style) {
+            m_lexer->setFont(font, style);
+        }
+    }
+
+    // Line numbers live on margin 0 (NumberMargin, set in setupMargins())
+    const int lineNumMargin = 0;
+    setMarginType(lineNumMargin, QsciScintilla::NumberMargin);
+    setMarginLineNumbers(lineNumMargin, showLineNumbers);
+    setMarginWidth(lineNumMargin, showLineNumbers ? QStringLiteral("00000") : QStringLiteral("0"));
+
+    // Word wrap
+    setWrapMode(wordWrap ? QsciScintilla::WrapWord : QsciScintilla::WrapNone);
+}
+
 void CodeEditor::onTextChanged() {
     if (!m_isModified) {
         m_isModified = true;

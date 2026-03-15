@@ -89,6 +89,11 @@ public:
      * @param themeName Theme name (dark, light, etc.)
      */
     void applyTheme(const QString& themeName);
+
+    /**
+     * @brief Apply font, line-number visibility and word-wrap settings.
+     */
+    void applyEditorSettings(const QFont& font, bool showLineNumbers, bool wordWrap);
     
 signals:
     void modificationChanged(bool modified);
