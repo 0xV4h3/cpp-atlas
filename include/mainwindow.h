@@ -126,6 +126,7 @@ private:
     // Custom title bar widgets
     QWidget* m_titleBar = nullptr;
     QLabel* m_titleLabel = nullptr;
+    QLabel* m_titleLabelLeft = nullptr;
     QLabel* m_iconLabel = nullptr;
     QPushButton* m_minimizeBtn = nullptr;
     QPushButton* m_maximizeBtn = nullptr;
@@ -214,6 +215,7 @@ private:
     void restoreProjectSession(Project* project);
     void showQuizModeWindow();
     void hideQuizModeWindow();
+    void updateTitlePosition();
 
     QString getCurrentSourceFile();
     QString getExecutablePath(const QString& sourceFile);

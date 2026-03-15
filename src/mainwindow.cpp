@@ -92,13 +92,23 @@ MainWindow::MainWindow(QWidget *parent)
     CompilerRegistry::instance().autoScanCompilers();
     loadCompilers();
 
-    // Apply default theme
-    ThemeManager::instance()->setTheme("dark");
+    // Apply last-used theme before any UI shows
+    {
+        const QString lastUser = AppSettings::lastLoggedInUser();
+        AppSettings tempSettings(lastUser);
+        const QString savedTheme = tempSettings.theme();
+        ThemeManager::instance()->setTheme(savedTheme.isEmpty() ? QStringLiteral("dark") : savedTheme);
+    }
 
     updateWindowTitle();
 
     // Show Welcome Screen on startup
     showWelcomeScreen();
+
+    // Apply persisted editor settings (font, line numbers, wrap) if already logged in
+    if (UserManager::instance().isLoggedIn()) {
+        onSettingsChanged();
+    }
 }
 
 MainWindow::~MainWindow()
@@ -161,9 +171,17 @@ void MainWindow::setupCustomTitleBar() {
         layout->addWidget(menuBar());
     }
 
+    // Left-aligned title label: shown only when Analysis Panel is visible
+    m_titleLabelLeft = new QLabel("CppAtlas - C++ Learning IDE", this);
+    m_titleLabelLeft->setObjectName("windowTitleLeft");
+    m_titleLabelLeft->setAlignment(Qt::AlignVCenter | Qt::AlignLeft);
+    m_titleLabelLeft->hide();   // hidden by default
+    layout->addSpacing(8);
+    layout->addWidget(m_titleLabelLeft);
+
     layout->addStretch();
 
-    // Window title (filename - CppAtlas)
+    // Centered title label (filename - CppAtlas)
     m_titleLabel = new QLabel("CppAtlas - C++ Learning IDE", this);
     m_titleLabel->setObjectName("windowTitle");
     m_titleLabel->setAlignment(Qt::AlignCenter);
@@ -410,6 +428,7 @@ void MainWindow::setupMenus() {
             m_mainSplitter->setSizes({m_mainSplitter->width() * 3 / 4,
                                       m_mainSplitter->width() / 4});
         }
+        updateTitlePosition();
     });
 
     m_toolsMenu->addSeparator();
@@ -420,7 +439,8 @@ void MainWindow::setupMenus() {
         QKeySequence(Qt::CTRL | Qt::SHIFT | Qt::Key_I));
     connect(showInsightsAction, &QAction::triggered, this, [this]() {
         m_analysisPanel->setVisible(true);
-        m_analysisPanel->setCurrentIndex(AnalysisPanel::TabAssembly);
+        m_analysisPanel->setCurrentIndex(AnalysisPanel::TabInsights);
+        updateTitlePosition();
     });
 
     QAction* showAssemblyAction = m_toolsMenu->addAction(
@@ -429,7 +449,8 @@ void MainWindow::setupMenus() {
         QKeySequence(Qt::CTRL | Qt::SHIFT | Qt::Key_S));
     connect(showAssemblyAction, &QAction::triggered, this, [this]() {
         m_analysisPanel->setVisible(true);
-        m_analysisPanel->setCurrentIndex(AnalysisPanel::TabBenchmark);
+        m_analysisPanel->setCurrentIndex(AnalysisPanel::TabAssembly);
+        updateTitlePosition();
     });
 
     QAction* showBenchmarkAction = m_toolsMenu->addAction(
@@ -439,6 +460,7 @@ void MainWindow::setupMenus() {
     connect(showBenchmarkAction, &QAction::triggered, this, [this]() {
         m_analysisPanel->setVisible(true);
         m_analysisPanel->setCurrentIndex(AnalysisPanel::TabBenchmark);
+        updateTitlePosition();
     });
 
     // Settings menu — always visible (shown in Welcome/Quiz mode too)
@@ -684,6 +706,7 @@ void MainWindow::showIDE() {
     m_modeStack->setCurrentIndex(0);
     m_fileTreeDock->show();
     m_outputPanelDock->show();
+    statusBar()->setVisible(true);
     updateMenuState(false);
     updateCustomTitleLabel("CppAtlas — C++ Learning IDE");
 }
@@ -696,6 +719,7 @@ void MainWindow::showWelcomeScreen() {
     m_modeStack->setCurrentIndex(1);
     m_fileTreeDock->hide();
     m_outputPanelDock->hide();
+    statusBar()->setVisible(false);
 
     bool hasOpenProject = ProjectManager::instance()->hasOpenProject();
     m_welcomeScreen->setReturnToProjectVisible(hasOpenProject);
@@ -749,13 +773,17 @@ void MainWindow::onSettingsChanged()
     const bool showLineNums = s.showLineNumbers();
     const bool wordWrap = s.wordWrap();
 
+    QFont f(fontFamily.isEmpty() ? QStringLiteral("Monospace") : fontFamily,
+            fontSize > 0 ? fontSize : 12);
+
     for (int i = 0; i < m_editorTabs->count(); ++i) {
         CodeEditor* editor = m_editorTabs->editorAt(i);
         if (!editor) continue;
-        editor->setFont(QFont(fontFamily.isEmpty() ? "Monospace" : fontFamily,
-                              fontSize > 0 ? fontSize : 12));
-        editor->setMarginLineNumbers(1, showLineNums);
-        editor->setWrapMode(wordWrap ? QsciScintilla::WrapWord : QsciScintilla::WrapNone);
+        editor->applyEditorSettings(f, showLineNums, wordWrap);
+    }
+
+    if (m_analysisPanel) {
+        m_analysisPanel->applyToolEditorSettings(s);
     }
 }
 
@@ -764,6 +792,7 @@ void MainWindow::showQuizModeWindow() {
 
     m_fileTreeDock->hide();
     m_outputPanelDock->hide();
+    statusBar()->setVisible(false);
 
     updateMenuState(true);
     updateCustomTitleLabel("CppAtlas — Quiz Mode");
@@ -858,6 +887,15 @@ void MainWindow::updateCustomTitleLabel(const QString& title) {
     if (m_titleLabel) {
         m_titleLabel->setText(title);
     }
+    if (m_titleLabelLeft) {
+        m_titleLabelLeft->setText(title);
+    }
+}
+
+void MainWindow::updateTitlePosition() {
+    const bool panelVisible = m_analysisPanel && m_analysisPanel->isVisible();
+    if (m_titleLabel)     m_titleLabel->setVisible(!panelVisible);
+    if (m_titleLabelLeft) m_titleLabelLeft->setVisible(panelVisible);
 }
 
 void MainWindow::closeEvent(QCloseEvent *event) {
