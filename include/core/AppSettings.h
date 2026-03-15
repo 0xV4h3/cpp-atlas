@@ -45,6 +45,19 @@ public:
     bool wordWrap() const;
     void setWordWrap(bool wrap);
 
+    // ── Analysis panel per-tool editor settings ───────────────────────────────
+    int  analysisEditorFontSize(const QString& tool) const;
+    void setAnalysisEditorFontSize(const QString& tool, int size);
+
+    QString analysisEditorFontFamily(const QString& tool) const;
+    void    setAnalysisEditorFontFamily(const QString& tool, const QString& family);
+
+    bool analysisEditorShowLineNumbers(const QString& tool) const;
+    void setAnalysisEditorShowLineNumbers(const QString& tool, bool show);
+
+    bool analysisEditorWordWrap(const QString& tool) const;
+    void setAnalysisEditorWordWrap(const QString& tool, bool wrap);
+
     // ── Session (per-user) ───────────────────────────────────────────────────
     QString lastOpenedProject() const;
     void    setLastOpenedProject(const QString& path);
