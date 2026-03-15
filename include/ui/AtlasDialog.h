@@ -16,7 +16,8 @@
  * class MyDialog : public AtlasDialog { … };
  * @endcode
  *
- * The class is header-only; no separate .cpp is required.
+ * Requires src/ui/AtlasDialog.cpp to be compiled so that CMake's AUTOMOC
+ * generates and links the Qt meta-object implementation (moc_AtlasDialog.cpp).
  */
 class AtlasDialog : public QDialog
 {
