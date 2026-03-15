@@ -3,6 +3,8 @@
 #include "ui/AssemblyWidget.h"
 #include "ui/BenchmarkWidget.h"
 
+#include <QFont>
+
 AnalysisPanel::AnalysisPanel(QWidget* parent)
     : QTabWidget(parent)
 {
@@ -43,4 +45,37 @@ void AnalysisPanel::setStandard(const QString& standard) {
     m_insights->setStandard(standard);
     m_assembly->setStandard(standard);
     m_benchmark->setStandard(standard);
+}
+
+void AnalysisPanel::applyToolEditorSettings(const AppSettings& s) {
+    // Insights
+    {
+        const QString family = s.analysisEditorFontFamily(QStringLiteral("insights"));
+        const int     size   = s.analysisEditorFontSize(QStringLiteral("insights"));
+        const bool    lnums  = s.analysisEditorShowLineNumbers(QStringLiteral("insights"));
+        const bool    wrap   = s.analysisEditorWordWrap(QStringLiteral("insights"));
+        QFont f(family.isEmpty() ? QStringLiteral("Monospace") : family,
+                size > 0 ? size : 10);
+        m_insights->applyEditorSettings(f, lnums, wrap);
+    }
+    // Assembly
+    {
+        const QString family = s.analysisEditorFontFamily(QStringLiteral("assembly"));
+        const int     size   = s.analysisEditorFontSize(QStringLiteral("assembly"));
+        const bool    lnums  = s.analysisEditorShowLineNumbers(QStringLiteral("assembly"));
+        const bool    wrap   = s.analysisEditorWordWrap(QStringLiteral("assembly"));
+        QFont f(family.isEmpty() ? QStringLiteral("Monospace") : family,
+                size > 0 ? size : 10);
+        m_assembly->applyEditorSettings(f, lnums, wrap);
+    }
+    // Benchmark
+    {
+        const QString family = s.analysisEditorFontFamily(QStringLiteral("benchmark"));
+        const int     size   = s.analysisEditorFontSize(QStringLiteral("benchmark"));
+        const bool    lnums  = s.analysisEditorShowLineNumbers(QStringLiteral("benchmark"));
+        const bool    wrap   = s.analysisEditorWordWrap(QStringLiteral("benchmark"));
+        QFont f(family.isEmpty() ? QStringLiteral("Monospace") : family,
+                size > 0 ? size : 10);
+        m_benchmark->applyEditorSettings(f, lnums, wrap);
+    }
 }
