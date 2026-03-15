@@ -89,6 +89,15 @@ public:
      * @param themeName Theme name (dark, light, etc.)
      */
     void applyTheme(const QString& themeName);
+
+    /**
+     * @brief Apply font, line-number visibility and word-wrap settings.
+     *
+     * Centralises all per-editor appearance tuning so that MainWindow's
+     * onSettingsChanged() can call one method instead of duplicating logic.
+     * Uses margin 0 (NumberMargin) for line numbers, consistent with setupMargins().
+     */
+    void applyEditorSettings(const QFont& font, bool showLineNumbers, bool wordWrap);
     
 signals:
     void modificationChanged(bool modified);

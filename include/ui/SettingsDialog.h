@@ -10,6 +10,9 @@
 #include <QLineEdit>
 #include <QPushButton>
 #include <QLabel>
+#include <QVBoxLayout>
+#include <QGroupBox>
+#include <QScrollArea>
 #include "core/AppSettings.h"
 
 /**
@@ -64,6 +67,22 @@ private:
     QSpinBox*      m_fontSizeSpinBox    = nullptr;
     QCheckBox*     m_lineNumbersCheck   = nullptr;
     QCheckBox*     m_wordWrapCheck      = nullptr;
+
+    // ── Analysis panel per-tool editor widgets ────────────────────────────
+    // Each tool has: font family, font size, line numbers, word wrap
+    struct ToolEditorControls {
+        QFontComboBox* fontFamilyCombo  = nullptr;
+        QSpinBox*      fontSizeSpinBox  = nullptr;
+        QCheckBox*     lineNumbersCheck = nullptr;
+        QCheckBox*     wordWrapCheck    = nullptr;
+    };
+    ToolEditorControls m_insightsControls;
+    ToolEditorControls m_assemblyControls;
+    ToolEditorControls m_benchmarkControls;
+
+    void setupToolEditorGroup(QWidget* parent, QVBoxLayout* layout,
+                              const QString& title, const QString& toolKey,
+                              ToolEditorControls& controls);
 
     // ── Account tab widgets ───────────────────────────────────────────────
     QLabel*        m_displayNameLabel   = nullptr;

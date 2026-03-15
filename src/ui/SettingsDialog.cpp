@@ -6,6 +6,8 @@
 #include <QHBoxLayout>
 #include <QFormLayout>
 #include <QFrame>
+#include <QScrollArea>
+#include <QGroupBox>
 #include <QColorDialog>
 #include <QApplication>
 #include <QDesktopServices>
@@ -41,6 +43,7 @@ SettingsDialog::SettingsDialog(const QString& username, QWidget* parent)
     m_initialFontSize   = m_settings.editorFontSize();
     m_initialLineNums   = m_settings.showLineNumbers();
     m_initialWordWrap   = m_settings.wordWrap();
+    // Analysis tool controls are loaded from settings each time (no separate snapshot needed)
 
     connect(ThemeManager::instance(), &ThemeManager::themeChanged,
             this, &SettingsDialog::applyTheme);
@@ -93,48 +96,112 @@ void SettingsDialog::setupUi()
 
 void SettingsDialog::setupAppearanceTab(QWidget* tab)
 {
-    QFormLayout* form = new QFormLayout(tab);
-    form->setContentsMargins(16, 16, 16, 16);
-    form->setSpacing(12);
-    form->setLabelAlignment(Qt::AlignRight | Qt::AlignVCenter);
+    // Use a scroll area so the extended content is accessible on small screens
+    auto* scrollArea = new QScrollArea(tab);
+    scrollArea->setFrameShape(QFrame::NoFrame);
+    scrollArea->setWidgetResizable(true);
+
+    auto* container = new QWidget(scrollArea);
+    scrollArea->setWidget(container);
+
+    auto* outerLayout = new QVBoxLayout(tab);
+    outerLayout->setContentsMargins(0, 0, 0, 0);
+    outerLayout->addWidget(scrollArea);
+
+    auto* mainLayout = new QVBoxLayout(container);
+    mainLayout->setContentsMargins(16, 16, 16, 16);
+    mainLayout->setSpacing(12);
+
+    // ── IDE Editor section ────────────────────────────────────────────────
+    auto* ideGroup = new QGroupBox(QStringLiteral("IDE Editor"), container);
+    auto* ideForm  = new QFormLayout(ideGroup);
+    ideForm->setContentsMargins(12, 12, 12, 12);
+    ideForm->setSpacing(10);
+    ideForm->setLabelAlignment(Qt::AlignRight | Qt::AlignVCenter);
 
     // Theme
-    m_themeCombo = new QComboBox(tab);
+    m_themeCombo = new QComboBox(ideGroup);
     const QStringList themes = ThemeManager::instance()->availableThemes();
-    const QStringList sortedThemes = [&]() {
-        QStringList t = themes;
-        std::sort(t.begin(), t.end());
-        return t;
-    }();
+    QStringList sortedThemes = themes;
+    std::sort(sortedThemes.begin(), sortedThemes.end());
     m_themeCombo->addItems(sortedThemes);
     const QString currentTheme = m_settings.theme();
     const int themeIdx = m_themeCombo->findText(currentTheme);
     if (themeIdx >= 0) m_themeCombo->setCurrentIndex(themeIdx);
     connect(m_themeCombo, &QComboBox::currentTextChanged,
             this, &SettingsDialog::onThemeChanged);
-    form->addRow("Theme:", m_themeCombo);
+    ideForm->addRow("Theme:", m_themeCombo);
 
     // Font family (monospace)
-    m_fontFamilyCombo = new QFontComboBox(tab);
+    m_fontFamilyCombo = new QFontComboBox(ideGroup);
     m_fontFamilyCombo->setFontFilters(QFontComboBox::MonospacedFonts);
     m_fontFamilyCombo->setCurrentFont(QFont(m_settings.editorFontFamily()));
-    form->addRow("Editor Font:", m_fontFamilyCombo);
+    ideForm->addRow("Font:", m_fontFamilyCombo);
 
     // Font size
-    m_fontSizeSpinBox = new QSpinBox(tab);
+    m_fontSizeSpinBox = new QSpinBox(ideGroup);
     m_fontSizeSpinBox->setRange(6, 32);
     m_fontSizeSpinBox->setValue(m_settings.editorFontSize());
-    form->addRow("Font Size:", m_fontSizeSpinBox);
+    ideForm->addRow("Font Size:", m_fontSizeSpinBox);
 
     // Line numbers
-    m_lineNumbersCheck = new QCheckBox(tab);
+    m_lineNumbersCheck = new QCheckBox(ideGroup);
     m_lineNumbersCheck->setChecked(m_settings.showLineNumbers());
-    form->addRow("Show Line Numbers:", m_lineNumbersCheck);
+    ideForm->addRow("Show Line Numbers:", m_lineNumbersCheck);
 
     // Word wrap
-    m_wordWrapCheck = new QCheckBox(tab);
+    m_wordWrapCheck = new QCheckBox(ideGroup);
     m_wordWrapCheck->setChecked(m_settings.wordWrap());
-    form->addRow("Word Wrap:", m_wordWrapCheck);
+    ideForm->addRow("Word Wrap:", m_wordWrapCheck);
+
+    mainLayout->addWidget(ideGroup);
+
+    // ── Analysis panel tool sections ─────────────────────────────────────
+    setupToolEditorGroup(container, mainLayout,
+                         QStringLiteral("Insights Editors"),
+                         QStringLiteral("insights"), m_insightsControls);
+    setupToolEditorGroup(container, mainLayout,
+                         QStringLiteral("Assembly Editors"),
+                         QStringLiteral("assembly"), m_assemblyControls);
+    setupToolEditorGroup(container, mainLayout,
+                         QStringLiteral("Benchmark Editor"),
+                         QStringLiteral("benchmark"), m_benchmarkControls);
+
+    mainLayout->addStretch();
+}
+
+void SettingsDialog::setupToolEditorGroup(QWidget* parent, QVBoxLayout* layout,
+                                          const QString& title,
+                                          const QString& toolKey,
+                                          ToolEditorControls& controls)
+{
+    auto* group = new QGroupBox(title, parent);
+    auto* form  = new QFormLayout(group);
+    form->setContentsMargins(12, 12, 12, 12);
+    form->setSpacing(10);
+    form->setLabelAlignment(Qt::AlignRight | Qt::AlignVCenter);
+
+    controls.fontFamilyCombo = new QFontComboBox(group);
+    controls.fontFamilyCombo->setFontFilters(QFontComboBox::MonospacedFonts);
+    controls.fontFamilyCombo->setCurrentFont(
+        QFont(m_settings.analysisEditorFontFamily(toolKey)));
+    form->addRow("Font:", controls.fontFamilyCombo);
+
+    controls.fontSizeSpinBox = new QSpinBox(group);
+    controls.fontSizeSpinBox->setRange(6, 32);
+    controls.fontSizeSpinBox->setValue(m_settings.analysisEditorFontSize(toolKey));
+    form->addRow("Font Size:", controls.fontSizeSpinBox);
+
+    controls.lineNumbersCheck = new QCheckBox(group);
+    controls.lineNumbersCheck->setChecked(
+        m_settings.analysisEditorShowLineNumbers(toolKey));
+    form->addRow("Show Line Numbers:", controls.lineNumbersCheck);
+
+    controls.wordWrapCheck = new QCheckBox(group);
+    controls.wordWrapCheck->setChecked(m_settings.analysisEditorWordWrap(toolKey));
+    form->addRow("Word Wrap:", controls.wordWrapCheck);
+
+    layout->addWidget(group);
 }
 
 void SettingsDialog::setupAccountTab(QWidget* tab)
@@ -343,6 +410,17 @@ void SettingsDialog::onApplyAppearance()
     m_settings.setShowLineNumbers(m_lineNumbersCheck->isChecked());
     m_settings.setWordWrap(m_wordWrapCheck->isChecked());
 
+    // Analysis panel per-tool settings
+    auto saveToolControls = [&](const QString& toolKey, const ToolEditorControls& c) {
+        m_settings.setAnalysisEditorFontFamily(toolKey, c.fontFamilyCombo->currentFont().family());
+        m_settings.setAnalysisEditorFontSize(toolKey, c.fontSizeSpinBox->value());
+        m_settings.setAnalysisEditorShowLineNumbers(toolKey, c.lineNumbersCheck->isChecked());
+        m_settings.setAnalysisEditorWordWrap(toolKey, c.wordWrapCheck->isChecked());
+    };
+    saveToolControls(QStringLiteral("insights"),  m_insightsControls);
+    saveToolControls(QStringLiteral("assembly"),  m_assemblyControls);
+    saveToolControls(QStringLiteral("benchmark"), m_benchmarkControls);
+
     // Update snapshot (so next Reset goes to currently applied values)
     m_initialTheme      = m_themeCombo->currentText();
     m_initialFontFamily = m_fontFamilyCombo->currentFont().family();
@@ -355,7 +433,7 @@ void SettingsDialog::onApplyAppearance()
 
 void SettingsDialog::onResetAppearance()
 {
-    // Restore to snapshot (values when dialog was opened or last applied)
+    // Restore IDE editor to snapshot (values when dialog was opened or last applied)
     const int themeIdx = m_themeCombo->findText(m_initialTheme);
     if (themeIdx >= 0) m_themeCombo->setCurrentIndex(themeIdx);
     // onThemeChanged fires automatically and reverts the theme live
@@ -364,6 +442,23 @@ void SettingsDialog::onResetAppearance()
     m_fontSizeSpinBox->setValue(m_initialFontSize);
     m_lineNumbersCheck->setChecked(m_initialLineNums);
     m_wordWrapCheck->setChecked(m_initialWordWrap);
+
+    // Re-load analysis tool controls from persisted settings (don't snapshot these)
+    auto loadToolControls = [&](const QString& toolKey, ToolEditorControls& c) {
+        if (c.fontFamilyCombo)
+            c.fontFamilyCombo->setCurrentFont(
+                QFont(m_settings.analysisEditorFontFamily(toolKey)));
+        if (c.fontSizeSpinBox)
+            c.fontSizeSpinBox->setValue(m_settings.analysisEditorFontSize(toolKey));
+        if (c.lineNumbersCheck)
+            c.lineNumbersCheck->setChecked(
+                m_settings.analysisEditorShowLineNumbers(toolKey));
+        if (c.wordWrapCheck)
+            c.wordWrapCheck->setChecked(m_settings.analysisEditorWordWrap(toolKey));
+    };
+    loadToolControls(QStringLiteral("insights"),  m_insightsControls);
+    loadToolControls(QStringLiteral("assembly"),  m_assemblyControls);
+    loadToolControls(QStringLiteral("benchmark"), m_benchmarkControls);
 
     // Notify listeners so editors update to the reverted values
     emit settingsChanged();

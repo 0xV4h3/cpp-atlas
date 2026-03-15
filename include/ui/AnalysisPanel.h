@@ -2,6 +2,7 @@
 #define ANALYSISPANEL_H
 
 #include <QTabWidget>
+#include "core/AppSettings.h"
 
 class InsightsWidget;
 class AssemblyWidget;
@@ -54,6 +55,12 @@ public:
      * Called when MainWindow toolbar standard combo changes.
      */
     void setStandard(const QString& standard);
+
+    /**
+     * @brief Apply per-tool appearance settings (font, line numbers, wrap)
+     * to all analysis editors.  Called from MainWindow::onSettingsChanged().
+     */
+    void applyToolEditorSettings(const AppSettings& s);
 
     // ── Tab indices (for programmatic tab switching) ──────────────
     static constexpr int TabInsights  = 0;

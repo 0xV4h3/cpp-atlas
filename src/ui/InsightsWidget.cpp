@@ -226,6 +226,27 @@ void InsightsWidget::onThemeChanged(const QString& themeName) {
     applyThemeToEditor(m_outputEditor, themeName);
 }
 
+void InsightsWidget::applyEditorSettings(const QFont& font, bool showLineNumbers, bool wordWrap)
+{
+    for (QsciScintilla* editor : {m_sourceEditor, m_outputEditor}) {
+        if (!editor) continue;
+        editor->setFont(font);
+        editor->setMarginsFont(font);
+        auto* lexer = qobject_cast<QsciLexerCPP*>(editor->lexer());
+        if (lexer) {
+            lexer->setDefaultFont(font);
+            for (int style = 0; style < 128; ++style)
+                lexer->setFont(font, style);
+        }
+        const int lineNumMargin = 0;
+        editor->setMarginType(lineNumMargin, QsciScintilla::NumberMargin);
+        editor->setMarginLineNumbers(lineNumMargin, showLineNumbers);
+        editor->setMarginWidth(lineNumMargin, showLineNumbers
+                               ? QStringLiteral("00000") : QStringLiteral("0"));
+        editor->setWrapMode(wordWrap ? QsciScintilla::WrapWord : QsciScintilla::WrapNone);
+    }
+}
+
 void InsightsWidget::stopProcess() {
     m_runner->cancel();
     m_runButton->setEnabled(true);

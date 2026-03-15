@@ -167,6 +167,7 @@ void BenchmarkWidget::setupCodeEditor() {
     m_editorTabs = new QTabWidget(this);
     m_editorTabs->setTabsClosable(true);
     m_editorTabs->setMovable(true);
+    m_editorTabs->setDocumentMode(true);
 
     // "+" button to add a new benchmark tab
     auto* addTabBtn = new QPushButton(QStringLiteral("+"), m_editorTabs);
@@ -241,8 +242,6 @@ void BenchmarkWidget::addBenchTab(const QString& title,
 }
 
 bool BenchmarkWidget::closeBenchTab(int index) {
-    if (m_editorTabs->count() <= 1)
-        return false; // keep at least one tab
     m_editorTabs->removeTab(index);
     return true;
 }
@@ -597,6 +596,37 @@ void BenchmarkWidget::onThemeChanged(const QString& themeName) {
     applyThemeToEditor(themeName);
     m_chartWidget->onThemeChanged(themeName);
     m_comparisonChartWidget->onThemeChanged(themeName);
+
+    // Theme the results table so it doesn't show white margins in dark themes
+    Theme theme = ThemeManager::instance()->currentTheme();
+    const QColor bg     = theme.editorBackground;
+    const QColor fg     = theme.editorForeground;
+    const QColor border = theme.border.isValid() ? theme.border : theme.sidebarBackground;
+    const QColor accent = theme.accent;
+
+    m_tableWidget->setStyleSheet(QString(
+        "QTableView, QTableWidget {"
+        "  background-color: %1; color: %2; gridline-color: %3;"
+        "  border: none;"
+        "}"
+        "QTableWidget::item:selected { background-color: %4; color: %2; }"
+        "QHeaderView::section {"
+        "  background-color: %1; color: %2; border: 1px solid %3; padding: 4px;"
+        "}"
+        "QTableWidget QTableCornerButton::section { background-color: %1; border: 1px solid %3; }"
+    ).arg(bg.name(), fg.name(), border.name(), accent.name()));
+
+    QPalette p = m_tableWidget->palette();
+    p.setColor(QPalette::Base,   bg);
+    p.setColor(QPalette::Window, bg);
+    p.setColor(QPalette::Text,   fg);
+    m_tableWidget->setPalette(p);
+    if (m_tableWidget->viewport()) {
+        m_tableWidget->viewport()->setAutoFillBackground(true);
+        QPalette vp = m_tableWidget->viewport()->palette();
+        vp.setColor(QPalette::Base, bg);
+        m_tableWidget->viewport()->setPalette(vp);
+    }
 }
 
 void BenchmarkWidget::stopProcess() {
@@ -605,4 +635,26 @@ void BenchmarkWidget::stopProcess() {
     m_runButton->setEnabled(true);
     m_stopButton->setEnabled(false);
     m_statusLabel->setText(QStringLiteral("Stopped."));
+}
+
+void BenchmarkWidget::applyEditorSettings(const QFont& font, bool showLineNumbers, bool wordWrap)
+{
+    for (int i = 0; i < m_editorTabs->count(); ++i) {
+        auto* editor = qobject_cast<QsciScintilla*>(m_editorTabs->widget(i));
+        if (!editor) continue;
+        editor->setFont(font);
+        editor->setMarginsFont(font);
+        auto* lexer = qobject_cast<QsciLexerCPP*>(editor->lexer());
+        if (lexer) {
+            lexer->setDefaultFont(font);
+            for (int style = 0; style < 128; ++style)
+                lexer->setFont(font, style);
+        }
+        const int lineNumMargin = 0;
+        editor->setMarginType(lineNumMargin, QsciScintilla::NumberMargin);
+        editor->setMarginLineNumbers(lineNumMargin, showLineNumbers);
+        editor->setMarginWidth(lineNumMargin, showLineNumbers
+                               ? QStringLiteral("00000") : QStringLiteral("0"));
+        editor->setWrapMode(wordWrap ? QsciScintilla::WrapWord : QsciScintilla::WrapNone);
+    }
 }

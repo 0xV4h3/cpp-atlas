@@ -61,6 +61,53 @@ void AppSettings::setWordWrap(bool wrap)
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
+// Analysis panel per-tool editor settings
+// ─────────────────────────────────────────────────────────────────────────────
+
+int AppSettings::analysisEditorFontSize(const QString& tool) const
+{
+    return m_settings.value(key(QStringLiteral("analysis/%1/fontSize").arg(tool)), 10).toInt();
+}
+
+void AppSettings::setAnalysisEditorFontSize(const QString& tool, int size)
+{
+    m_settings.setValue(key(QStringLiteral("analysis/%1/fontSize").arg(tool)), size);
+}
+
+QString AppSettings::analysisEditorFontFamily(const QString& tool) const
+{
+    return m_settings.value(key(QStringLiteral("analysis/%1/fontFamily").arg(tool)),
+                            QStringLiteral("Monospace")).toString();
+}
+
+void AppSettings::setAnalysisEditorFontFamily(const QString& tool, const QString& family)
+{
+    m_settings.setValue(key(QStringLiteral("analysis/%1/fontFamily").arg(tool)), family);
+}
+
+bool AppSettings::analysisEditorShowLineNumbers(const QString& tool) const
+{
+    return m_settings.value(key(QStringLiteral("analysis/%1/showLineNumbers").arg(tool)),
+                            true).toBool();
+}
+
+void AppSettings::setAnalysisEditorShowLineNumbers(const QString& tool, bool show)
+{
+    m_settings.setValue(key(QStringLiteral("analysis/%1/showLineNumbers").arg(tool)), show);
+}
+
+bool AppSettings::analysisEditorWordWrap(const QString& tool) const
+{
+    return m_settings.value(key(QStringLiteral("analysis/%1/wordWrap").arg(tool)),
+                            false).toBool();
+}
+
+void AppSettings::setAnalysisEditorWordWrap(const QString& tool, bool wrap)
+{
+    m_settings.setValue(key(QStringLiteral("analysis/%1/wordWrap").arg(tool)), wrap);
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 // Session
 // ─────────────────────────────────────────────────────────────────────────────
 

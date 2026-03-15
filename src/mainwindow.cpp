@@ -92,8 +92,13 @@ MainWindow::MainWindow(QWidget *parent)
     CompilerRegistry::instance().autoScanCompilers();
     loadCompilers();
 
-    // Apply default theme
-    ThemeManager::instance()->setTheme("dark");
+    // Apply last-used theme before any UI shows
+    {
+        const QString lastUser = AppSettings::lastLoggedInUser();
+        AppSettings tempSettings(lastUser);
+        const QString savedTheme = tempSettings.theme();
+        ThemeManager::instance()->setTheme(savedTheme.isEmpty() ? QStringLiteral("dark") : savedTheme);
+    }
 
     updateWindowTitle();
 
@@ -684,6 +689,7 @@ void MainWindow::showIDE() {
     m_modeStack->setCurrentIndex(0);
     m_fileTreeDock->show();
     m_outputPanelDock->show();
+    statusBar()->setVisible(true);
     updateMenuState(false);
     updateCustomTitleLabel("CppAtlas — C++ Learning IDE");
 }
@@ -696,6 +702,7 @@ void MainWindow::showWelcomeScreen() {
     m_modeStack->setCurrentIndex(1);
     m_fileTreeDock->hide();
     m_outputPanelDock->hide();
+    statusBar()->setVisible(false);
 
     bool hasOpenProject = ProjectManager::instance()->hasOpenProject();
     m_welcomeScreen->setReturnToProjectVisible(hasOpenProject);
@@ -749,13 +756,17 @@ void MainWindow::onSettingsChanged()
     const bool showLineNums = s.showLineNumbers();
     const bool wordWrap = s.wordWrap();
 
+    QFont f(fontFamily.isEmpty() ? QStringLiteral("Monospace") : fontFamily,
+            fontSize > 0 ? fontSize : 12);
+
     for (int i = 0; i < m_editorTabs->count(); ++i) {
         CodeEditor* editor = m_editorTabs->editorAt(i);
         if (!editor) continue;
-        editor->setFont(QFont(fontFamily.isEmpty() ? "Monospace" : fontFamily,
-                              fontSize > 0 ? fontSize : 12));
-        editor->setMarginLineNumbers(1, showLineNums);
-        editor->setWrapMode(wordWrap ? QsciScintilla::WrapWord : QsciScintilla::WrapNone);
+        editor->applyEditorSettings(f, showLineNums, wordWrap);
+    }
+
+    if (m_analysisPanel) {
+        m_analysisPanel->applyToolEditorSettings(s);
     }
 }
 
@@ -764,6 +775,7 @@ void MainWindow::showQuizModeWindow() {
 
     m_fileTreeDock->hide();
     m_outputPanelDock->hide();
+    statusBar()->setVisible(false);
 
     updateMenuState(true);
     updateCustomTitleLabel("CppAtlas — Quiz Mode");
