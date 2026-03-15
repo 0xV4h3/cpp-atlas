@@ -6,7 +6,7 @@
 #include <QGroupBox>
 
 FindReplaceDialog::FindReplaceDialog(Mode mode, QWidget *parent)
-    : QDialog(parent)
+    : AtlasDialog(parent)
     , m_mode(mode)
 {
     setWindowTitle(mode == Find ? "Find" : "Find and Replace");

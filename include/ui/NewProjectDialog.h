@@ -1,14 +1,14 @@
 #ifndef NEWPROJECTDIALOG_H
 #define NEWPROJECTDIALOG_H
 
-#include <QDialog>
 #include <QLineEdit>
 #include <QCheckBox>
 #include <QComboBox>
 #include <QPushButton>
 #include <QLabel>
+#include "ui/AtlasDialog.h"
 
-class NewProjectDialog : public QDialog {
+class NewProjectDialog : public AtlasDialog {
     Q_OBJECT
 
 public:

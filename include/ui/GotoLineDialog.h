@@ -1,15 +1,15 @@
 #ifndef GOTOLINEDIALOG_H
 #define GOTOLINEDIALOG_H
 
-#include <QDialog>
 #include <QSpinBox>
 #include <QPushButton>
 #include <QLabel>
+#include "ui/AtlasDialog.h"
 
 /**
  * @brief Dialog for navigating to a specific line number
  */
-class GotoLineDialog : public QDialog {
+class GotoLineDialog : public AtlasDialog {
     Q_OBJECT
 
 public:

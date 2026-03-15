@@ -15,6 +15,7 @@
 #include "ui/AnalysisPanel.h"
 #include "ui/QuizModeWindow.h"
 #include "ui/SettingsDialog.h"
+#include "ui/AtlasDialog.h"
 #include "quiz/UserManager.h"
 #include "core/AppSettings.h"
 #include "core/FileManager.h"
@@ -104,6 +105,11 @@ MainWindow::MainWindow(QWidget *parent)
 
     // Show Welcome Screen on startup
     showWelcomeScreen();
+
+    // Apply persisted editor settings (font, line numbers, wrap) if already logged in
+    if (UserManager::instance().isLoggedIn()) {
+        onSettingsChanged();
+    }
 }
 
 MainWindow::~MainWindow()
@@ -166,9 +172,17 @@ void MainWindow::setupCustomTitleBar() {
         layout->addWidget(menuBar());
     }
 
+    // Left-aligned title label: shown only when Analysis Panel is visible
+    m_titleLabelLeft = new QLabel("CppAtlas - C++ Learning IDE", this);
+    m_titleLabelLeft->setObjectName("windowTitleLeft");
+    m_titleLabelLeft->setAlignment(Qt::AlignVCenter | Qt::AlignLeft);
+    m_titleLabelLeft->hide();   // hidden by default
+    layout->addSpacing(8);
+    layout->addWidget(m_titleLabelLeft);
+
     layout->addStretch();
 
-    // Window title (filename - CppAtlas)
+    // Centered title label: default position
     m_titleLabel = new QLabel("CppAtlas - C++ Learning IDE", this);
     m_titleLabel->setObjectName("windowTitle");
     m_titleLabel->setAlignment(Qt::AlignCenter);
@@ -415,6 +429,7 @@ void MainWindow::setupMenus() {
             m_mainSplitter->setSizes({m_mainSplitter->width() * 3 / 4,
                                       m_mainSplitter->width() / 4});
         }
+        updateTitlePosition();
     });
 
     m_toolsMenu->addSeparator();
@@ -425,7 +440,8 @@ void MainWindow::setupMenus() {
         QKeySequence(Qt::CTRL | Qt::SHIFT | Qt::Key_I));
     connect(showInsightsAction, &QAction::triggered, this, [this]() {
         m_analysisPanel->setVisible(true);
-        m_analysisPanel->setCurrentIndex(AnalysisPanel::TabAssembly);
+        m_analysisPanel->setCurrentIndex(AnalysisPanel::TabInsights);
+        updateTitlePosition();
     });
 
     QAction* showAssemblyAction = m_toolsMenu->addAction(
@@ -434,7 +450,8 @@ void MainWindow::setupMenus() {
         QKeySequence(Qt::CTRL | Qt::SHIFT | Qt::Key_S));
     connect(showAssemblyAction, &QAction::triggered, this, [this]() {
         m_analysisPanel->setVisible(true);
-        m_analysisPanel->setCurrentIndex(AnalysisPanel::TabBenchmark);
+        m_analysisPanel->setCurrentIndex(AnalysisPanel::TabAssembly);
+        updateTitlePosition();
     });
 
     QAction* showBenchmarkAction = m_toolsMenu->addAction(
@@ -444,6 +461,7 @@ void MainWindow::setupMenus() {
     connect(showBenchmarkAction, &QAction::triggered, this, [this]() {
         m_analysisPanel->setVisible(true);
         m_analysisPanel->setCurrentIndex(AnalysisPanel::TabBenchmark);
+        updateTitlePosition();
     });
 
     // Settings menu — always visible (shown in Welcome/Quiz mode too)
@@ -870,6 +888,15 @@ void MainWindow::updateCustomTitleLabel(const QString& title) {
     if (m_titleLabel) {
         m_titleLabel->setText(title);
     }
+    if (m_titleLabelLeft) {
+        m_titleLabelLeft->setText(title);
+    }
+}
+
+void MainWindow::updateTitlePosition() {
+    const bool panelVisible = m_analysisPanel && m_analysisPanel->isVisible();
+    if (m_titleLabel)     m_titleLabel->setVisible(!panelVisible);
+    if (m_titleLabelLeft) m_titleLabelLeft->setVisible(panelVisible);
 }
 
 void MainWindow::closeEvent(QCloseEvent *event) {
@@ -1344,7 +1371,7 @@ void MainWindow::showAboutDialog()
     flags |= Qt::MSWindowsFixedSizeDialogHint;
 #endif
 
-    QDialog* dlg = new QDialog(this, flags);
+    AtlasDialog* dlg = new AtlasDialog(this, flags);
 
     dlg->setWindowTitle("About CppAtlas");
     dlg->setAttribute(Qt::WA_DeleteOnClose);
@@ -1402,7 +1429,7 @@ void MainWindow::showAboutDialog()
 
     QPushButton* closeBtn = new QPushButton("Close", dlg);
     closeBtn->setObjectName("aboutCloseBtn");
-    connect(closeBtn, &QPushButton::clicked, dlg, &QDialog::accept);
+    connect(closeBtn, &QPushButton::clicked, dlg, &AtlasDialog::accept);
     layout->addWidget(closeBtn, 0, Qt::AlignHCenter);
 
     dlg->setFixedSize(410, dlg->layout()->sizeHint().height());

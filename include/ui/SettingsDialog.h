@@ -1,7 +1,6 @@
 #ifndef SETTINGSDIALOG_H
 #define SETTINGSDIALOG_H
 
-#include <QDialog>
 #include <QTabWidget>
 #include <QComboBox>
 #include <QFontComboBox>
@@ -13,7 +12,9 @@
 #include <QVBoxLayout>
 #include <QGroupBox>
 #include <QScrollArea>
+#include <QShowEvent>
 #include "core/AppSettings.h"
+#include "ui/AtlasDialog.h"
 
 /**
  * @brief Tabbed settings dialog for CppAtlas.
@@ -25,13 +26,16 @@
  * Emits settingsChanged() when font/theme settings are applied so that
  * MainWindow can react (e.g., update window title, re-apply fonts).
  */
-class SettingsDialog : public QDialog
+class SettingsDialog : public AtlasDialog
 {
     Q_OBJECT
 
 public:
     explicit SettingsDialog(const QString& username, QWidget* parent = nullptr);
     ~SettingsDialog() = default;
+
+    /** Reload all controls from AppSettings (called on showEvent). */
+    void syncFromSettings();
 
 signals:
     /** Emitted when appearance settings (font, theme) are applied. */
@@ -47,6 +51,9 @@ private slots:
     void onChangePassword();
     void onApplyAppearance();
     void onResetAppearance();
+
+protected:
+    void showEvent(QShowEvent* event) override;
 
 private:
     void setupUi();

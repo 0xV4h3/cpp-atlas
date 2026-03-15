@@ -125,7 +125,8 @@ private:
 
     // Custom title bar widgets
     QWidget* m_titleBar = nullptr;
-    QLabel* m_titleLabel = nullptr;
+    QLabel* m_titleLabel = nullptr;         ///< Centered title (default position)
+    QLabel* m_titleLabelLeft = nullptr;     ///< Left title (shown when Analysis Panel is visible)
     QLabel* m_iconLabel = nullptr;
     QPushButton* m_minimizeBtn = nullptr;
     QPushButton* m_maximizeBtn = nullptr;
@@ -214,6 +215,7 @@ private:
     void restoreProjectSession(Project* project);
     void showQuizModeWindow();
     void hideQuizModeWindow();
+    void updateTitlePosition();  ///< Moves title label left/center based on Analysis Panel visibility.
 
     QString getCurrentSourceFile();
     QString getExecutablePath(const QString& sourceFile);

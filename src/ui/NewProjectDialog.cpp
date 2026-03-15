@@ -13,7 +13,7 @@
 #include <QStandardPaths>
 
 NewProjectDialog::NewProjectDialog(QWidget *parent)
-    : QDialog(parent)
+    : AtlasDialog(parent)
 {
     setWindowTitle("Create New Project");
     setMinimumWidth(500);
