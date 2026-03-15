@@ -69,6 +69,12 @@ public slots:
     void saveBenchmarkFile();
     void importResults();
 
+    /**
+     * @brief Apply font/line-numbers/wrap to all benchmark code-editor tabs.
+     * Called from AnalysisPanel::applyToolEditorSettings().
+     */
+    void applyEditorSettings(const QFont& font, bool showLineNumbers, bool wordWrap);
+
 signals:
     void benchmarkCompleted(const BenchmarkResult& result);
 

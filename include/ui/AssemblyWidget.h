@@ -65,6 +65,12 @@ public slots:
     void runAssembly();
     void onThemeChanged(const QString& themeName);
 
+    /**
+     * @brief Apply font/line-numbers/wrap to the internal Assembly editors.
+     * Called from AnalysisPanel::applyToolEditorSettings().
+     */
+    void applyEditorSettings(const QFont& font, bool showLineNumbers, bool wordWrap);
+
 signals:
     /**
      * @brief Emitted when the user clicks on an assembly line that maps back

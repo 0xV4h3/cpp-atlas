@@ -52,6 +52,12 @@ public slots:
     void runInsights();
     void onThemeChanged(const QString& themeName);
 
+    /**
+     * @brief Apply font/line-numbers/wrap to the internal Insights editors.
+     * Called from AnalysisPanel::applyToolEditorSettings().
+     */
+    void applyEditorSettings(const QFont& font, bool showLineNumbers, bool wordWrap);
+
 private slots:
     void onInsightsFinished(bool success, const QString& output, const QString& error);
     void onInsightsStarted();
