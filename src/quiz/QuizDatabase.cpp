@@ -111,7 +111,7 @@ bool QuizDatabase::openDatabase()
 
 bool QuizDatabase::applySchema()
 {
-    if (!runSqlFile(":/db/schema.sql", false)) return false;
+    if (!runSqlFile(":/db/schema.sql", true)) return false;
     return applyMigrations();
 }
 

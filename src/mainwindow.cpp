@@ -1778,8 +1778,13 @@ void MainWindow::tryOpenAdminPanelFromStartupRequest()
 
 void MainWindow::showQuizAdminPanel()
 {
+#ifdef QT_DEBUG
+    const bool requireReleasePassword = false;
+#else
+    const bool requireReleasePassword = true;
+#endif
     const AdminAccessResult result =
-        AdminAccessController::instance().verifyAccess(this, false);
+        AdminAccessController::instance().verifyAccess(this, requireReleasePassword);
 
     switch (result) {
     case AdminAccessResult::Granted:

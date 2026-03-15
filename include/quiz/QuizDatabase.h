@@ -61,6 +61,20 @@ public:
      */
     QString databasePath() const;
 
+    /**
+     * @brief Execute all SQL statements from a file or Qt resource path.
+     *
+     * This is the single canonical SQL-file execution path used by both the
+     * database initialisation code and the ContentPatchService.  Exposing it
+     * publicly avoids maintaining a duplicate SQL parser elsewhere.
+     *
+     * @param resourceOrFilePath  File system path or Qt resource path (e.g. :/db/schema.sql).
+     * @param strict  When true, the first SQL error stops execution and returns false.
+     *                When false (default), errors are logged as warnings and execution continues.
+     * @return true if all statements succeeded (or strict=false).
+     */
+    bool runSqlFile(const QString& resourceOrFilePath, bool strict = false);
+
 private:
     explicit QuizDatabase(QObject* parent = nullptr);
     ~QuizDatabase() override = default;
@@ -70,14 +84,6 @@ private:
     bool openDatabase();
     bool applySchema();
     bool applyMigrations();
-    /**
-     * @brief Execute all SQL statements from a file or Qt resource path.
-     * @param resourceOrFilePath  File system path or Qt resource path (e.g. :/db/schema.sql).
-     * @param strict  When true, the first SQL error stops execution and returns false.
-     *                When false (default), errors are logged as warnings and execution continues.
-     * @return true if all statements succeeded (or strict=false).
-     */
-    bool runSqlFile(const QString& resourceOrFilePath, bool strict = false);
     bool needsSeed() const;
     bool applySeed();
     int  currentSchemaVersion() const;

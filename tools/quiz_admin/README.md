@@ -1,6 +1,6 @@
 # quiz_admin — CppAtlas Quiz Admin CLI
 
-Command-line tool for inspecting and validating a CppAtlas quiz database without starting the full GUI application.
+Command-line tool for inspecting, validating, patching, and exporting a CppAtlas quiz database without starting the full GUI application.
 
 ## Build
 
@@ -105,17 +105,17 @@ quiz_admin [--db <path>] validate --content-dir <dir>
 **Example**
 
 ```sh
-$ quiz_admin --db /var/data/cppatlas.db validate --content-dir ./patches
-Database: /var/data/cppatlas.db
+$ quiz_admin validate --content-dir ./patches
+Database: /home/user/.local/share/CppAtlas/cppatlas.db
 
 === CppAtlas Quiz Content Validation ===
 
 Content directory : ./patches
 
 Patches (3 total):
-  001_add_topics.sql     [APPLIED]
-  002_add_questions.sql  [APPLIED]
-  003_fix_typos.sql      [PENDING]
+  001_add_topics  [APPLIED]
+  002_questions   [APPLIED]
+  003_fix_typos   [PENDING]
 
   Applied : 2  Pending : 1  Total : 3
 
@@ -126,3 +126,97 @@ Content integrity:
 
 Result: OK
 ```
+
+---
+
+### `apply-content`
+
+Discover `*.sql` patch files in a directory and apply any that have not yet been recorded in the database.  Patches are applied in lexicographic order.  The command stops and returns a non-zero exit code on the first failure.
+
+**Usage**
+
+```sh
+quiz_admin [--db <path>] apply-content --content-dir <dir>
+```
+
+| Option | Description |
+|---|---|
+| `--content-dir <dir>` | Directory containing `*.sql` patch files. |
+
+**Exit codes**
+
+| Code | Meaning |
+|---|---|
+| `0` | Success — all pending patches applied (or none were pending). |
+| `1` | Usage or argument error. |
+| `2` | A patch failed to apply. |
+
+**Example**
+
+```sh
+$ quiz_admin apply-content --content-dir ./patches
+Database: /home/user/.local/share/CppAtlas/cppatlas.db
+
+=== CppAtlas Apply Content Patches ===
+
+Content directory : ./patches
+
+Patches total   : 3
+Already applied : 2
+Pending         : 1
+
+Applied now     : 1
+
+Result: OK
+```
+
+---
+
+### `export`
+
+Export all rows from the quiz content tables to a SQL dump file.  Output uses `INSERT INTO` statements with deterministic `ORDER BY id` ordering (or composite key ordering for junction tables).
+
+**Usage**
+
+```sh
+quiz_admin [--db <path>] export --out <file>
+```
+
+| Option | Description |
+|---|---|
+| `--out <file>` | Output file path for the SQL dump. The file is created or overwritten. |
+
+**Tables exported**
+
+`topics`, `tags`, `quizzes`, `questions`, `options`, `question_tags`, `quiz_tags`
+
+**Exit codes**
+
+| Code | Meaning |
+|---|---|
+| `0` | Success. |
+| `1` | Usage or argument error. |
+| `2` | File or SQL error during export. |
+
+**Example**
+
+```sh
+$ quiz_admin export --out backup.sql
+Database: /home/user/.local/share/CppAtlas/cppatlas.db
+
+=== CppAtlas Content Export ===
+
+  topics: 42 row(s)
+  tags: 8 row(s)
+  quizzes: 15 row(s)
+  questions: 320 row(s)
+  options: 1280 row(s)
+  question_tags: 95 row(s)
+  quiz_tags: 30 row(s)
+
+Total rows exported : 1790
+Output file         : backup.sql
+
+Result: OK
+```
+

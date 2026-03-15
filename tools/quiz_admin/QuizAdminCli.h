@@ -20,6 +20,14 @@
  *     and run basic content integrity checks (MCQ without options, orphan
  *     options, MCQ without a correct answer).
  *
+ *   apply-content --content-dir <dir>
+ *     Discover pending *.sql patch files in <dir> and apply them in
+ *     lexicographic order.  Stops on first failure.
+ *
+ *   export --out <file>
+ *     Export content tables (topics, tags, quizzes, questions, options,
+ *     question_tags, quiz_tags) to a SQL dump file.
+ *
  * Global options:
  *   --db <path>    Path to the SQLite database file.
  *                  Defaults to the standard CppAtlas application data location.
@@ -34,7 +42,7 @@ public:
      * @brief Parse @p args and dispatch to the appropriate command.
      * @param args  Argument list including argv[0] (program name).
      * @return 0 on success, 1 on usage/argument error,
-     *         2 on integrity warnings (validate command only).
+     *         2 on integrity warnings (validate) or apply/export failure.
      */
     int run(const QStringList& args);
 
@@ -45,6 +53,8 @@ private:
     // ── Commands ─────────────────────────────────────────────────────────────
     int cmdStats();
     int cmdValidate(const QString& contentDir);
+    int cmdApplyContent(const QString& contentDir);
+    int cmdExport(const QString& outFile);
 
     // ── Helpers ──────────────────────────────────────────────────────────────
     void printUsage(QTextStream& out) const;

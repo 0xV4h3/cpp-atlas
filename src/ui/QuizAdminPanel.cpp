@@ -1,5 +1,8 @@
 #include "ui/QuizAdminPanel.h"
 
+#include "quiz/ContentPatchService.h"
+#include "quiz/QuizDatabase.h"
+
 #include <QLabel>
 #include <QTabWidget>
 #include <QTextEdit>
@@ -10,6 +13,14 @@
 #include <QDateTime>
 #include <QMenuBar>
 #include <QStatusBar>
+#include <QFileDialog>
+#include <QMessageBox>
+#include <QSqlDatabase>
+#include <QSqlQuery>
+#include <QSqlError>
+#include <QSqlRecord>
+#include <QFile>
+#include <QVariant>
 
 QuizAdminPanel::QuizAdminPanel(QWidget* parent)
     : QMainWindow(parent)
@@ -171,26 +182,230 @@ void QuizAdminPanel::setupStatsTab(QWidget* tab)
 
 void QuizAdminPanel::onApplyContentUpdates()
 {
-    log(tr("[Content] Apply content updates requested — patch system not yet configured."));
-    statusBar()->showMessage(tr("Content update: no patches directory configured."));
+    const QString dir = QFileDialog::getExistingDirectory(
+        this,
+        tr("Select Content Patches Directory"),
+        QString(),
+        QFileDialog::ShowDirsOnly | QFileDialog::DontResolveSymlinks
+    );
+    if (dir.isEmpty()) {
+        log(tr("[Content] Operation cancelled."));
+        return;
+    }
+
+    log(tr("[Content] Discovering patches in: %1").arg(dir));
+
+    ContentPatchService svc;
+    const QList<ContentPatch> patches = svc.discoverPatches(dir);
+
+    if (patches.isEmpty()) {
+        log(tr("[Content] No *.sql patch files found."));
+        statusBar()->showMessage(tr("No patches found."));
+        return;
+    }
+
+    int alreadyApplied = 0;
+    int pending = 0;
+    for (const ContentPatch& p : patches) {
+        if (svc.isPatchApplied(p.id)) ++alreadyApplied;
+        else ++pending;
+    }
+
+    log(tr("[Content] Total: %1  Applied: %2  Pending: %3")
+        .arg(patches.size()).arg(alreadyApplied).arg(pending));
+
+    if (pending == 0) {
+        log(tr("[Content] All patches already applied."));
+        statusBar()->showMessage(tr("All patches already applied."));
+        return;
+    }
+
+    QString patchError;
+    if (!svc.applyPendingPatches(patches, &patchError)) {
+        log(tr("[Content] ERROR: %1").arg(patchError));
+        statusBar()->showMessage(tr("Content update failed."));
+        QMessageBox::critical(this, tr("Apply Content"), patchError);
+        return;
+    }
+
+    log(tr("[Content] Successfully applied %1 patch(es).").arg(pending));
+    statusBar()->showMessage(tr("Applied %1 patch(es).").arg(pending));
 }
 
 void QuizAdminPanel::onValidateContent()
 {
-    log(tr("[Validation] Content validation requested — not yet implemented."));
-    statusBar()->showMessage(tr("Validation: not yet implemented."));
+    log(tr("[Validation] Running content integrity checks..."));
+
+    QSqlDatabase db = QSqlDatabase::database(QuizDatabase::CONNECTION_NAME);
+    if (!db.isOpen()) {
+        log(tr("[Validation] ERROR: database is not open."));
+        statusBar()->showMessage(tr("Validation failed: database not open."));
+        return;
+    }
+
+    auto queryInt = [&](const QString& sql) -> int {
+        QSqlQuery q(db);
+        if (q.exec(sql) && q.next()) return q.value(0).toInt();
+        return -1;
+    };
+
+    const int mcqNoOptions = queryInt(
+        "SELECT COUNT(*) FROM questions q "
+        "WHERE q.type = 'mcq' AND q.is_active = 1 "
+        "AND NOT EXISTS (SELECT 1 FROM options o WHERE o.question_id = q.id)");
+
+    const int orphanOptions = queryInt(
+        "SELECT COUNT(*) FROM options o "
+        "WHERE NOT EXISTS (SELECT 1 FROM questions q WHERE q.id = o.question_id)");
+
+    const int mcqNoCorrect = queryInt(
+        "SELECT COUNT(*) FROM questions q "
+        "WHERE q.type = 'mcq' AND q.is_active = 1 "
+        "AND NOT EXISTS ("
+        "  SELECT 1 FROM options o WHERE o.question_id = q.id AND o.is_correct = 1)");
+
+    log(tr("[Validation] MCQ without options : %1").arg(mcqNoOptions >= 0 ? QString::number(mcqNoOptions) : "n/a"));
+    log(tr("[Validation] Orphan options      : %1").arg(orphanOptions >= 0 ? QString::number(orphanOptions) : "n/a"));
+    log(tr("[Validation] MCQ without correct : %1").arg(mcqNoCorrect >= 0 ? QString::number(mcqNoCorrect) : "n/a"));
+
+    const bool ok = (mcqNoOptions == 0 && orphanOptions == 0 && mcqNoCorrect == 0);
+    if (ok) {
+        log(tr("[Validation] Result: OK"));
+        statusBar()->showMessage(tr("Validation passed."));
+    } else {
+        log(tr("[Validation] Result: WARNINGS FOUND"));
+        statusBar()->showMessage(tr("Validation: warnings found."));
+    }
 }
 
 void QuizAdminPanel::onExportBackup()
 {
-    log(tr("[Export] Backup export requested — not yet implemented."));
-    statusBar()->showMessage(tr("Export: not yet implemented."));
+    const QString outFile = QFileDialog::getSaveFileName(
+        this,
+        tr("Export Quiz Content Backup"),
+        QString("cppatlas_backup_%1.sql").arg(
+            QDateTime::currentDateTime().toString("yyyyMMdd_hhmmss")),
+        tr("SQL Files (*.sql);;All Files (*)")
+    );
+    if (outFile.isEmpty()) {
+        log(tr("[Export] Operation cancelled."));
+        return;
+    }
+
+    log(tr("[Export] Exporting to: %1").arg(outFile));
+
+    QFile f(outFile);
+    if (!f.open(QIODevice::WriteOnly | QIODevice::Text | QIODevice::Truncate)) {
+        const QString msg = tr("Cannot open output file: %1").arg(outFile);
+        log(tr("[Export] ERROR: %1").arg(msg));
+        statusBar()->showMessage(tr("Export failed."));
+        QMessageBox::critical(this, tr("Export Backup"), msg);
+        return;
+    }
+    QTextStream out(&f);
+
+    out << "-- CppAtlas quiz content export\n";
+    out << "-- Generated: " << QDateTime::currentDateTime().toString(Qt::ISODate) << "\n\n";
+
+    QSqlDatabase db = QSqlDatabase::database(QuizDatabase::CONNECTION_NAME);
+
+    struct TableSpec { QString name; QString orderBy; };
+    const QList<TableSpec> tables = {
+        { "topics",        "ORDER BY id" },
+        { "tags",          "ORDER BY id" },
+        { "quizzes",       "ORDER BY id" },
+        { "questions",     "ORDER BY id" },
+        { "options",       "ORDER BY id" },
+        { "question_tags", "ORDER BY question_id, tag_id" },
+        { "quiz_tags",     "ORDER BY quiz_id, tag_id" },
+    };
+
+    int totalRows = 0;
+    bool exportError = false;
+
+    for (const TableSpec& spec : tables) {
+        out << "-- Table: " << spec.name << "\n";
+        QSqlQuery q(db);
+        if (!q.exec("SELECT * FROM " + spec.name + " " + spec.orderBy)) {
+            const QString msg = tr("Failed to query table '%1': %2")
+                                    .arg(spec.name, q.lastError().text());
+            log(tr("[Export] ERROR: %1").arg(msg));
+            exportError = true;
+            break;
+        }
+
+        const QSqlRecord rec = q.record();
+        const int fieldCount = rec.count();
+        int tableRows = 0;
+
+        while (q.next()) {
+            out << "INSERT INTO " << spec.name << " (";
+            for (int i = 0; i < fieldCount; ++i) {
+                if (i > 0) out << ", ";
+                out << rec.fieldName(i);
+            }
+            out << ") VALUES (";
+            for (int i = 0; i < fieldCount; ++i) {
+                if (i > 0) out << ", ";
+                const QVariant val = q.value(i);
+                if (val.isNull()) {
+                    out << "NULL";
+                } else {
+                    const QMetaType::Type mt =
+                        static_cast<QMetaType::Type>(val.typeId());
+                    if (mt == QMetaType::Int || mt == QMetaType::LongLong
+                            || mt == QMetaType::UInt || mt == QMetaType::ULongLong) {
+                        out << val.toLongLong();
+                    } else {
+                        out << "'" << val.toString().replace("'", "''") << "'";
+                    }
+                }
+            }
+            out << ");\n";
+            ++tableRows;
+        }
+        out << "\n";
+        totalRows += tableRows;
+        log(tr("[Export]   %1: %2 row(s)").arg(spec.name).arg(tableRows));
+    }
+
+    out.flush();
+    f.close();
+
+    if (exportError) {
+        statusBar()->showMessage(tr("Export failed."));
+        return;
+    }
+
+    log(tr("[Export] Total rows: %1. File: %2").arg(totalRows).arg(outFile));
+    statusBar()->showMessage(tr("Export complete: %1 row(s).").arg(totalRows));
 }
 
 void QuizAdminPanel::refreshStats()
 {
-    log(tr("[Stats] Statistics refreshed at %1.").arg(
-        QDateTime::currentDateTime().toString("hh:mm:ss")));
+    QSqlDatabase db = QSqlDatabase::database(QuizDatabase::CONNECTION_NAME);
+    if (!db.isOpen()) {
+        log(tr("[Stats] Database not open."));
+        statusBar()->showMessage(tr("Stats: database not open."));
+        return;
+    }
+
+    auto qi = [&](const QString& sql) -> QString {
+        QSqlQuery q(db);
+        if (q.exec(sql) && q.next()) return QString::number(q.value(0).toInt());
+        return "n/a";
+    };
+
+    log(tr("[Stats] === Database Statistics ==="));
+    log(tr("[Stats] Schema version : %1").arg(qi("SELECT MAX(version) FROM schema_version")));
+    log(tr("[Stats] Topics         : %1").arg(qi("SELECT COUNT(*) FROM topics")));
+    log(tr("[Stats] Quizzes        : %1").arg(qi("SELECT COUNT(*) FROM quizzes WHERE is_active = 1")));
+    log(tr("[Stats] Questions      : %1").arg(qi("SELECT COUNT(*) FROM questions WHERE is_active = 1")));
+    log(tr("[Stats] Tags           : %1").arg(qi("SELECT COUNT(*) FROM tags")));
+    log(tr("[Stats] Users          : %1").arg(qi("SELECT COUNT(*) FROM users")));
+    log(tr("[Stats] Admins         : %1").arg(qi("SELECT COUNT(*) FROM users WHERE is_admin = 1")));
+    log(tr("[Stats] Sessions       : %1").arg(qi("SELECT COUNT(*) FROM quiz_sessions")));
+    log(tr("[Stats] Patches applied: %1").arg(qi("SELECT COUNT(*) FROM content_patches")));
     statusBar()->showMessage(tr("Stats refreshed."));
 }
 
