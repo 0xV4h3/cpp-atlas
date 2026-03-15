@@ -64,9 +64,6 @@ void SettingsDialog::syncFromSettings()
 {
     if (!m_themeCombo) return;  // UI not yet constructed
 
-    // Re-load settings for the current user (values may have changed since last open)
-    m_settings = AppSettings(m_username);
-
     // ── IDE Editor controls ───────────────────────────────────────────────
     const int themeIdx = m_themeCombo->findText(m_settings.theme());
     if (themeIdx >= 0) {
