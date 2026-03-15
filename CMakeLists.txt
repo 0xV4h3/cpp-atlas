@@ -148,5 +148,6 @@ else()
 endif()
 
 add_subdirectory(src)
+add_subdirectory(tools/quiz_admin)
 add_subdirectory(tests)
 enable_testing()

@@ -150,7 +150,11 @@ bool QuizDatabase::applyMigrations()
     // Migration v3: add content_patches table for incremental content tracking.
     {
         QSqlQuery check(db);
-        check.exec("SELECT name FROM sqlite_master WHERE type='table' AND name='content_patches'");
+        if (!check.exec("SELECT name FROM sqlite_master WHERE type='table' AND name='content_patches'")) {
+            qWarning() << "[QuizDatabase] Migration v3 check failed:"
+                       << check.lastError().text();
+            return false;
+        }
         if (!check.next()) {
             QSqlQuery create(db);
             if (!create.exec(
