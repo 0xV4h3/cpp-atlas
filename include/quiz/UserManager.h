@@ -117,6 +117,19 @@ public:
      */
     bool deleteUser(int userId);
 
+    // ── Admin checks ────────────────────────────────────────────────────────
+
+    /**
+     * @brief Returns true if the currently logged-in user has admin privileges.
+     */
+    bool isCurrentUserAdmin() const;
+
+    /**
+     * @brief Returns true if the given username belongs to an admin account.
+     * The lookup is case-insensitive (COLLATE NOCASE).
+     */
+    bool isAdmin(const QString& username) const;
+
     // ── Helpers ─────────────────────────────────────────────────────────────
 
     /**

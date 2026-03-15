@@ -63,6 +63,7 @@ set(TOOLS_SOURCES
 set(QUIZ_SOURCES
     ${CMAKE_CURRENT_SOURCE_DIR}/quiz/QuizDatabase.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/quiz/UserManager.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/quiz/AdminAccessController.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/quiz/QuizRepository.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/quiz/QuizEngine.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/quiz/ProgressAnalyzer.cpp

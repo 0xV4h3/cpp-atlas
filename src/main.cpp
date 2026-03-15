@@ -7,6 +7,7 @@
 #include "core/AppSettings.h"
 
 #include <QApplication>
+#include <QCommandLineParser>
 #include <QLocale>
 #include <QTranslator>
 #include <QMessageBox>
@@ -19,6 +20,21 @@ int main(int argc, char *argv[])
     QApplication::setOrganizationName("CppAtlas");
     QApplication::setApplicationName("CppAtlas");
     QApplication::setApplicationVersion("0.2");
+
+    // ── Parse command-line options ───────────────────────────────────────────
+    QCommandLineParser parser;
+    parser.setApplicationDescription("CppAtlas — C++ Learning IDE");
+    parser.addHelpOption();
+    parser.addVersionOption();
+
+    QCommandLineOption adminOption(
+        QStringLiteral("admin"),
+        QStringLiteral("Open admin panel on startup (requires admin account).")
+    );
+    parser.addOption(adminOption);
+    parser.process(a);
+
+    const bool startupAdminRequested = parser.isSet(adminOption);
 
     QTranslator translator;
     const QStringList uiLanguages = QLocale::system().uiLanguages();
@@ -58,6 +74,7 @@ int main(int argc, char *argv[])
     }
 
     MainWindow w;
+    w.setStartupAdminRequested(startupAdminRequested);
     w.showMaximized();
     return a.exec();
 }

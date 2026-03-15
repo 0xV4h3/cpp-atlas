@@ -16,6 +16,7 @@
 #include "ui/QuizModeWindow.h"
 #include "ui/SettingsDialog.h"
 #include "quiz/UserManager.h"
+#include "quiz/AdminAccessController.h"
 #include "core/AppSettings.h"
 #include "core/FileManager.h"
 #include "core/Project.h"
@@ -49,6 +50,7 @@
 #include <QDesktopServices>
 #include <QUrl>
 #include <QApplication>
+#include <QShortcut>
 #include <QStyle>
 
 #ifdef Q_OS_WIN
@@ -108,6 +110,15 @@ MainWindow::MainWindow(QWidget *parent)
     // Apply persisted editor settings (font, line numbers, wrap) if already logged in
     if (UserManager::instance().isLoggedIn()) {
         onSettingsChanged();
+    }
+
+    // Hidden admin shortcut: Ctrl+Alt+Shift+M
+    m_adminShortcut = new QShortcut(QKeySequence(Qt::CTRL | Qt::ALT | Qt::SHIFT | Qt::Key_M), this);
+    connect(m_adminShortcut, &QShortcut::activated, this, &MainWindow::showQuizAdminPanel);
+
+    // Handle --admin startup flag after the window is fully constructed
+    if (m_startupAdminRequested) {
+        QTimer::singleShot(0, this, &MainWindow::tryOpenAdminPanelFromStartupRequest);
     }
 }
 
@@ -1745,5 +1756,58 @@ void MainWindow::restoreProjectSession(Project* project) {
         } else if (QFileInfo::exists(project->activeFile())) {
             m_editorTabs->openFile(project->activeFile());
         }
+    }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Admin panel
+// ─────────────────────────────────────────────────────────────────────────────
+
+void MainWindow::setStartupAdminRequested(bool enabled)
+{
+    m_startupAdminRequested = enabled;
+}
+
+void MainWindow::tryOpenAdminPanelFromStartupRequest()
+{
+    if (m_startupAdminRequested) {
+        showQuizAdminPanel();
+    }
+}
+
+void MainWindow::showQuizAdminPanel()
+{
+    const AdminAccessResult result =
+        AdminAccessController::instance().verifyAccess(this, false);
+
+    switch (result) {
+    case AdminAccessResult::Granted: {
+        QDialog* placeholder = new QDialog(this);
+        placeholder->setAttribute(Qt::WA_DeleteOnClose);
+        placeholder->setWindowTitle(tr("Admin Panel"));
+        QVBoxLayout* layout = new QVBoxLayout(placeholder);
+        layout->addWidget(new QLabel(tr("Admin panel — coming soon."), placeholder));
+        QPushButton* closeBtn = new QPushButton(tr("Close"), placeholder);
+        connect(closeBtn, &QPushButton::clicked, placeholder, &QDialog::accept);
+        layout->addWidget(closeBtn, 0, Qt::AlignHCenter);
+        placeholder->exec();
+        break;
+    }
+    case AdminAccessResult::NotLoggedIn:
+        QMessageBox::warning(this, tr("Admin Access"),
+                             tr("You must be logged in to access the admin panel."));
+        break;
+    case AdminAccessResult::NotAdmin:
+        QMessageBox::warning(this, tr("Admin Access"),
+                             tr("Your account does not have administrator privileges."));
+        break;
+    case AdminAccessResult::PasswordRejected:
+        QMessageBox::warning(this, tr("Admin Access"),
+                             tr("Admin password verification failed."));
+        break;
+    case AdminAccessResult::Error:
+        QMessageBox::critical(this, tr("Admin Access"),
+                              tr("Admin authentication is not configured."));
+        break;
     }
 }
