@@ -70,7 +70,14 @@ private:
     bool openDatabase();
     bool applySchema();
     bool applyMigrations();
-    bool runSqlFile(const QString& resourcePath);
+    /**
+     * @brief Execute all SQL statements from a file or Qt resource path.
+     * @param resourceOrFilePath  File system path or Qt resource path (e.g. :/db/schema.sql).
+     * @param strict  When true, the first SQL error stops execution and returns false.
+     *                When false (default), errors are logged as warnings and execution continues.
+     * @return true if all statements succeeded (or strict=false).
+     */
+    bool runSqlFile(const QString& resourceOrFilePath, bool strict = false);
     bool needsSeed() const;
     bool applySeed();
     int  currentSchemaVersion() const;

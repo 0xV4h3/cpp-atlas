@@ -111,7 +111,7 @@ bool QuizDatabase::openDatabase()
 
 bool QuizDatabase::applySchema()
 {
-    if (!runSqlFile(":/db/schema.sql")) return false;
+    if (!runSqlFile(":/db/schema.sql", false)) return false;
     return applyMigrations();
 }
 
@@ -146,6 +146,36 @@ bool QuizDatabase::applyMigrations()
                      "VALUES (2, 'Add avatar_path to users table')");
         ver2.exec();
     }
+
+    // Migration v3: add content_patches table for incremental content tracking.
+    {
+        QSqlQuery check(db);
+        check.exec("SELECT name FROM sqlite_master WHERE type='table' AND name='content_patches'");
+        if (!check.next()) {
+            QSqlQuery create(db);
+            if (!create.exec(
+                    "CREATE TABLE content_patches ("
+                    "  id          TEXT PRIMARY KEY,"
+                    "  applied_at  DATETIME DEFAULT CURRENT_TIMESTAMP,"
+                    "  description TEXT,"
+                    "  checksum    TEXT"
+                    ")")) {
+                qWarning() << "[QuizDatabase] Migration v3 failed (content_patches table):"
+                           << create.lastError().text();
+                return false;
+            }
+            create.exec(
+                "CREATE INDEX IF NOT EXISTS idx_content_patches_applied_at "
+                "ON content_patches(applied_at)"
+            );
+            qDebug() << "[QuizDatabase] Applied migration to schema v3";
+        }
+        QSqlQuery ver3(db);
+        ver3.prepare("INSERT OR IGNORE INTO schema_version (version, description) "
+                     "VALUES (3, 'Add content_patches table')");
+        ver3.exec();
+    }
+
     return true;
 }
 
@@ -164,17 +194,17 @@ bool QuizDatabase::applySeed()
 {
     QSqlDatabase db = QSqlDatabase::database(CONNECTION_NAME);
     db.transaction();
-    const bool ok = runSqlFile(":/db/seed_data.sql");
+    const bool ok = runSqlFile(":/db/seed_data.sql", false);
     if (ok) db.commit();
     else    db.rollback();
     return ok;
 }
 
-bool QuizDatabase::runSqlFile(const QString& resourcePath)
+bool QuizDatabase::runSqlFile(const QString& resourceOrFilePath, bool strict)
 {
-    QFile file(resourcePath);
+    QFile file(resourceOrFilePath);
     if (!file.open(QIODevice::ReadOnly | QIODevice::Text)) {
-        m_lastError = QSqlError("Cannot open resource: " + resourcePath,
+        m_lastError = QSqlError("Cannot open resource: " + resourceOrFilePath,
                                 QString(), QSqlError::ConnectionError);
         return false;
     }
@@ -242,7 +272,14 @@ bool QuizDatabase::runSqlFile(const QString& resourcePath)
 
         QSqlQuery q(db);
         if (!q.exec(clean)) {
-            qWarning() << "[QuizDatabase] Warning in" << resourcePath
+            if (strict) {
+                m_lastError = q.lastError();
+                qWarning() << "[QuizDatabase] Error in" << resourceOrFilePath
+                           << ":" << m_lastError.text()
+                           << "\n  Statement:" << clean.left(120);
+                return false;
+            }
+            qWarning() << "[QuizDatabase] Warning in" << resourceOrFilePath
                        << ":" << q.lastError().text()
                        << "\n  Statement:" << clean.left(120);
         }

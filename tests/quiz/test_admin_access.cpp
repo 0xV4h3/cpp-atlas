@@ -113,8 +113,10 @@ private slots:
         QVERIFY(UserManager::instance().registerUser("test_admin2", "Admin2", "adminpass2", true));
         QVERIFY(UserManager::instance().login("test_admin2", "adminpass2"));
 
-        // Schedule dialog dismissal to fire once QInputDialog's event loop is
-        // running (50 ms is enough for the dialog to complete setup).
+        // Schedule dialog dismissal. QInputDialog::exec() blocks the test thread
+        // in its own event loop, so a QTimer::singleShot posted before exec() is
+        // the idiomatic Qt way to dismiss a synchronous modal dialog in tests.
+        // 50 ms is sufficient for the offscreen platform to process the event.
         QTimer::singleShot(50, []() {
             QWidget* modal = QApplication::activeModalWidget();
             if (modal) {

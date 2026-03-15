@@ -29,6 +29,7 @@ class Project;
 class ICompiler;
 class WelcomeScreen;
 class QuizModeWindow;
+class QuizAdminPanel;
 class NewFileDialog;
 class NewProjectDialog;
 class AnalysisPanel;
@@ -204,6 +205,7 @@ private:
     // Admin panel
     bool m_startupAdminRequested = false;
     QShortcut* m_adminShortcut = nullptr;
+    QuizAdminPanel* m_adminPanel = nullptr;
 
     void setupUi();
     void setupCustomTitleBar();

@@ -17,6 +17,7 @@
 #include "ui/SettingsDialog.h"
 #include "quiz/UserManager.h"
 #include "quiz/AdminAccessController.h"
+#include "ui/QuizAdminPanel.h"
 #include "core/AppSettings.h"
 #include "core/FileManager.h"
 #include "core/Project.h"
@@ -1781,18 +1782,18 @@ void MainWindow::showQuizAdminPanel()
         AdminAccessController::instance().verifyAccess(this, false);
 
     switch (result) {
-    case AdminAccessResult::Granted: {
-        QDialog* placeholder = new QDialog(this);
-        placeholder->setAttribute(Qt::WA_DeleteOnClose);
-        placeholder->setWindowTitle(tr("Admin Panel"));
-        QVBoxLayout* layout = new QVBoxLayout(placeholder);
-        layout->addWidget(new QLabel(tr("Admin panel — coming soon."), placeholder));
-        QPushButton* closeBtn = new QPushButton(tr("Close"), placeholder);
-        connect(closeBtn, &QPushButton::clicked, placeholder, &QDialog::accept);
-        layout->addWidget(closeBtn, 0, Qt::AlignHCenter);
-        placeholder->exec();
+    case AdminAccessResult::Granted:
+        if (!m_adminPanel) {
+            m_adminPanel = new QuizAdminPanel(this);
+            m_adminPanel->setAttribute(Qt::WA_DeleteOnClose);
+            connect(m_adminPanel, &QObject::destroyed, this, [this]() {
+                m_adminPanel = nullptr;
+            });
+        }
+        m_adminPanel->show();
+        m_adminPanel->raise();
+        m_adminPanel->activateWindow();
         break;
-    }
     case AdminAccessResult::NotLoggedIn:
         QMessageBox::warning(this, tr("Admin Access"),
                              tr("You must be logged in to access the admin panel."));

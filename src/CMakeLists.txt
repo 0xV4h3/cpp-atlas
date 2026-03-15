@@ -49,6 +49,7 @@ set(UI_SOURCES
     ${CMAKE_CURRENT_SOURCE_DIR}/ui/UserProfileWidget.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/ui/CustomTestBuilderWidget.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/ui/SettingsDialog.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/ui/QuizAdminPanel.cpp
 )
 
 # Tools module - runners and configuration
@@ -64,6 +65,7 @@ set(QUIZ_SOURCES
     ${CMAKE_CURRENT_SOURCE_DIR}/quiz/QuizDatabase.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/quiz/UserManager.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/quiz/AdminAccessController.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/quiz/ContentPatchService.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/quiz/QuizRepository.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/quiz/QuizEngine.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/quiz/ProgressAnalyzer.cpp
