@@ -9,6 +9,7 @@
 #include <QProcess>
 #include <QPushButton>
 #include <QPoint>
+#include <QShortcut>
 #include <QSplitter>
 #include <QStackedWidget>
 #include <QToolBar>
@@ -28,6 +29,7 @@ class Project;
 class ICompiler;
 class WelcomeScreen;
 class QuizModeWindow;
+class QuizAdminPanel;
 class NewFileDialog;
 class NewProjectDialog;
 class AnalysisPanel;
@@ -41,6 +43,9 @@ class MainWindow : public QMainWindow
 public:
     MainWindow(QWidget *parent = nullptr);
     ~MainWindow();
+
+    void setStartupAdminRequested(bool enabled);
+    void tryOpenAdminPanelFromStartupRequest();
 
 protected:
     void closeEvent(QCloseEvent *event) override;
@@ -113,6 +118,9 @@ private slots:
     // Settings
     void onOpenSettings();
     void onSettingsChanged();
+
+    // Admin panel
+    void showQuizAdminPanel();
 
 private:
     Ui::MainWindow *ui;
@@ -193,6 +201,11 @@ private:
 
     // Settings dialog (modeless, persisted between opens)
     SettingsDialog* m_settingsDialog = nullptr;
+
+    // Admin panel
+    bool m_startupAdminRequested = false;
+    QShortcut* m_adminShortcut = nullptr;
+    QuizAdminPanel* m_adminPanel = nullptr;
 
     void setupUi();
     void setupCustomTitleBar();

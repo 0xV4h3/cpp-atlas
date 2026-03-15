@@ -159,5 +159,15 @@ CREATE INDEX IF NOT EXISTS idx_questions_topic  ON questions(topic_id);
 CREATE INDEX IF NOT EXISTS idx_topics_parent    ON topics(parent_id);
 CREATE INDEX IF NOT EXISTS idx_topics_slug      ON topics(slug);
 
+CREATE TABLE IF NOT EXISTS content_patches (
+    id          TEXT PRIMARY KEY,
+    applied_at  DATETIME DEFAULT CURRENT_TIMESTAMP,
+    description TEXT,
+    checksum    TEXT
+);
+
+CREATE INDEX IF NOT EXISTS idx_content_patches_applied_at
+ON content_patches(applied_at);
+
 INSERT OR IGNORE INTO schema_version (version, description)
 VALUES (1, 'Initial schema');

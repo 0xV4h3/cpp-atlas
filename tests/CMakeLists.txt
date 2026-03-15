@@ -10,3 +10,5 @@ if(TEST_SOURCES)
     )
     add_test(NAME RunUnitTests COMMAND CppAtlasTests)
 endif()
+
+add_subdirectory(quiz)

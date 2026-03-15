@@ -137,6 +137,25 @@ UserRecord UserManager::currentUser() const
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
+// Admin checks
+// ─────────────────────────────────────────────────────────────────────────────
+
+bool UserManager::isCurrentUserAdmin() const
+{
+    return m_loggedIn && m_currentUser.isAdmin;
+}
+
+bool UserManager::isAdmin(const QString& username) const
+{
+    QSqlDatabase db = QSqlDatabase::database(QuizDatabase::CONNECTION_NAME);
+    QSqlQuery q(db);
+    q.prepare("SELECT is_admin FROM users WHERE username = :u COLLATE NOCASE");
+    q.bindValue(":u", username);
+    if (!q.exec() || !q.next()) return false;
+    return q.value("is_admin").toInt() == 1;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 // User Management
 // ─────────────────────────────────────────────────────────────────────────────
 

@@ -96,3 +96,48 @@ QT_QPA_PLATFORM=offscreen ./tests/CppAtlasTests
 4. **Run**: Press F5 or Build → Run
 5. **View Errors**: Check Problems tab for compiler diagnostics
 
+---
+
+### Administrator Tools
+
+CppAtlas includes a built-in admin panel for managing quiz content.
+
+#### Entry points
+
+| Method | Description |
+|---|---|
+| `--admin` CLI flag | `./CppAtlas --admin` — opens the admin panel immediately after login |
+| `Ctrl+Alt+Shift+M` | Keyboard shortcut while the main window is active |
+
+#### Release password gate
+
+In **release builds**, the admin panel requires a second confirmation step.  
+Set the `CPPATLAS_ADMIN_HASH` environment variable to the **SHA-256 hex digest** of your
+admin password before launching:
+
+```bash
+export CPPATLAS_ADMIN_HASH="$(echo -n 'YourPassword' | sha256sum | cut -d' ' -f1)"
+./CppAtlas
+```
+
+In **debug builds** (`QT_DEBUG`) the second password prompt is suppressed for convenience.
+
+#### CLI tool (`quiz_admin`)
+
+```bash
+# Show database statistics
+quiz_admin --db /path/to/cppatlas.db stats
+
+# Validate content integrity + patch status
+quiz_admin --db /path/to/cppatlas.db validate --content-dir ./patches
+
+# Apply pending SQL patches
+quiz_admin --db /path/to/cppatlas.db apply-content --content-dir ./patches
+
+# Export content tables to a SQL dump
+quiz_admin --db /path/to/cppatlas.db export --out backup.sql
+```
+
+See [`tools/quiz_admin/README.md`](tools/quiz_admin/README.md) and
+[`docs/admin_workflow.md`](docs/admin_workflow.md) for the full workflow.
+
