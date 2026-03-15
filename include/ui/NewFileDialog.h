@@ -1,16 +1,16 @@
 #ifndef NEWFILEDIALOG_H
 #define NEWFILEDIALOG_H
 
+#include <QDialog>
 #include <QListWidget>
 #include <QLineEdit>
 #include <QLabel>
 #include <QPushButton>
-#include "ui/AtlasDialog.h"
 
 /**
  * @brief Dialog for creating new files with template selection
  */
-class NewFileDialog : public AtlasDialog {
+class NewFileDialog : public QDialog {
     Q_OBJECT
 
 public:

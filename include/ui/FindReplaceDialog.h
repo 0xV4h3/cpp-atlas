@@ -1,15 +1,15 @@
 #ifndef FINDREPLACEDIALOG_H
 #define FINDREPLACEDIALOG_H
 
+#include <QDialog>
 #include <QLineEdit>
 #include <QPushButton>
 #include <QCheckBox>
-#include "ui/AtlasDialog.h"
 
 /**
  * @brief Dialog for find and replace functionality
  */
-class FindReplaceDialog : public AtlasDialog {
+class FindReplaceDialog : public QDialog {
     Q_OBJECT
 
 public:

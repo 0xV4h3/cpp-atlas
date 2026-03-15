@@ -12,7 +12,7 @@
 #include <QApplication>
 
 LoginDialog::LoginDialog(QWidget* parent)
-    : AtlasDialog(parent, Qt::Dialog | Qt::WindowTitleHint | Qt::WindowCloseButtonHint)
+    : QDialog(parent, Qt::Dialog | Qt::WindowTitleHint | Qt::WindowCloseButtonHint)
 {
     setWindowTitle("CppAtlas — Sign In");
     setModal(true);

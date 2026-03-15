@@ -1,13 +1,13 @@
 #ifndef LOGINDIALOG_H
 #define LOGINDIALOG_H
 
+#include <QDialog>
 #include <QStackedWidget>
 #include <QLineEdit>
 #include <QPushButton>
 #include <QLabel>
 #include <QListWidget>
 #include "quiz/UserManager.h"
-#include "ui/AtlasDialog.h"
 
 /**
  * @brief Login and registration dialog for CppAtlas multi-user system.
@@ -21,7 +21,7 @@
  * On first launch (no users exist), navigates directly to Register page
  * and creates the first user as admin.
  */
-class LoginDialog : public AtlasDialog
+class LoginDialog : public QDialog
 {
     Q_OBJECT
 

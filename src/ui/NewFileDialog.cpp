@@ -13,7 +13,7 @@
 #include <QDebug>
 
 NewFileDialog::NewFileDialog(const QString& defaultDirectory, QWidget *parent)
-    : AtlasDialog(parent)
+    : QDialog(parent)
     , m_defaultDirectory(defaultDirectory)
 {
     setWindowTitle("New File");

@@ -4,7 +4,7 @@
 #include <QLabel>
 
 GotoLineDialog::GotoLineDialog(int maxLine, QWidget *parent)
-    : AtlasDialog(parent)
+    : QDialog(parent)
 {
     setWindowTitle("Go to Line");
     setModal(true);

@@ -27,7 +27,7 @@
 // ─────────────────────────────────────────────────────────────────────────────
 
 SettingsDialog::SettingsDialog(const QString& username, QWidget* parent)
-    : AtlasDialog(parent, Qt::Dialog | Qt::WindowTitleHint | Qt::WindowCloseButtonHint)
+    : QDialog(parent, Qt::Dialog | Qt::WindowTitleHint | Qt::WindowCloseButtonHint)
     , m_settings(username)
     , m_username(username)
 {
@@ -56,7 +56,7 @@ SettingsDialog::SettingsDialog(const QString& username, QWidget* parent)
 
 void SettingsDialog::showEvent(QShowEvent* event)
 {
-    AtlasDialog::showEvent(event);
+    QDialog::showEvent(event);
     syncFromSettings();
 }
 
@@ -213,22 +213,30 @@ void SettingsDialog::setupAppearanceTab(QWidget* tab)
     m_fontFamilyCombo = new QFontComboBox(ideGroup);
     m_fontFamilyCombo->setFontFilters(QFontComboBox::MonospacedFonts);
     m_fontFamilyCombo->setCurrentFont(QFont(m_settings.editorFontFamily()));
+    connect(m_fontFamilyCombo, &QFontComboBox::currentFontChanged,
+            this, &SettingsDialog::onLiveApply);
     ideForm->addRow("Font:", m_fontFamilyCombo);
 
     // Font size
     m_fontSizeSpinBox = new QSpinBox(ideGroup);
     m_fontSizeSpinBox->setRange(6, 32);
     m_fontSizeSpinBox->setValue(m_settings.editorFontSize());
+    connect(m_fontSizeSpinBox, QOverload<int>::of(&QSpinBox::valueChanged),
+            this, &SettingsDialog::onLiveApply);
     ideForm->addRow("Font Size:", m_fontSizeSpinBox);
 
     // Line numbers
     m_lineNumbersCheck = new QCheckBox(ideGroup);
     m_lineNumbersCheck->setChecked(m_settings.showLineNumbers());
+    connect(m_lineNumbersCheck, &QCheckBox::toggled,
+            this, &SettingsDialog::onLiveApply);
     ideForm->addRow("Show Line Numbers:", m_lineNumbersCheck);
 
     // Word wrap
     m_wordWrapCheck = new QCheckBox(ideGroup);
     m_wordWrapCheck->setChecked(m_settings.wordWrap());
+    connect(m_wordWrapCheck, &QCheckBox::toggled,
+            this, &SettingsDialog::onLiveApply);
     ideForm->addRow("Word Wrap:", m_wordWrapCheck);
 
     mainLayout->addWidget(ideGroup);
@@ -262,20 +270,28 @@ void SettingsDialog::setupToolEditorGroup(QWidget* parent, QVBoxLayout* layout,
     controls.fontFamilyCombo->setFontFilters(QFontComboBox::MonospacedFonts);
     controls.fontFamilyCombo->setCurrentFont(
         QFont(m_settings.analysisEditorFontFamily(toolKey)));
+    connect(controls.fontFamilyCombo, &QFontComboBox::currentFontChanged,
+            this, &SettingsDialog::onLiveApply);
     form->addRow("Font:", controls.fontFamilyCombo);
 
     controls.fontSizeSpinBox = new QSpinBox(group);
     controls.fontSizeSpinBox->setRange(6, 32);
     controls.fontSizeSpinBox->setValue(m_settings.analysisEditorFontSize(toolKey));
+    connect(controls.fontSizeSpinBox, QOverload<int>::of(&QSpinBox::valueChanged),
+            this, &SettingsDialog::onLiveApply);
     form->addRow("Font Size:", controls.fontSizeSpinBox);
 
     controls.lineNumbersCheck = new QCheckBox(group);
     controls.lineNumbersCheck->setChecked(
         m_settings.analysisEditorShowLineNumbers(toolKey));
+    connect(controls.lineNumbersCheck, &QCheckBox::toggled,
+            this, &SettingsDialog::onLiveApply);
     form->addRow("Show Line Numbers:", controls.lineNumbersCheck);
 
     controls.wordWrapCheck = new QCheckBox(group);
     controls.wordWrapCheck->setChecked(m_settings.analysisEditorWordWrap(toolKey));
+    connect(controls.wordWrapCheck, &QCheckBox::toggled,
+            this, &SettingsDialog::onLiveApply);
     form->addRow("Word Wrap:", controls.wordWrapCheck);
 
     layout->addWidget(group);
@@ -505,6 +521,38 @@ void SettingsDialog::onApplyAppearance()
     m_initialLineNums   = m_lineNumbersCheck->isChecked();
     m_initialWordWrap   = m_wordWrapCheck->isChecked();
 
+    emit settingsChanged();
+}
+
+// Live-apply: save and notify editors immediately when a control changes,
+// but do NOT update the Reset snapshot so the user can still revert all
+// changes made in this dialog session.
+void SettingsDialog::onLiveApply()
+{
+    // Theme (already applied live via onThemeChanged, just save)
+    m_settings.setTheme(m_themeCombo->currentText());
+
+    // Font
+    m_settings.setEditorFontFamily(m_fontFamilyCombo->currentFont().family());
+    m_settings.setEditorFontSize(m_fontSizeSpinBox->value());
+
+    // Editor options
+    m_settings.setShowLineNumbers(m_lineNumbersCheck->isChecked());
+    m_settings.setWordWrap(m_wordWrapCheck->isChecked());
+
+    // Analysis panel per-tool settings
+    auto saveToolControls = [&](const QString& toolKey, const ToolEditorControls& c) {
+        m_settings.setAnalysisEditorFontFamily(toolKey, c.fontFamilyCombo->currentFont().family());
+        m_settings.setAnalysisEditorFontSize(toolKey, c.fontSizeSpinBox->value());
+        m_settings.setAnalysisEditorShowLineNumbers(toolKey, c.lineNumbersCheck->isChecked());
+        m_settings.setAnalysisEditorWordWrap(toolKey, c.wordWrapCheck->isChecked());
+    };
+    saveToolControls(QStringLiteral("insights"),  m_insightsControls);
+    saveToolControls(QStringLiteral("assembly"),  m_assemblyControls);
+    saveToolControls(QStringLiteral("benchmark"), m_benchmarkControls);
+
+    // Intentionally do NOT update m_initial* snapshot here — Reset remains
+    // able to revert back to the state when the dialog was opened.
     emit settingsChanged();
 }
 

@@ -15,7 +15,6 @@
 #include "ui/AnalysisPanel.h"
 #include "ui/QuizModeWindow.h"
 #include "ui/SettingsDialog.h"
-#include "ui/AtlasDialog.h"
 #include "quiz/UserManager.h"
 #include "core/AppSettings.h"
 #include "core/FileManager.h"
@@ -1371,7 +1370,7 @@ void MainWindow::showAboutDialog()
     flags |= Qt::MSWindowsFixedSizeDialogHint;
 #endif
 
-    AtlasDialog* dlg = new AtlasDialog(this, flags);
+    QDialog* dlg = new QDialog(this, flags);
 
     dlg->setWindowTitle("About CppAtlas");
     dlg->setAttribute(Qt::WA_DeleteOnClose);
@@ -1429,7 +1428,7 @@ void MainWindow::showAboutDialog()
 
     QPushButton* closeBtn = new QPushButton("Close", dlg);
     closeBtn->setObjectName("aboutCloseBtn");
-    connect(closeBtn, &QPushButton::clicked, dlg, &AtlasDialog::accept);
+    connect(closeBtn, &QPushButton::clicked, dlg, &QDialog::accept);
     layout->addWidget(closeBtn, 0, Qt::AlignHCenter);
 
     dlg->setFixedSize(410, dlg->layout()->sizeHint().height());

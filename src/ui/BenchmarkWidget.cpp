@@ -604,6 +604,19 @@ void BenchmarkWidget::onThemeChanged(const QString& themeName) {
     const QColor border = theme.border.isValid() ? theme.border : theme.sidebarBackground;
     const QColor accent = theme.accent;
 
+    // Style the results tab widget container to eliminate white gap/lines
+    const QString tabWidgetQss = QString(
+        "QTabWidget::pane { background-color: %1; border: none; }"
+        "QTabWidget > QWidget { background-color: %1; }"
+    ).arg(bg.name());
+    m_resultsTabs->setStyleSheet(tabWidgetQss);
+    {
+        QPalette tp = m_resultsTabs->palette();
+        tp.setColor(QPalette::Window, bg);
+        tp.setColor(QPalette::Base,   bg);
+        m_resultsTabs->setPalette(tp);
+    }
+
     m_tableWidget->setStyleSheet(QString(
         "QTableView, QTableWidget {"
         "  background-color: %1; color: %2; gridline-color: %3;"
@@ -627,6 +640,13 @@ void BenchmarkWidget::onThemeChanged(const QString& themeName) {
         vp.setColor(QPalette::Base, bg);
         m_tableWidget->viewport()->setPalette(vp);
     }
+
+    // Theme the Raw JSON text view
+    QPalette rp = m_rawJsonView->palette();
+    rp.setColor(QPalette::Base,   bg);
+    rp.setColor(QPalette::Window, bg);
+    rp.setColor(QPalette::Text,   fg);
+    m_rawJsonView->setPalette(rp);
 }
 
 void BenchmarkWidget::stopProcess() {
