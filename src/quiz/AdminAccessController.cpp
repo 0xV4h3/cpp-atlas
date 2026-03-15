@@ -4,7 +4,9 @@
 #include <QCryptographicHash>
 #include <QInputDialog>
 #include <QLineEdit>
+#include <QRegularExpression>
 #include <QWidget>
+#include <QDebug>
 
 AdminAccessController& AdminAccessController::instance()
 {
@@ -65,5 +67,15 @@ AdminAccessResult AdminAccessController::verifyAccess(QWidget* parent, bool requ
 
 void AdminAccessController::setReleaseAdminPasswordHash(const QString& hashHex)
 {
+    // Accept an empty string (clears the hash) or exactly 64 lowercase hex digits
+    // (SHA-256 output).  Anything else is silently rejected with a warning so that
+    // a malformed CPPATLAS_ADMIN_HASH env value does not look like success.
+    static const QRegularExpression kSha256HexPattern(QStringLiteral("^[0-9a-f]{64}$"));
+    if (!hashHex.isEmpty() && !kSha256HexPattern.match(hashHex).hasMatch()) {
+        qWarning() << "[AdminAccessController] Ignoring invalid admin password hash"
+                      " (expected 64 lowercase hex chars or empty to clear):"
+                   << hashHex.left(16) + "...";
+        return;
+    }
     m_releaseAdminPasswordHash = hashHex;
 }

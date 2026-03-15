@@ -1,4 +1,5 @@
 #include <QtTest/QtTest>
+#include <QDir>
 #include <QSqlDatabase>
 #include <QSqlQuery>
 #include <QTemporaryDir>
@@ -176,6 +177,24 @@ private slots:
         const int rc = cli.run({"quiz_admin", "--db", dbPath, "validate",
                                 "--content-dir", patchDir.path()});
         QCOMPARE(rc, 0);
+        QFile::remove(dbPath);
+    }
+
+    // ── validate: non-existent directory → exit 1 ────────────────────────────
+
+    void testValidateNonExistentDirReturnsOne()
+    {
+        const QString dbPath = buildTempDbFile();
+        QVERIFY(!dbPath.isEmpty());
+
+        // Use a path that is guaranteed not to exist
+        const QString nonExistentDir = QDir::tempPath() + "/cppatlas_no_such_dir_xyzzy_12345";
+        QDir().rmdir(nonExistentDir); // ensure it really doesn't exist
+
+        QuizAdminCli cli;
+        const int rc = cli.run({"quiz_admin", "--db", dbPath, "validate",
+                                "--content-dir", nonExistentDir});
+        QCOMPARE(rc, 1);
         QFile::remove(dbPath);
     }
 

@@ -230,9 +230,9 @@ int QuizAdminCli::cmdValidate(const QString& contentDir)
 
     // ── Patch status ──────────────────────────────────────────────────────────
     if (!QFileInfo::exists(contentDir)) {
-        m_out << "Directory does not exist: " << contentDir << "\n";
-        m_out.flush();
-        return 0;
+        m_err << "error: content directory does not exist: " << contentDir << "\n";
+        m_err.flush();
+        return 1;
     }
 
     ContentPatchService svc;

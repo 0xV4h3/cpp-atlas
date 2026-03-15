@@ -132,6 +132,71 @@ private slots:
         // Reset hash so later tests are not affected
         AdminAccessController::instance().setReleaseAdminPasswordHash(QString());
     }
+
+    // 5. setReleaseAdminPasswordHash: valid 64-char hex is accepted
+    void testSetHashAcceptsValid64HexLower()
+    {
+        // A real SHA-256 hex of "test": 64 lowercase hex chars
+        const QString validHash = QString::fromLatin1(
+            QCryptographicHash::hash(QByteArrayLiteral("test"),
+                                     QCryptographicHash::Sha256).toHex()
+        );
+        QCOMPARE(validHash.length(), 64);
+
+        AdminAccessController::instance().setReleaseAdminPasswordHash(validHash);
+
+        // Verify it was accepted: admin user + requireReleasePassword=true should
+        // not return Error (it will return PasswordRejected because no dialog,
+        // but NOT Error which would indicate the hash was not stored).
+        QVERIFY(UserManager::instance().registerUser("test_admin3", "Admin3", "pass3", true));
+        QVERIFY(UserManager::instance().login("test_admin3", "pass3"));
+
+        // Cancel the dialog immediately so we get PasswordRejected, not Error
+        QTimer::singleShot(50, []() {
+            QWidget* modal = QApplication::activeModalWidget();
+            if (modal) QTest::keyClick(modal, Qt::Key_Escape);
+        });
+
+        const AdminAccessResult result =
+            AdminAccessController::instance().verifyAccess(nullptr, true);
+
+        // PasswordRejected (not Error) proves the hash was stored
+        QCOMPARE(result, AdminAccessResult::PasswordRejected);
+
+        AdminAccessController::instance().setReleaseAdminPasswordHash(QString());
+    }
+
+    // 6. setReleaseAdminPasswordHash: invalid hash is rejected (returns Error)
+    void testSetHashRejectsInvalidInput()
+    {
+        // These should all be silently ignored:
+        const QStringList badHashes = {
+            QStringLiteral("not-a-hash"),
+            QStringLiteral("ABCDEF1234567890ABCDEF1234567890ABCDEF1234567890ABCDEF1234567890"), // uppercase
+            QStringLiteral("abc123"),  // too short
+            // 63 chars (one short of 64)
+            QStringLiteral("aabbccddeeff00112233445566778899aabbccddeeff00112233445566778")
+        };
+
+        for (const QString& bad : badHashes) {
+            AdminAccessController::instance().setReleaseAdminPasswordHash(bad);
+
+            // Hash must not have been stored: with an admin logged in,
+            // verifyAccess with requireReleasePassword=true must return Error
+            QVERIFY(UserManager::instance().registerUser(
+                "test_admin4", "Admin4", "pass4", true));
+            QVERIFY(UserManager::instance().login("test_admin4", "pass4"));
+
+            const AdminAccessResult result =
+                AdminAccessController::instance().verifyAccess(nullptr, true);
+
+            QCOMPARE_EQ(result, AdminAccessResult::Error);
+            cleanupUsers();
+        }
+
+        // Clearing with empty string is always valid
+        AdminAccessController::instance().setReleaseAdminPasswordHash(QString());
+    }
 };
 
 QTEST_MAIN(AdminAccessTest)
