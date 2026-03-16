@@ -44,3 +44,16 @@ target_include_directories(QuizAdminCliTests PRIVATE
 )
 
 add_test(NAME QuizAdminCliTests COMMAND QuizAdminCliTests)
+
+# ── FillBlank evaluation tests ────────────────────────────────────────────────
+add_executable(FillBlankEvaluationTests
+    ${CMAKE_CURRENT_SOURCE_DIR}/test_fill_blank_evaluation.cpp
+)
+
+target_link_libraries(FillBlankEvaluationTests
+    PRIVATE
+        Qt${QT_VERSION_MAJOR}::Test
+        CppAtlasLib
+)
+
+add_test(NAME FillBlankEvaluationTests COMMAND FillBlankEvaluationTests)

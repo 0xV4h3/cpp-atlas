@@ -73,7 +73,7 @@ void QuizAdminPanel::setupUi()
     m_tabs->addTab(exportTab,     tr("Export"));
     m_tabs->addTab(statsTab,      tr("Stats"));
 
-    mainLayout->addWidget(m_tabs, 1);
+    mainLayout->addWidget(m_tabs);
 
     // ── Log view ─────────────────────────────────────────────────────────────
     QLabel* logLabel = new QLabel(tr("Activity log:"), central);
@@ -82,9 +82,8 @@ void QuizAdminPanel::setupUi()
     m_logView = new QTextEdit(central);
     m_logView->setObjectName("adminLogView");
     m_logView->setReadOnly(true);
-    m_logView->setMaximumHeight(130);
     m_logView->setPlaceholderText(tr("Admin operations will be logged here."));
-    mainLayout->addWidget(m_logView);
+    mainLayout->addWidget(m_logView, 1);
 
     // ── Status bar ───────────────────────────────────────────────────────────
     statusBar()->showMessage(tr("Administrator panel ready."));
@@ -92,87 +91,72 @@ void QuizAdminPanel::setupUi()
 
 void QuizAdminPanel::setupContentTab(QWidget* tab)
 {
-    QVBoxLayout* layout = new QVBoxLayout(tab);
-    layout->setContentsMargins(8, 8, 8, 8);
-    layout->setSpacing(6);
-
-    QLabel* info = new QLabel(
-        tr("Apply incremental SQL content patches to the quiz database.\n"
-           "Patches are discovered from the configured patches directory,\n"
-           "sorted lexicographically, and applied only once."),
-        tab);
-    info->setWordWrap(true);
-    layout->addWidget(info);
-
-    layout->addStretch(1);
-
     QPushButton* applyBtn = new QPushButton(tr("Apply Content Updates"), tab);
     applyBtn->setObjectName("adminApplyBtn");
     connect(applyBtn, &QPushButton::clicked, this, &QuizAdminPanel::onApplyContentUpdates);
-    layout->addWidget(applyBtn, 0, Qt::AlignLeft);
+
+    createAdminTabLayout(tab,
+        tr("Apply incremental SQL content patches to the quiz database.\n"
+           "Patches are discovered from the configured patches directory,\n"
+           "sorted lexicographically, and applied only once."),
+        applyBtn);
 }
 
 void QuizAdminPanel::setupValidationTab(QWidget* tab)
 {
-    QVBoxLayout* layout = new QVBoxLayout(tab);
-    layout->setContentsMargins(8, 8, 8, 8);
-    layout->setSpacing(6);
-
-    QLabel* info = new QLabel(
-        tr("Validate the consistency of quiz content: check for questions\n"
-           "without options, orphaned records, and broken references."),
-        tab);
-    info->setWordWrap(true);
-    layout->addWidget(info);
-
-    layout->addStretch(1);
-
     QPushButton* validateBtn = new QPushButton(tr("Validate Content"), tab);
     validateBtn->setObjectName("adminValidateBtn");
     connect(validateBtn, &QPushButton::clicked, this, &QuizAdminPanel::onValidateContent);
-    layout->addWidget(validateBtn, 0, Qt::AlignLeft);
+
+    createAdminTabLayout(tab,
+        tr("Validate the consistency of quiz content: check for questions\n"
+           "without options, orphaned records, and broken references."),
+        validateBtn);
 }
 
 void QuizAdminPanel::setupExportTab(QWidget* tab)
 {
-    QVBoxLayout* layout = new QVBoxLayout(tab);
-    layout->setContentsMargins(8, 8, 8, 8);
-    layout->setSpacing(6);
-
-    QLabel* info = new QLabel(
-        tr("Export a full backup of quiz content (questions, options,\n"
-           "topics, tags) to a SQL dump file."),
-        tab);
-    info->setWordWrap(true);
-    layout->addWidget(info);
-
-    layout->addStretch(1);
-
     QPushButton* exportBtn = new QPushButton(tr("Export Backup"), tab);
     exportBtn->setObjectName("adminExportBtn");
     connect(exportBtn, &QPushButton::clicked, this, &QuizAdminPanel::onExportBackup);
-    layout->addWidget(exportBtn, 0, Qt::AlignLeft);
+
+    createAdminTabLayout(tab,
+        tr("Export a full backup of quiz content (questions, options,\n"
+           "topics, tags) to a SQL dump file."),
+        exportBtn);
 }
 
 void QuizAdminPanel::setupStatsTab(QWidget* tab)
+{
+    QPushButton* refreshBtn = new QPushButton(tr("Refresh Stats"), tab);
+    refreshBtn->setObjectName("adminRefreshBtn");
+    connect(refreshBtn, &QPushButton::clicked, this, &QuizAdminPanel::refreshStats);
+
+    createAdminTabLayout(tab,
+        tr("Live database statistics: question counts, session counts,\n"
+           "user counts, and applied content patches."),
+        refreshBtn);
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Tab layout helper
+// ─────────────────────────────────────────────────────────────────────────────
+
+QVBoxLayout* QuizAdminPanel::createAdminTabLayout(QWidget* tab,
+                                                   const QString& description,
+                                                   QPushButton* actionBtn)
 {
     QVBoxLayout* layout = new QVBoxLayout(tab);
     layout->setContentsMargins(8, 8, 8, 8);
     layout->setSpacing(6);
 
-    QLabel* info = new QLabel(
-        tr("Live database statistics: question counts, session counts,\n"
-           "user counts, and applied content patches."),
-        tab);
+    QLabel* info = new QLabel(description, tab);
     info->setWordWrap(true);
     layout->addWidget(info);
 
-    layout->addStretch(1);
+    layout->addWidget(actionBtn, 0, Qt::AlignLeft);
 
-    QPushButton* refreshBtn = new QPushButton(tr("Refresh Stats"), tab);
-    refreshBtn->setObjectName("adminRefreshBtn");
-    connect(refreshBtn, &QPushButton::clicked, this, &QuizAdminPanel::refreshStats);
-    layout->addWidget(refreshBtn, 0, Qt::AlignLeft);
+    return layout;
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -267,11 +251,21 @@ void QuizAdminPanel::onValidateContent()
         "AND NOT EXISTS ("
         "  SELECT 1 FROM options o WHERE o.question_id = q.id AND o.is_correct = 1)");
 
-    log(tr("[Validation] MCQ without options : %1").arg(mcqNoOptions >= 0 ? QString::number(mcqNoOptions) : "n/a"));
-    log(tr("[Validation] Orphan options      : %1").arg(orphanOptions >= 0 ? QString::number(orphanOptions) : "n/a"));
-    log(tr("[Validation] MCQ without correct : %1").arg(mcqNoCorrect >= 0 ? QString::number(mcqNoCorrect) : "n/a"));
+    const int badDifficultyQuizzes = queryInt(
+        "SELECT COUNT(*) FROM quizzes WHERE difficulty < 1 OR difficulty > 4");
 
-    const bool ok = (mcqNoOptions == 0 && orphanOptions == 0 && mcqNoCorrect == 0);
+    const int badDifficultyQuestions = queryInt(
+        "SELECT COUNT(*) FROM questions WHERE is_active = 1 "
+        "AND (difficulty < 1 OR difficulty > 4)");
+
+    log(tr("[Validation] MCQ without options       : %1").arg(mcqNoOptions >= 0 ? QString::number(mcqNoOptions) : "n/a"));
+    log(tr("[Validation] Orphan options             : %1").arg(orphanOptions >= 0 ? QString::number(orphanOptions) : "n/a"));
+    log(tr("[Validation] MCQ without correct        : %1").arg(mcqNoCorrect >= 0 ? QString::number(mcqNoCorrect) : "n/a"));
+    log(tr("[Validation] Quizzes bad difficulty     : %1").arg(badDifficultyQuizzes >= 0 ? QString::number(badDifficultyQuizzes) : "n/a"));
+    log(tr("[Validation] Questions bad difficulty   : %1").arg(badDifficultyQuestions >= 0 ? QString::number(badDifficultyQuestions) : "n/a"));
+
+    const bool ok = (mcqNoOptions == 0 && orphanOptions == 0 && mcqNoCorrect == 0
+                     && badDifficultyQuizzes == 0 && badDifficultyQuestions == 0);
     if (ok) {
         log(tr("[Validation] Result: OK"));
         statusBar()->showMessage(tr("Validation passed."));

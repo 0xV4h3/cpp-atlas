@@ -1,5 +1,6 @@
 #include "quiz/QuizEngine.h"
 #include "quiz/ProgressAnalyzer.h"
+#include "quiz/AnswerEvaluationService.h"
 
 #include <QJsonDocument>
 #include <QJsonArray>
@@ -265,10 +266,11 @@ bool QuizEngine::evaluateAnswer(const QuestionDTO& q, const QString& answer) con
     }
 
     if (q.type == "fill_blank") {
-        // Compare against first correct option text, case-insensitive
+        // Compare against each correct option using the canonical evaluator.
         for (const auto& opt : q.options) {
-            if (opt.isCorrect && opt.content.trimmed().compare(
-                answer.trimmed(), Qt::CaseInsensitive) == 0) return true;
+            if (opt.isCorrect &&
+                AnswerEvaluationService::isFillBlankMatch(answer, opt.content))
+                return true;
         }
         return false;
     }

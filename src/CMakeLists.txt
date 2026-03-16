@@ -68,6 +68,7 @@ set(QUIZ_SOURCES
     ${CMAKE_CURRENT_SOURCE_DIR}/quiz/ContentPatchService.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/quiz/QuizRepository.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/quiz/QuizEngine.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/quiz/AnswerEvaluationService.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/quiz/ProgressAnalyzer.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/quiz/QuizExporter.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/quiz/QuizContentExporter.cpp

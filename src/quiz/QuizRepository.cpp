@@ -29,6 +29,11 @@ TopicDTO QuizRepository::topicFromQuery(QSqlQuery& q) const
     t.parentId    = q.value("parent_id").isNull() ? -1 : q.value("parent_id").toInt();
     t.level       = q.value("level").toInt();
     t.difficulty  = q.value("difficulty").toInt();
+    if (t.difficulty < 1 || t.difficulty > 4) {
+        qWarning() << "[QuizRepository] topicFromQuery: out-of-range difficulty"
+                   << t.difficulty << "for topic id" << t.id << "— clamped to 4";
+        t.difficulty = 4;
+    }
     t.orderIndex  = q.value("order_index").toInt();
     t.icon        = q.value("icon").toString();
     t.refUrl      = q.value("ref_url").toString();
@@ -44,6 +49,11 @@ QuizDTO QuizRepository::quizFromQuery(QSqlQuery& q) const
     qz.description  = q.value("description").toString();
     qz.topicId      = q.value("topic_id").isNull() ? -1 : q.value("topic_id").toInt();
     qz.difficulty   = q.value("difficulty").toInt();
+    if (qz.difficulty < 1 || qz.difficulty > 4) {
+        qWarning() << "[QuizRepository] quizFromQuery: out-of-range difficulty"
+                   << qz.difficulty << "for quiz id" << qz.id << "— clamped to 4";
+        qz.difficulty = 4;
+    }
     qz.timeLimitSec = q.value("time_limit").toInt();
     qz.isTimed      = q.value("is_timed").toInt() == 1;
     qz.type         = q.value("type").toString();
@@ -62,6 +72,11 @@ QuestionDTO QuizRepository::questionFromQuery(QSqlQuery& q) const
     qst.codeSnippet  = q.value("code_snippet").toString();
     qst.explanation  = q.value("explanation").toString();
     qst.difficulty   = q.value("difficulty").toInt();
+    if (qst.difficulty < 1 || qst.difficulty > 4) {
+        qWarning() << "[QuizRepository] questionFromQuery: out-of-range difficulty"
+                   << qst.difficulty << "for question id" << qst.id << "— clamped to 4";
+        qst.difficulty = 4;
+    }
     qst.timeLimitSec = q.value("time_limit").toInt();
     qst.points       = q.value("points").toInt();
     qst.orderIndex   = q.value("order_index").toInt();
