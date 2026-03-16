@@ -6,6 +6,7 @@
 #include "quiz/ContentValidationService.h"
 #include "quiz/AdminPatchWorkflowService.h"
 #include "ui/AdminQuestionEditorDialog.h"
+#include "ui/AdminContentMaintenanceWidget.h"
 
 #include <QLabel>
 #include <QTabWidget>
@@ -346,32 +347,37 @@ void QuizAdminPanel::setupMaintenanceTab(QWidget* tab)
     layout->setSpacing(8);
 
     QLabel* info = new QLabel(
-        tr("Content Maintenance: create or edit questions, "
+        tr("Content Maintenance: create or edit questions and quizzes, "
            "and manage patch workflow with rollback support."), tab);
     info->setWordWrap(true);
     layout->addWidget(info);
 
-    // ── Question editor button ────────────────────────────────────────────────
-    QPushButton* editorBtn = new QPushButton(tr("Create Question"), tab);
-    editorBtn->setObjectName("adminOpenEditorBtn");
-    connect(editorBtn, &QPushButton::clicked,
-            this, &QuizAdminPanel::onOpenQuestionEditor);
-    layout->addWidget(editorBtn, 0, Qt::AlignLeft);
+    // ── AdminContentMaintenanceWidget ─────────────────────────────────────────
+    m_maintenanceWidget = new AdminContentMaintenanceWidget(tab);
+    connect(m_maintenanceWidget, &AdminContentMaintenanceWidget::operationCompleted,
+            this, [this](const QString& msg) {
+                log(tr("[Maintenance] %1").arg(msg));
+                statusBar()->showMessage(msg);
+            });
+    layout->addWidget(m_maintenanceWidget, 1);
 
     // ── Patch workflow buttons ────────────────────────────────────────────────
+    QHBoxLayout* patchBtnLayout = new QHBoxLayout;
+
     QPushButton* rollbackBtn = new QPushButton(tr("Rollback Last Patch"), tab);
     rollbackBtn->setObjectName("adminRollbackBtn");
     connect(rollbackBtn, &QPushButton::clicked,
             this, &QuizAdminPanel::onRollbackLastPatch);
-    layout->addWidget(rollbackBtn, 0, Qt::AlignLeft);
+    patchBtnLayout->addWidget(rollbackBtn);
 
     QPushButton* journalBtn = new QPushButton(tr("Show Journal History"), tab);
     journalBtn->setObjectName("adminJournalBtn");
     connect(journalBtn, &QPushButton::clicked,
             this, &QuizAdminPanel::onShowJournalHistory);
-    layout->addWidget(journalBtn, 0, Qt::AlignLeft);
+    patchBtnLayout->addWidget(journalBtn);
 
-    layout->addStretch(1);
+    patchBtnLayout->addStretch(1);
+    layout->addLayout(patchBtnLayout);
 }
 
 // ─────────────────────────────────────────────────────────────────────────────

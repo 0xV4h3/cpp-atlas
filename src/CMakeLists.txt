@@ -51,6 +51,8 @@ set(UI_SOURCES
     ${CMAKE_CURRENT_SOURCE_DIR}/ui/SettingsDialog.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/ui/QuizAdminPanel.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/ui/AdminQuestionEditorDialog.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/ui/AdminQuizEditorDialog.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/ui/AdminContentMaintenanceWidget.cpp
 )
 
 # Tools module - runners and configuration

@@ -7,6 +7,7 @@ class QTextEdit;
 class QPushButton;
 class QVBoxLayout;
 class QString;
+class AdminContentMaintenanceWidget;
 
 class QuizAdminPanel : public QMainWindow
 {
@@ -39,4 +40,5 @@ private:
     QLabel*     m_modeLabel = nullptr;
     QTabWidget* m_tabs      = nullptr;
     QTextEdit*  m_logView   = nullptr;
+    AdminContentMaintenanceWidget* m_maintenanceWidget = nullptr;
 };
