@@ -57,3 +57,43 @@ target_link_libraries(FillBlankEvaluationTests
 )
 
 add_test(NAME FillBlankEvaluationTests COMMAND FillBlankEvaluationTests)
+
+# ── AdminContentService tests ─────────────────────────────────────────────────
+add_executable(AdminContentServiceTests
+    ${CMAKE_CURRENT_SOURCE_DIR}/test_admin_content_service.cpp
+)
+
+target_link_libraries(AdminContentServiceTests
+    PRIVATE
+        Qt${QT_VERSION_MAJOR}::Test
+        CppAtlasLib
+)
+
+add_test(NAME AdminContentServiceTests COMMAND AdminContentServiceTests)
+
+# ── FillBlank recovery tests (isFillBlankMatchAny + aliases) ──────────────────
+add_executable(FillBlankRecoveryTests
+    ${CMAKE_CURRENT_SOURCE_DIR}/test_fill_blank_recovery.cpp
+)
+
+target_link_libraries(FillBlankRecoveryTests
+    PRIVATE
+        Qt${QT_VERSION_MAJOR}::Test
+        CppAtlasLib
+)
+
+add_test(NAME FillBlankRecoveryTests COMMAND FillBlankRecoveryTests)
+
+# ── Patch workflow rollback tests ─────────────────────────────────────────────
+add_executable(PatchWorkflowRollbackTests
+    ${CMAKE_CURRENT_SOURCE_DIR}/test_patch_workflow_rollback.cpp
+)
+
+target_link_libraries(PatchWorkflowRollbackTests
+    PRIVATE
+        Qt${QT_VERSION_MAJOR}::Test
+        CppAtlasLib
+)
+
+add_test(NAME PatchWorkflowRollbackTests COMMAND PatchWorkflowRollbackTests)
+

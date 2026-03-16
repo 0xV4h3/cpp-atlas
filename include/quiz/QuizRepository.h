@@ -55,6 +55,10 @@ struct QuestionDTO {
     QString        refUrl;
     QList<OptionDTO> options;
     QStringList    tags;
+    /** Explicit accepted-answer tokens for fill_blank questions.
+     *  Populated from the fill_blank_answers table when available;
+     *  falls back to the correct option content(s) otherwise. */
+    QStringList    acceptedAnswers;
 };
 
 struct QuizDTO {
@@ -190,6 +194,9 @@ private:
     QuestionDTO      loadQuestionWithOptions(int questionId) const;
     QList<OptionDTO> loadOptions(int questionId) const;
     QStringList      loadTagsForQuestion(int questionId) const;
+    /** Load accepted answer tokens from fill_blank_answers table.
+     *  Returns an empty list if the table does not exist yet (pre-patch). */
+    QStringList      loadFillBlankAnswers(int questionId) const;
     QuizDTO          quizFromQuery(class QSqlQuery& q) const;
     TopicDTO         topicFromQuery(class QSqlQuery& q) const;
     QuestionDTO      questionFromQuery(class QSqlQuery& q) const;

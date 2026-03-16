@@ -1,5 +1,6 @@
 #pragma once
 #include <QString>
+#include <QStringList>
 
 /**
  * @brief Stateless service that encapsulates answer-comparison logic.
@@ -23,6 +24,23 @@ public:
      * @return true if the normalised strings are equal (case-insensitive).
      */
     static bool isFillBlankMatch(const QString& user, const QString& expected);
+
+    /**
+     * @brief Match a user answer against a list of accepted answers.
+     *
+     * Returns true if the user's normalised answer equals any of the
+     * @p expectedAnswers tokens (case-insensitive, whitespace-collapsed).
+     *
+     * This is the preferred entry-point for fill_blank scoring when multiple
+     * accepted answer tokens are stored in the @c fill_blank_answers table.
+     * Falls back gracefully to the single-token path for the common case.
+     *
+     * @param user            Answer string supplied by the user.
+     * @param expectedAnswers Non-empty list of accepted answer tokens.
+     * @return true if any token matches.
+     */
+    static bool isFillBlankMatchAny(const QString& user,
+                                    const QStringList& expectedAnswers);
 
 private:
     /** Apply the canonical normalisation pipeline to a single string. */

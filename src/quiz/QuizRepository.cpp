@@ -123,6 +123,25 @@ QStringList QuizRepository::loadTagsForQuestion(int questionId) const
     return tags;
 }
 
+QStringList QuizRepository::loadFillBlankAnswers(int questionId) const
+{
+    QStringList answers;
+    QSqlQuery q(db());
+    // Use a conditional prepare — if the table was not yet created by the
+    // 2026_03_16_fill_blank_answer_keys_schema patch the query simply fails
+    // silently and we return an empty list (caller falls back to options).
+    q.prepare(
+        "SELECT answer FROM fill_blank_answers "
+        "WHERE question_id = :qid AND is_active = 1 "
+        "ORDER BY order_index"
+    );
+    q.bindValue(":qid", questionId);
+    if (q.exec()) {
+        while (q.next()) answers << q.value(0).toString();
+    }
+    return answers;
+}
+
 QuestionDTO QuizRepository::loadQuestionWithOptions(int questionId) const
 {
     QSqlQuery q(db());
@@ -132,6 +151,14 @@ QuestionDTO QuizRepository::loadQuestionWithOptions(int questionId) const
     QuestionDTO qst = questionFromQuery(q);
     qst.options = loadOptions(questionId);
     qst.tags    = loadTagsForQuestion(questionId);
+    if (qst.type == "fill_blank") {
+        qst.acceptedAnswers = loadFillBlankAnswers(questionId);
+        // Fallback: if no explicit answer keys, derive from correct options
+        if (qst.acceptedAnswers.isEmpty()) {
+            for (const auto& opt : qst.options)
+                if (opt.isCorrect) qst.acceptedAnswers << opt.content;
+        }
+    }
     return qst;
 }
 
@@ -377,6 +404,13 @@ QList<QuestionDTO> QuizRepository::questionsForQuiz(int quizId) const
         QuestionDTO qst = questionFromQuery(q);
         qst.options = loadOptions(qst.id);
         qst.tags    = loadTagsForQuestion(qst.id);
+        if (qst.type == "fill_blank") {
+            qst.acceptedAnswers = loadFillBlankAnswers(qst.id);
+            if (qst.acceptedAnswers.isEmpty()) {
+                for (const auto& opt : qst.options)
+                    if (opt.isCorrect) qst.acceptedAnswers << opt.content;
+            }
+        }
         list << qst;
     }
     return list;

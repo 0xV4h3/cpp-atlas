@@ -3,6 +3,9 @@
 #include "quiz/ContentPatchService.h"
 #include "quiz/QuizDatabase.h"
 #include "quiz/QuizContentExporter.h"
+#include "quiz/ContentValidationService.h"
+#include "quiz/AdminPatchWorkflowService.h"
+#include "ui/AdminQuestionEditorDialog.h"
 
 #include <QLabel>
 #include <QTabWidget>
@@ -58,20 +61,23 @@ void QuizAdminPanel::setupUi()
     m_tabs = new QTabWidget(central);
     m_tabs->setObjectName("adminTabs");
 
-    QWidget* contentTab    = new QWidget;
-    QWidget* validationTab = new QWidget;
-    QWidget* exportTab     = new QWidget;
-    QWidget* statsTab      = new QWidget;
+    QWidget* contentTab     = new QWidget;
+    QWidget* validationTab  = new QWidget;
+    QWidget* exportTab      = new QWidget;
+    QWidget* statsTab       = new QWidget;
+    QWidget* maintenanceTab = new QWidget;
 
     setupContentTab(contentTab);
     setupValidationTab(validationTab);
     setupExportTab(exportTab);
     setupStatsTab(statsTab);
+    setupMaintenanceTab(maintenanceTab);
 
-    m_tabs->addTab(contentTab,    tr("Content"));
-    m_tabs->addTab(validationTab, tr("Validation"));
-    m_tabs->addTab(exportTab,     tr("Export"));
-    m_tabs->addTab(statsTab,      tr("Stats"));
+    m_tabs->addTab(contentTab,     tr("Content"));
+    m_tabs->addTab(validationTab,  tr("Validation"));
+    m_tabs->addTab(exportTab,      tr("Export"));
+    m_tabs->addTab(statsTab,       tr("Stats"));
+    m_tabs->addTab(maintenanceTab, tr("Maintenance"));
 
     mainLayout->addWidget(m_tabs);
 
@@ -230,48 +236,33 @@ void QuizAdminPanel::onValidateContent()
         return;
     }
 
-    auto queryInt = [&](const QString& sql) -> int {
-        QSqlQuery q(db);
-        if (q.exec(sql) && q.next()) return q.value(0).toInt();
-        return -1;
-    };
+    ContentValidationService svc;
+    const QList<ValidationFinding> findings = svc.validate();
 
-    const int mcqNoOptions = queryInt(
-        "SELECT COUNT(*) FROM questions q "
-        "WHERE q.type = 'mcq' AND q.is_active = 1 "
-        "AND NOT EXISTS (SELECT 1 FROM options o WHERE o.question_id = q.id)");
-
-    const int orphanOptions = queryInt(
-        "SELECT COUNT(*) FROM options o "
-        "WHERE NOT EXISTS (SELECT 1 FROM questions q WHERE q.id = o.question_id)");
-
-    const int mcqNoCorrect = queryInt(
-        "SELECT COUNT(*) FROM questions q "
-        "WHERE q.type = 'mcq' AND q.is_active = 1 "
-        "AND NOT EXISTS ("
-        "  SELECT 1 FROM options o WHERE o.question_id = q.id AND o.is_correct = 1)");
-
-    const int badDifficultyQuizzes = queryInt(
-        "SELECT COUNT(*) FROM quizzes WHERE difficulty < 1 OR difficulty > 4");
-
-    const int badDifficultyQuestions = queryInt(
-        "SELECT COUNT(*) FROM questions WHERE is_active = 1 "
-        "AND (difficulty < 1 OR difficulty > 4)");
-
-    log(tr("[Validation] MCQ without options       : %1").arg(mcqNoOptions >= 0 ? QString::number(mcqNoOptions) : "n/a"));
-    log(tr("[Validation] Orphan options             : %1").arg(orphanOptions >= 0 ? QString::number(orphanOptions) : "n/a"));
-    log(tr("[Validation] MCQ without correct        : %1").arg(mcqNoCorrect >= 0 ? QString::number(mcqNoCorrect) : "n/a"));
-    log(tr("[Validation] Quizzes bad difficulty     : %1").arg(badDifficultyQuizzes >= 0 ? QString::number(badDifficultyQuizzes) : "n/a"));
-    log(tr("[Validation] Questions bad difficulty   : %1").arg(badDifficultyQuestions >= 0 ? QString::number(badDifficultyQuestions) : "n/a"));
-
-    const bool ok = (mcqNoOptions == 0 && orphanOptions == 0 && mcqNoCorrect == 0
-                     && badDifficultyQuizzes == 0 && badDifficultyQuestions == 0);
-    if (ok) {
-        log(tr("[Validation] Result: OK"));
+    if (findings.isEmpty()) {
+        log(tr("[Validation] Result: OK — no issues found."));
         statusBar()->showMessage(tr("Validation passed."));
+        return;
+    }
+
+    int errors   = 0;
+    int warnings = 0;
+    for (const ValidationFinding& f : findings) {
+        const QString sev = (f.severity == ValidationSeverity::Error)
+                            ? tr("ERROR") : tr("WARN ");
+        if (f.severity == ValidationSeverity::Error) ++errors;
+        else ++warnings;
+
+        log(tr("[Validation] %1 [%2 id=%3] %4 → %5")
+            .arg(sev, f.entityType).arg(f.entityId)
+            .arg(f.message, f.suggestedFix));
+    }
+
+    log(tr("[Validation] Summary: %1 error(s), %2 warning(s).").arg(errors).arg(warnings));
+    if (errors > 0) {
+        statusBar()->showMessage(tr("Validation: %1 error(s) found.").arg(errors));
     } else {
-        log(tr("[Validation] Result: WARNINGS FOUND"));
-        statusBar()->showMessage(tr("Validation: warnings found."));
+        statusBar()->showMessage(tr("Validation: %1 warning(s) found.").arg(warnings));
     }
 }
 
@@ -342,4 +333,101 @@ void QuizAdminPanel::log(const QString& message)
     if (!m_logView) return;
     const QString timestamp = QDateTime::currentDateTime().toString("hh:mm:ss");
     m_logView->append(QString("[%1] %2").arg(timestamp, message));
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Maintenance tab
+// ─────────────────────────────────────────────────────────────────────────────
+
+void QuizAdminPanel::setupMaintenanceTab(QWidget* tab)
+{
+    QVBoxLayout* layout = new QVBoxLayout(tab);
+    layout->setContentsMargins(8, 8, 8, 8);
+    layout->setSpacing(8);
+
+    QLabel* info = new QLabel(
+        tr("Content Maintenance: create or edit questions, "
+           "and manage patch workflow with rollback support."), tab);
+    info->setWordWrap(true);
+    layout->addWidget(info);
+
+    // ── Question editor button ────────────────────────────────────────────────
+    QPushButton* editorBtn = new QPushButton(tr("Open Question Editor (New)"), tab);
+    editorBtn->setObjectName("adminOpenEditorBtn");
+    connect(editorBtn, &QPushButton::clicked,
+            this, &QuizAdminPanel::onOpenQuestionEditor);
+    layout->addWidget(editorBtn, 0, Qt::AlignLeft);
+
+    // ── Patch workflow buttons ────────────────────────────────────────────────
+    QPushButton* rollbackBtn = new QPushButton(tr("Rollback Last Patch"), tab);
+    rollbackBtn->setObjectName("adminRollbackBtn");
+    connect(rollbackBtn, &QPushButton::clicked,
+            this, &QuizAdminPanel::onRollbackLastPatch);
+    layout->addWidget(rollbackBtn, 0, Qt::AlignLeft);
+
+    QPushButton* journalBtn = new QPushButton(tr("Show Journal History"), tab);
+    journalBtn->setObjectName("adminJournalBtn");
+    connect(journalBtn, &QPushButton::clicked,
+            this, &QuizAdminPanel::onShowJournalHistory);
+    layout->addWidget(journalBtn, 0, Qt::AlignLeft);
+
+    layout->addStretch(1);
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Maintenance slots
+// ─────────────────────────────────────────────────────────────────────────────
+
+void QuizAdminPanel::onOpenQuestionEditor()
+{
+    AdminQuestionEditorDialog dlg(this);
+    if (dlg.exec() == QDialog::Accepted) {
+        log(tr("[Maintenance] %1").arg(dlg.resultMessage()));
+        statusBar()->showMessage(tr("Question saved."));
+    } else {
+        log(tr("[Maintenance] Question editor cancelled."));
+    }
+}
+
+void QuizAdminPanel::onRollbackLastPatch()
+{
+    const QMessageBox::StandardButton btn = QMessageBox::question(
+        this, tr("Rollback Last Patch"),
+        tr("This will restore the database to the snapshot taken before the "
+           "last applied patch.\n\nAre you sure?"),
+        QMessageBox::Yes | QMessageBox::No,
+        QMessageBox::No
+    );
+    if (btn != QMessageBox::Yes) {
+        log(tr("[Maintenance] Rollback cancelled by user."));
+        return;
+    }
+
+    log(tr("[Maintenance] Rolling back last patch..."));
+    const PatchWorkflowResult r = AdminPatchWorkflowService::instance().rollbackLastPatch();
+    if (r.ok) {
+        log(tr("[Maintenance] Rollback succeeded. %1").arg(r.message));
+        statusBar()->showMessage(tr("Rollback succeeded."));
+    } else {
+        log(tr("[Maintenance] Rollback FAILED: %1").arg(r.message));
+        statusBar()->showMessage(tr("Rollback failed."));
+        QMessageBox::critical(this, tr("Rollback Failed"), r.message);
+    }
+}
+
+void QuizAdminPanel::onShowJournalHistory()
+{
+    const QStringList lines =
+        AdminPatchWorkflowService::instance().journalTail(30);
+
+    if (lines.isEmpty()) {
+        log(tr("[Maintenance] Journal is empty (no patch operations recorded yet)."));
+        statusBar()->showMessage(tr("Journal empty."));
+        return;
+    }
+
+    log(tr("[Maintenance] === Recent Admin Actions ==="));
+    for (const QString& line : lines)
+        log(tr("[Journal] %1").arg(line));
+    statusBar()->showMessage(tr("Journal loaded — see log."));
 }

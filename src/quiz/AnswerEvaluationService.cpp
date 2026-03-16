@@ -22,3 +22,13 @@ bool AnswerEvaluationService::isFillBlankMatch(const QString& user,
     const QString normExpected = normalizeText(expected);
     return normUser.compare(normExpected, Qt::CaseInsensitive) == 0;
 }
+
+bool AnswerEvaluationService::isFillBlankMatchAny(const QString& user,
+                                                   const QStringList& expectedAnswers)
+{
+    for (const QString& expected : expectedAnswers) {
+        if (isFillBlankMatch(user, expected))
+            return true;
+    }
+    return false;
+}
