@@ -223,10 +223,7 @@ void AdminQuestionEditorDialog::loadQuestion(int questionId)
               }()
             : q.acceptedAnswers);
     } else {
-        populateOptionsTable([&]() -> QVariantMap {
-            Q_UNUSED(q);
-            return {};
-        }());
+        populateOptionsTable(QVariantMap{});
         // Fill options table directly from DTO
         m_optionsTable->setRowCount(0);
         for (const auto& opt : q.options) {

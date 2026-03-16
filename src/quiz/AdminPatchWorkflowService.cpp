@@ -255,7 +255,7 @@ QStringList AdminPatchWorkflowService::journalTail(int n) const
     if (!q.exec()) return lines;
 
     while (q.next()) {
-        lines.prepend(QString("[%1] %2 %3 — %4  %5")
+        lines.prepend(QString("[%1] %2 %3 — %4 %5")
             .arg(q.value(0).toString(),
                  q.value(1).toString(),
                  q.value(2).toString(),
