@@ -24,7 +24,7 @@ CREATE TABLE IF NOT EXISTS topics (
     description TEXT,
     parent_id   INTEGER  REFERENCES topics(id) ON DELETE SET NULL,
     level       INTEGER  DEFAULT 0,
-    difficulty  INTEGER  DEFAULT 1,
+    difficulty  INTEGER  DEFAULT 1 CHECK (difficulty BETWEEN 1 AND 4),
     order_index INTEGER  DEFAULT 0,
     icon        TEXT     DEFAULT '?',
     ref_url     TEXT,
@@ -42,7 +42,7 @@ CREATE TABLE IF NOT EXISTS quizzes (
     title       TEXT     NOT NULL,
     description TEXT,
     topic_id    INTEGER  REFERENCES topics(id) ON DELETE SET NULL,
-    difficulty  INTEGER  DEFAULT 1,
+    difficulty  INTEGER  DEFAULT 1 CHECK (difficulty BETWEEN 1 AND 4),
     time_limit  INTEGER  DEFAULT 0,
     is_timed    INTEGER  DEFAULT 0,
     type        TEXT     DEFAULT 'standard',
@@ -66,7 +66,7 @@ CREATE TABLE IF NOT EXISTS questions (
     content      TEXT     NOT NULL,
     code_snippet TEXT,
     explanation  TEXT,
-    difficulty   INTEGER  DEFAULT 1,
+    difficulty   INTEGER  DEFAULT 1 CHECK (difficulty BETWEEN 1 AND 4),
     time_limit   INTEGER  DEFAULT 0,
     points       INTEGER  DEFAULT 10,
     order_index  INTEGER  DEFAULT 0,
@@ -168,6 +168,44 @@ CREATE TABLE IF NOT EXISTS content_patches (
 
 CREATE INDEX IF NOT EXISTS idx_content_patches_applied_at
 ON content_patches(applied_at);
+
+-- Fill-blank answers table
+CREATE TABLE IF NOT EXISTS fill_blank_answers (
+    id          INTEGER PRIMARY KEY AUTOINCREMENT,
+    question_id INTEGER NOT NULL REFERENCES questions(id) ON DELETE CASCADE,
+    answer      TEXT    NOT NULL,
+    is_active   INTEGER DEFAULT 1,
+    order_index INTEGER DEFAULT 0
+);
+
+CREATE INDEX IF NOT EXISTS idx_fill_blank_answers_qid
+    ON fill_blank_answers(question_id);
+
+-- Admin patch journal table
+CREATE TABLE IF NOT EXISTS admin_patch_journal (
+    id            INTEGER  PRIMARY KEY AUTOINCREMENT,
+    patch_id      TEXT     NOT NULL,
+    action        TEXT     NOT NULL,   -- 'APPLY' or 'ROLLBACK'
+    snapshot_path TEXT,
+    status        TEXT     NOT NULL,   -- 'OK' or 'FAIL'
+    details       TEXT,
+    created_at    DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_admin_patch_journal_created_at
+    ON admin_patch_journal(created_at);
+
+-- Admin deletion log table
+CREATE TABLE IF NOT EXISTS admin_deletion_log (
+    id          INTEGER  PRIMARY KEY AUTOINCREMENT,
+    entity_type TEXT     NOT NULL,   -- 'question', 'quiz', etc.
+    entity_id   INTEGER  NOT NULL,
+    reason      TEXT,
+    deleted_at  DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_admin_deletion_log_entity
+    ON admin_deletion_log(entity_type, entity_id);
 
 INSERT OR IGNORE INTO schema_version (version, description)
 VALUES (1, 'Initial schema');
