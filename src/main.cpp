@@ -21,7 +21,7 @@ int main(int argc, char *argv[])
 
     QApplication::setOrganizationName("CppAtlas");
     QApplication::setApplicationName("CppAtlas");
-    QApplication::setApplicationVersion("0.2");
+    QApplication::setApplicationVersion("0.1");
 
     // ── Parse command-line options ───────────────────────────────────────────
     QCommandLineParser parser;

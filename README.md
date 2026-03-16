@@ -28,10 +28,6 @@ Educational Qt-based offline environment for learning, visualizing, and benchmar
 3. Open CMakeLists.txt in Qt Creator, configure the kit, build, and run.
 4. Place compatible tools/binaries in `/tools` as needed.
 
-## License
-
-MIT License (see LICENSE file for details)
-
 ## References
 
 - [C++ Insights](https://github.com/andreasfertig/cppinsights)
@@ -77,24 +73,13 @@ cd build
 QT_QPA_PLATFORM=offscreen ./tests/CppAtlasTests
 ```
 
-### Features Implemented (Phase 1)
+## Emoji Support (Linux/WSL)
 
-- ✅ Multi-file code editor with C++ syntax highlighting
-- ✅ Compiler abstraction (GCC & Clang support)
-- ✅ Build & Run integration
-- ✅ Problems panel with diagnostic parsing
-- ✅ File tree navigation
-- ✅ Output panels (Build, Run, Problems)
-- ✅ Auto-detection of system compilers
-- ✅ Configurable C++ standards (C++11 through C++23)
+To see color emoji icons in quiz topics/UI, install:
 
-### Usage
+    sudo apt install fonts-noto-color-emoji
 
-1. **Create/Open Files**: Use File → New or File → Open
-2. **Select Compiler**: Choose from toolbar dropdown
-3. **Build**: Press F7 or Build → Build
-4. **Run**: Press F5 or Build → Run
-5. **View Errors**: Check Problems tab for compiler diagnostics
+If not installed, some emojis (e.g. in quiz topics or navigation) will show as empty squares or boxes.
 
 ---
 
@@ -141,3 +126,6 @@ quiz_admin --db /path/to/cppatlas.db export --out backup.sql
 See [`tools/quiz_admin/README.md`](tools/quiz_admin/README.md) and
 [`docs/admin_workflow.md`](docs/admin_workflow.md) for the full workflow.
 
+## License
+
+MIT License (see LICENSE file for details)

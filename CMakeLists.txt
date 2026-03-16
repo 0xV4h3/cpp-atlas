@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.16)
-project(cpp-atlas VERSION 0.2 LANGUAGES CXX)
+project(cpp-atlas VERSION 0.1 LANGUAGES CXX)
 
 # Qt6 requires minimum C++17
 set(CMAKE_CXX_STANDARD 17)
@@ -70,6 +70,24 @@ endif()
 message(STATUS "Found QScintilla:")
 message(STATUS "  Include: ${QSCINTILLA_INCLUDE_DIR}")
 message(STATUS "  Library: ${QSCINTILLA_LIBRARY}")
+
+# ------- Emoji font check (POSIX/WSL Linux only) -----------
+if(UNIX AND NOT APPLE)
+    find_path(EMOJI_FONT_PATH NAMES "NotoColorEmoji.ttf"
+        PATHS /usr/share/fonts/truetype/noto /usr/share/fonts/ /usr/local/share/fonts/
+        NO_DEFAULT_PATH
+    )
+    if(NOT EMOJI_FONT_PATH)
+        message(WARNING "
+========================================================================
+Emoji font 'fonts-noto-color-emoji' is NOT installed!
+Some emojis (for topics, UI) may appear as blank squares.
+
+To fix: sudo apt install fonts-noto-color-emoji
+========================================================================
+")
+    endif()
+endif()
 
 # Export for subdirectories
 set(QSCINTILLA_INCLUDE_DIR ${QSCINTILLA_INCLUDE_DIR} CACHE PATH "QScintilla include directory")
