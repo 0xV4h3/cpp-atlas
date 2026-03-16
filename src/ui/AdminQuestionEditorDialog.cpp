@@ -58,6 +58,18 @@ void AdminQuestionEditorDialog::setupUi()
     QGroupBox* basicGroup = new QGroupBox(tr("Question details"), this);
     QFormLayout* form = new QFormLayout(basicGroup);
 
+    // Quiz selection (mandatory in create mode; read-only label in edit mode)
+    m_quizCombo = new QComboBox(basicGroup);
+    {
+        QSqlDatabase db = QSqlDatabase::database(QuizDatabase::CONNECTION_NAME);
+        QSqlQuery q("SELECT id, title FROM quizzes WHERE is_active=1 ORDER BY title", db);
+        while (q.next())
+            m_quizCombo->addItem(q.value("title").toString(), q.value("id").toInt());
+    }
+    if (m_quizCombo->count() == 0)
+        m_quizCombo->addItem(tr("(no active quizzes)"), -1);
+    form->addRow(tr("Quiz:"), m_quizCombo);
+
     m_typeCombo = new QComboBox(basicGroup);
     m_typeCombo->addItems({"mcq", "multi_select", "true_false", "code_output", "fill_blank"});
     connect(m_typeCombo, &QComboBox::currentTextChanged,
@@ -107,7 +119,7 @@ void AdminQuestionEditorDialog::setupUi()
     numerics->addSpacing(16);
     m_orderIndexSpin = new QSpinBox(basicGroup);
     m_orderIndexSpin->setRange(0, 9999);
-    numerics->addWidget(new QLabel(tr("Order:")));
+    numerics->addWidget(new QLabel(tr("Order (position within quiz):")));
     numerics->addWidget(m_orderIndexSpin);
     numerics->addStretch(1);
     form->addRow(numerics);
@@ -200,6 +212,14 @@ void AdminQuestionEditorDialog::loadQuestion(int questionId)
     QuizRepository repo;
     const QuestionDTO q = repo.questionById(questionId);
     if (q.id == -1) return;
+
+    // Pre-select the quiz in the combo
+    for (int i = 0; i < m_quizCombo->count(); ++i) {
+        if (m_quizCombo->itemData(i).toInt() == q.quizId) {
+            m_quizCombo->setCurrentIndex(i);
+            break;
+        }
+    }
 
     m_typeCombo->setCurrentText(q.type);
     m_contentEdit->setPlainText(q.content);
@@ -301,6 +321,7 @@ void AdminQuestionEditorDialog::onAccept()
     }
 
     QVariantMap payload;
+    payload["quiz_id"]     = m_quizCombo->currentData().toInt();
     payload["type"]        = type;
     payload["content"]     = content;
     payload["code_snippet"]= m_codeEdit->toPlainText();
@@ -327,18 +348,12 @@ void AdminQuestionEditorDialog::onAccept()
     }
 
     // For fill_blank: also save accepted answers into fill_blank_answers table.
-    // In create mode, we need to get the newly inserted question id first.
+    // In create mode, use the inserted id from the service result.
     int questionIdForAnswers = m_questionId;
     if (type == "fill_blank") {
         if (questionIdForAnswers == -1) {
-            // Retrieve the newly created question id
-            QSqlDatabase db = QSqlDatabase::database(QuizDatabase::CONNECTION_NAME);
-            QSqlQuery idq(db);
-            idq.exec("SELECT MAX(id) FROM questions");
-            if (idq.next()) {
-                questionIdForAnswers = idq.value(0).toInt();
-                m_questionId = questionIdForAnswers;  // update for affectedQuestionId()
-            }
+            questionIdForAnswers = result.entityId;
+            m_questionId = questionIdForAnswers;  // update for affectedQuestionId()
         }
 
         if (questionIdForAnswers > 0) {

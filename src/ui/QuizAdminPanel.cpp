@@ -352,7 +352,7 @@ void QuizAdminPanel::setupMaintenanceTab(QWidget* tab)
     layout->addWidget(info);
 
     // ── Question editor button ────────────────────────────────────────────────
-    QPushButton* editorBtn = new QPushButton(tr("Open Question Editor (New)"), tab);
+    QPushButton* editorBtn = new QPushButton(tr("Create Question"), tab);
     editorBtn->setObjectName("adminOpenEditorBtn");
     connect(editorBtn, &QPushButton::clicked,
             this, &QuizAdminPanel::onOpenQuestionEditor);

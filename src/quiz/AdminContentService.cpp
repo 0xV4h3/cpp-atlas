@@ -129,7 +129,7 @@ AdminOpResult AdminContentService::createQuestion(const QVariantMap& payload)
         return dbError("createQuestion COMMIT", db.lastError());
     }
 
-    return {true, "Question created.", 1};
+    return {true, "Question created.", 1, q.lastInsertId().toInt()};
 }
 
 AdminOpResult AdminContentService::updateQuestion(int questionId, const QVariantMap& patch)
@@ -218,6 +218,28 @@ AdminOpResult AdminContentService::softDeleteQuestion(int questionId,
     return {true, QString("Question %1 soft-deleted.").arg(questionId), rows};
 }
 
+AdminOpResult AdminContentService::restoreQuestion(int questionId)
+{
+    QSqlDatabase db = adminDb();
+    db.transaction();
+
+    QSqlQuery q(db);
+    q.prepare("UPDATE questions SET is_active = 1 WHERE id = :id");
+    q.bindValue(":id", questionId);
+
+    if (!q.exec()) {
+        db.rollback();
+        return dbError("restoreQuestion UPDATE", q.lastError());
+    }
+    const int rows = q.numRowsAffected();
+
+    if (!db.commit()) {
+        db.rollback();
+        return dbError("restoreQuestion COMMIT", db.lastError());
+    }
+    return {true, QString("Question %1 restored.").arg(questionId), rows};
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
 // Options
 // ─────────────────────────────────────────────────────────────────────────────
@@ -249,7 +271,7 @@ AdminOpResult AdminContentService::createOption(int questionId, const QVariantMa
         db.rollback();
         return dbError("createOption COMMIT", db.lastError());
     }
-    return {true, "Option created.", 1};
+    return {true, "Option created.", 1, q.lastInsertId().toInt()};
 }
 
 AdminOpResult AdminContentService::updateOption(int optionId, const QVariantMap& patch)
@@ -355,7 +377,7 @@ AdminOpResult AdminContentService::createQuiz(const QVariantMap& payload)
         db.rollback();
         return dbError("createQuiz COMMIT", db.lastError());
     }
-    return {true, "Quiz created.", 1};
+    return {true, "Quiz created.", 1, q.lastInsertId().toInt()};
 }
 
 AdminOpResult AdminContentService::updateQuiz(int quizId, const QVariantMap& patch)
@@ -437,4 +459,26 @@ AdminOpResult AdminContentService::softDeleteQuiz(int quizId, const QString& rea
         return dbError("softDeleteQuiz COMMIT", db.lastError());
     }
     return {true, QString("Quiz %1 soft-deleted.").arg(quizId), rows};
+}
+
+AdminOpResult AdminContentService::restoreQuiz(int quizId)
+{
+    QSqlDatabase db = adminDb();
+    db.transaction();
+
+    QSqlQuery q(db);
+    q.prepare("UPDATE quizzes SET is_active = 1 WHERE id = :id");
+    q.bindValue(":id", quizId);
+
+    if (!q.exec()) {
+        db.rollback();
+        return dbError("restoreQuiz UPDATE", q.lastError());
+    }
+    const int rows = q.numRowsAffected();
+
+    if (!db.commit()) {
+        db.rollback();
+        return dbError("restoreQuiz COMMIT", db.lastError());
+    }
+    return {true, QString("Quiz %1 restored.").arg(quizId), rows};
 }

@@ -14,6 +14,7 @@ struct AdminOpResult {
     bool    ok           = false;
     QString message;
     int     affectedRows = 0;
+    int     entityId     = -1; ///< Primary key of created/updated entity (-1 when not applicable)
 };
 
 /**
@@ -60,6 +61,11 @@ public:
      */
     AdminOpResult softDeleteQuestion(int questionId, const QString& reason = QString());
 
+    /**
+     * @brief Restore a previously soft-deleted question (set is_active = 1).
+     */
+    AdminOpResult restoreQuestion(int questionId);
+
     // ── Options ──────────────────────────────────────────────────────────────
 
     /**
@@ -104,6 +110,11 @@ public:
      * @brief Soft-delete a quiz (sets is_active = 0).
      */
     AdminOpResult softDeleteQuiz(int quizId, const QString& reason = QString());
+
+    /**
+     * @brief Restore a previously soft-deleted quiz (set is_active = 1).
+     */
+    AdminOpResult restoreQuiz(int quizId);
 
     // ── Validation ───────────────────────────────────────────────────────────
 

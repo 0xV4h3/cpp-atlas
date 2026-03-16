@@ -71,6 +71,7 @@ private:
     void populateAcceptedAnswers(const QStringList& answers);
 
     // ── Widgets ──────────────────────────────────────────────────────────────
+    QComboBox*      m_quizCombo       = nullptr;
     QComboBox*      m_typeCombo       = nullptr;
     QPlainTextEdit* m_contentEdit     = nullptr;
     QPlainTextEdit* m_codeEdit        = nullptr;
