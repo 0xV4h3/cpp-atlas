@@ -5,6 +5,8 @@ class QLabel;
 class QTabWidget;
 class QTextEdit;
 class QPushButton;
+class QVBoxLayout;
+class QString;
 
 class QuizAdminPanel : public QMainWindow
 {
@@ -17,6 +19,9 @@ private slots:
     void onValidateContent();
     void onExportBackup();
     void refreshStats();
+    void onOpenQuestionEditor();
+    void onRollbackLastPatch();
+    void onShowJournalHistory();
 
 private:
     void setupUi();
@@ -24,6 +29,11 @@ private:
     void setupValidationTab(QWidget* tab);
     void setupExportTab(QWidget* tab);
     void setupStatsTab(QWidget* tab);
+    void setupMaintenanceTab(QWidget* tab);
+    /** Creates a compact tab layout: description label on top, action button directly below.
+     *  The shared activity log (dominant area) is added to the main window layout separately. */
+    QVBoxLayout* createAdminTabLayout(QWidget* tab, const QString& description,
+                                      QPushButton* actionBtn);
     void log(const QString& message);
 
     QLabel*     m_modeLabel = nullptr;

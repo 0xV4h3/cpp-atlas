@@ -1,5 +1,6 @@
 #include "quiz/QuizEngine.h"
 #include "quiz/ProgressAnalyzer.h"
+#include "quiz/AnswerEvaluationService.h"
 
 #include <QJsonDocument>
 #include <QJsonArray>
@@ -265,12 +266,16 @@ bool QuizEngine::evaluateAnswer(const QuestionDTO& q, const QString& answer) con
     }
 
     if (q.type == "fill_blank") {
-        // Compare against first correct option text, case-insensitive
-        for (const auto& opt : q.options) {
-            if (opt.isCorrect && opt.content.trimmed().compare(
-                answer.trimmed(), Qt::CaseInsensitive) == 0) return true;
-        }
-        return false;
+        // Use explicit accepted-answer list when available (loaded from
+        // fill_blank_answers table); otherwise fall back to correct options.
+        if (!q.acceptedAnswers.isEmpty())
+            return AnswerEvaluationService::isFillBlankMatchAny(answer, q.acceptedAnswers);
+
+        // Fallback: derive accepted tokens from correct options on the fly.
+        QStringList fallback;
+        for (const auto& opt : q.options)
+            if (opt.isCorrect) fallback << opt.content;
+        return AnswerEvaluationService::isFillBlankMatchAny(answer, fallback);
     }
 
     return false;

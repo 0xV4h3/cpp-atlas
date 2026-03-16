@@ -29,6 +29,11 @@ TopicDTO QuizRepository::topicFromQuery(QSqlQuery& q) const
     t.parentId    = q.value("parent_id").isNull() ? -1 : q.value("parent_id").toInt();
     t.level       = q.value("level").toInt();
     t.difficulty  = q.value("difficulty").toInt();
+    if (t.difficulty < 1 || t.difficulty > 4) {
+        qWarning() << "[QuizRepository] topicFromQuery: out-of-range difficulty"
+                   << t.difficulty << "for topic id" << t.id << "— clamped to 4";
+        t.difficulty = 4;
+    }
     t.orderIndex  = q.value("order_index").toInt();
     t.icon        = q.value("icon").toString();
     t.refUrl      = q.value("ref_url").toString();
@@ -44,6 +49,11 @@ QuizDTO QuizRepository::quizFromQuery(QSqlQuery& q) const
     qz.description  = q.value("description").toString();
     qz.topicId      = q.value("topic_id").isNull() ? -1 : q.value("topic_id").toInt();
     qz.difficulty   = q.value("difficulty").toInt();
+    if (qz.difficulty < 1 || qz.difficulty > 4) {
+        qWarning() << "[QuizRepository] quizFromQuery: out-of-range difficulty"
+                   << qz.difficulty << "for quiz id" << qz.id << "— clamped to 4";
+        qz.difficulty = 4;
+    }
     qz.timeLimitSec = q.value("time_limit").toInt();
     qz.isTimed      = q.value("is_timed").toInt() == 1;
     qz.type         = q.value("type").toString();
@@ -62,6 +72,11 @@ QuestionDTO QuizRepository::questionFromQuery(QSqlQuery& q) const
     qst.codeSnippet  = q.value("code_snippet").toString();
     qst.explanation  = q.value("explanation").toString();
     qst.difficulty   = q.value("difficulty").toInt();
+    if (qst.difficulty < 1 || qst.difficulty > 4) {
+        qWarning() << "[QuizRepository] questionFromQuery: out-of-range difficulty"
+                   << qst.difficulty << "for question id" << qst.id << "— clamped to 4";
+        qst.difficulty = 4;
+    }
     qst.timeLimitSec = q.value("time_limit").toInt();
     qst.points       = q.value("points").toInt();
     qst.orderIndex   = q.value("order_index").toInt();
@@ -108,6 +123,25 @@ QStringList QuizRepository::loadTagsForQuestion(int questionId) const
     return tags;
 }
 
+QStringList QuizRepository::loadFillBlankAnswers(int questionId) const
+{
+    QStringList answers;
+    QSqlQuery q(db());
+    // Use a conditional prepare — if the table was not yet created by the
+    // 2026_03_16_fill_blank_answer_keys_schema patch the query simply fails
+    // silently and we return an empty list (caller falls back to options).
+    q.prepare(
+        "SELECT answer FROM fill_blank_answers "
+        "WHERE question_id = :qid AND is_active = 1 "
+        "ORDER BY order_index"
+    );
+    q.bindValue(":qid", questionId);
+    if (q.exec()) {
+        while (q.next()) answers << q.value(0).toString();
+    }
+    return answers;
+}
+
 QuestionDTO QuizRepository::loadQuestionWithOptions(int questionId) const
 {
     QSqlQuery q(db());
@@ -117,6 +151,14 @@ QuestionDTO QuizRepository::loadQuestionWithOptions(int questionId) const
     QuestionDTO qst = questionFromQuery(q);
     qst.options = loadOptions(questionId);
     qst.tags    = loadTagsForQuestion(questionId);
+    if (qst.type == "fill_blank") {
+        qst.acceptedAnswers = loadFillBlankAnswers(questionId);
+        // Fallback: if no explicit answer keys, derive from correct options
+        if (qst.acceptedAnswers.isEmpty()) {
+            for (const auto& opt : qst.options)
+                if (opt.isCorrect) qst.acceptedAnswers << opt.content;
+        }
+    }
     return qst;
 }
 
@@ -362,6 +404,13 @@ QList<QuestionDTO> QuizRepository::questionsForQuiz(int quizId) const
         QuestionDTO qst = questionFromQuery(q);
         qst.options = loadOptions(qst.id);
         qst.tags    = loadTagsForQuestion(qst.id);
+        if (qst.type == "fill_blank") {
+            qst.acceptedAnswers = loadFillBlankAnswers(qst.id);
+            if (qst.acceptedAnswers.isEmpty()) {
+                for (const auto& opt : qst.options)
+                    if (opt.isCorrect) qst.acceptedAnswers << opt.content;
+            }
+        }
         list << qst;
     }
     return list;
