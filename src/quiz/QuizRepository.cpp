@@ -29,11 +29,10 @@ TopicDTO QuizRepository::topicFromQuery(QSqlQuery& q) const
     t.parentId    = q.value("parent_id").isNull() ? -1 : q.value("parent_id").toInt();
     t.level       = q.value("level").toInt();
     t.difficulty  = q.value("difficulty").toInt();
-    if (t.difficulty < 1 || t.difficulty > 4) {
+    if (t.difficulty < 1 || t.difficulty > 4)
         qWarning() << "[QuizRepository] topicFromQuery: out-of-range difficulty"
-                   << t.difficulty << "for topic id" << t.id << "— clamped to 4";
-        t.difficulty = 4;
-    }
+                   << t.difficulty << "for topic id" << t.id
+                   << "— DB CHECK constraint violation, run ContentValidationService";
     t.orderIndex  = q.value("order_index").toInt();
     t.icon        = q.value("icon").toString();
     t.refUrl      = q.value("ref_url").toString();
@@ -49,11 +48,10 @@ QuizDTO QuizRepository::quizFromQuery(QSqlQuery& q) const
     qz.description  = q.value("description").toString();
     qz.topicId      = q.value("topic_id").isNull() ? -1 : q.value("topic_id").toInt();
     qz.difficulty   = q.value("difficulty").toInt();
-    if (qz.difficulty < 1 || qz.difficulty > 4) {
+    if (qz.difficulty < 1 || qz.difficulty > 4)
         qWarning() << "[QuizRepository] quizFromQuery: out-of-range difficulty"
-                   << qz.difficulty << "for quiz id" << qz.id << "— clamped to 4";
-        qz.difficulty = 4;
-    }
+                   << qz.difficulty << "for quiz id" << qz.id
+                   << "— DB CHECK constraint violation, run ContentValidationService";
     qz.timeLimitSec = q.value("time_limit").toInt();
     qz.isTimed      = q.value("is_timed").toInt() == 1;
     qz.type         = q.value("type").toString();
@@ -72,11 +70,10 @@ QuestionDTO QuizRepository::questionFromQuery(QSqlQuery& q) const
     qst.codeSnippet  = q.value("code_snippet").toString();
     qst.explanation  = q.value("explanation").toString();
     qst.difficulty   = q.value("difficulty").toInt();
-    if (qst.difficulty < 1 || qst.difficulty > 4) {
+    if (qst.difficulty < 1 || qst.difficulty > 4)
         qWarning() << "[QuizRepository] questionFromQuery: out-of-range difficulty"
-                   << qst.difficulty << "for question id" << qst.id << "— clamped to 4";
-        qst.difficulty = 4;
-    }
+                   << qst.difficulty << "for question id" << qst.id
+                   << "— DB CHECK constraint violation, run ContentValidationService";
     qst.timeLimitSec = q.value("time_limit").toInt();
     qst.points       = q.value("points").toInt();
     qst.orderIndex   = q.value("order_index").toInt();
@@ -127,17 +124,17 @@ QStringList QuizRepository::loadFillBlankAnswers(int questionId) const
 {
     QStringList answers;
     QSqlQuery q(db());
-    // Use a conditional prepare — if the table was not yet created by the
-    // 2026_03_16_fill_blank_answer_keys_schema patch the query simply fails
-    // silently and we return an empty list (caller falls back to options).
     q.prepare(
         "SELECT answer FROM fill_blank_answers "
         "WHERE question_id = :qid AND is_active = 1 "
         "ORDER BY order_index"
-    );
+        );
     q.bindValue(":qid", questionId);
     if (q.exec()) {
         while (q.next()) answers << q.value(0).toString();
+    } else {
+        qWarning() << "[QuizRepository] loadFillBlankAnswers failed for question"
+                   << questionId << ":" << q.lastError().text();
     }
     return answers;
 }
@@ -153,10 +150,9 @@ QuestionDTO QuizRepository::loadQuestionWithOptions(int questionId) const
     qst.tags    = loadTagsForQuestion(questionId);
     if (qst.type == "fill_blank") {
         qst.acceptedAnswers = loadFillBlankAnswers(questionId);
-        // Fallback: if no explicit answer keys, derive from correct options
         if (qst.acceptedAnswers.isEmpty()) {
-            for (const auto& opt : qst.options)
-                if (opt.isCorrect) qst.acceptedAnswers << opt.content;
+            qWarning() << "[QuizRepository] fill_blank question" << questionId
+                       << "has no entries in fill_blank_answers — check data integrity";
         }
     }
     return qst;
@@ -221,7 +217,7 @@ TopicDTO QuizRepository::topicBySlug(const QString& slug) const
     return TopicDTO{};
 }
 
-// ────────────��────────────────────────────────────────────────────────────────
+// ─────────────────────────────────────────────────────────────────────────────
 // Tags
 // ─────────────────────────────────────────────────────────────────────────────
 QList<TagDTO> QuizRepository::allTags() const
@@ -305,7 +301,7 @@ QList<QuizDTO> QuizRepository::allActiveQuizzes() const
         "WHERE qz.is_active = 1 "
         "GROUP BY qz.id "
         "ORDER BY qz.difficulty, qz.id"
-    );
+        );
     while (q.next()) {
         QuizDTO qz = quizFromQuery(q);
         qz.questionCount = q.value("qcount").toInt();
@@ -326,7 +322,7 @@ QList<QuizDTO> QuizRepository::quizzesByTopic(int topicId) const
         "WHERE qz.topic_id = :tid AND qz.is_active = 1 "
         "GROUP BY qz.id "
         "ORDER BY qz.difficulty"
-    );
+        );
     q.bindValue(":tid", topicId);
     if (!q.exec()) return list;
     while (q.next()) {
@@ -407,8 +403,8 @@ QList<QuestionDTO> QuizRepository::questionsForQuiz(int quizId) const
         if (qst.type == "fill_blank") {
             qst.acceptedAnswers = loadFillBlankAnswers(qst.id);
             if (qst.acceptedAnswers.isEmpty()) {
-                for (const auto& opt : qst.options)
-                    if (opt.isCorrect) qst.acceptedAnswers << opt.content;
+                qWarning() << "[QuizRepository] fill_blank question" << qst.id
+                           << "has no entries in fill_blank_answers — check data integrity";
             }
         }
         list << qst;
@@ -435,8 +431,8 @@ QList<QuestionDTO> QuizRepository::questionsForQuizShuffled(int quizId) const
 }
 
 QList<QuestionDTO> QuizRepository::randomQuestions(const QList<int>& topicIds,
-                                                     int count,
-                                                     int maxDifficulty) const
+                                                   int count,
+                                                   int maxDifficulty) const
 {
     if (topicIds.isEmpty() || count <= 0) return {};
 
@@ -447,10 +443,10 @@ QList<QuestionDTO> QuizRepository::randomQuestions(const QList<int>& topicIds,
 
     QSqlQuery q(db());
     q.prepare(QString(
-        "SELECT id FROM questions "
-        "WHERE topic_id IN (%1) AND difficulty <= :maxd AND is_active = 1 "
-        "ORDER BY RANDOM() LIMIT :n"
-    ).arg(inClause));
+                  "SELECT id FROM questions "
+                  "WHERE topic_id IN (%1) AND difficulty <= :maxd AND is_active = 1 "
+                  "ORDER BY RANDOM() LIMIT :n"
+                  ).arg(inClause));
     q.bindValue(":maxd", maxDifficulty);
     q.bindValue(":n",    count);
 
@@ -490,7 +486,7 @@ int QuizRepository::createSession(int userId, int quizId, const QString& mode) c
 }
 
 bool QuizRepository::completeSession(int sessionId, int score,
-                                      int maxScore, int timeSpentSec) const
+                                     int maxScore, int timeSpentSec) const
 {
     QSqlQuery q(db());
     q.prepare("UPDATE quiz_sessions SET "
@@ -506,9 +502,9 @@ bool QuizRepository::completeSession(int sessionId, int score,
 }
 
 bool QuizRepository::recordAttempt(int sessionId, int questionId,
-                                    const QString& userAnswer,
-                                    bool isCorrect, int timeSpentSec,
-                                    bool hintUsed) const
+                                   const QString& userAnswer,
+                                   bool isCorrect, int timeSpentSec,
+                                   bool hintUsed) const
 {
     QSqlQuery q(db());
     q.prepare("INSERT INTO question_attempts "
@@ -538,7 +534,7 @@ QList<UserTopicStatDTO> QuizRepository::userTopicStats(int userId) const
         "JOIN topics t ON t.id = uts.topic_id "
         "WHERE uts.user_id = :uid "
         "ORDER BY t.order_index"
-    );
+        );
     q.bindValue(":uid", userId);
     if (!q.exec()) return list;
     while (q.next()) {
@@ -581,7 +577,7 @@ UserTopicStatDTO QuizRepository::userTopicStat(int userId, int topicId) const
 }
 
 bool QuizRepository::updateTopicStats(int userId, int topicId,
-                                       int deltaAttempts, int deltaCorrect) const
+                                      int deltaAttempts, int deltaCorrect) const
 {
     const QString now = QDateTime::currentDateTimeUtc().toString(Qt::ISODate);
 
@@ -596,8 +592,8 @@ bool QuizRepository::updateTopicStats(int userId, int topicId,
         const int newAttempts = existing.value(0).toInt() + deltaAttempts;
         const int newCorrect  = existing.value(1).toInt() + deltaCorrect;
         const double mastery  = newAttempts > 0
-                                ? static_cast<double>(newCorrect) / newAttempts
-                                : 0.0;
+                                   ? static_cast<double>(newCorrect) / newAttempts
+                                   : 0.0;
         QSqlQuery upd(db());
         upd.prepare("UPDATE user_topic_stats SET "
                     "  attempts = :a, correct = :c, mastery_level = :m, "
@@ -612,8 +608,8 @@ bool QuizRepository::updateTopicStats(int userId, int topicId,
         return upd.exec();
     } else {
         const double mastery = deltaAttempts > 0
-                               ? static_cast<double>(deltaCorrect) / deltaAttempts
-                               : 0.0;
+                                   ? static_cast<double>(deltaCorrect) / deltaAttempts
+                                   : 0.0;
         QSqlQuery ins(db());
         ins.prepare("INSERT INTO user_topic_stats "
                     "(user_id, topic_id, attempts, correct, mastery_level, last_attempt_at) "
@@ -656,8 +652,8 @@ QList<RecommendationDTO> QuizRepository::recommendationsForUser(int userId) cons
 }
 
 bool QuizRepository::insertRecommendation(int userId, int topicId,
-                                           const QString& reason,
-                                           const QString& refUrl) const
+                                          const QString& reason,
+                                          const QString& refUrl) const
 {
     QSqlQuery q(db());
     q.prepare("INSERT INTO recommendations (user_id, topic_id, reason, ref_url, created_at) "
@@ -690,7 +686,7 @@ bool QuizRepository::clearRecommendationsForUser(int userId) const
 // Custom Tests
 // ─────────────────────────────────────────────────────────────────────────────
 int QuizRepository::createCustomTest(int userId, const QString& title,
-                                      const QString& description) const
+                                     const QString& description) const
 {
     QSqlQuery q(db());
     q.prepare("INSERT INTO custom_tests (user_id, title, description, created_at) "
@@ -704,7 +700,7 @@ int QuizRepository::createCustomTest(int userId, const QString& title,
 }
 
 bool QuizRepository::addQuestionToCustomTest(int testId, int questionId,
-                                              int orderIndex) const
+                                             int orderIndex) const
 {
     QSqlQuery q(db());
     q.prepare("INSERT OR IGNORE INTO custom_test_questions "
@@ -722,6 +718,7 @@ bool QuizRepository::removeCustomTest(int testId) const
     q.bindValue(":id", testId);
     return q.exec();
 }
+
 QList<QuizDTO> QuizRepository::customTestsForUser(int userId) const
 {
     QList<QuizDTO> list;
@@ -734,7 +731,7 @@ QList<QuizDTO> QuizRepository::customTestsForUser(int userId) const
         "WHERE ct.user_id = :uid "
         "GROUP BY ct.id "
         "ORDER BY ct.created_at DESC"
-    );
+        );
     q.bindValue(":uid", userId);
     if (!q.exec()) {
         qWarning() << "[QuizRepository] customTestsForUser failed:" << q.lastError().text();
@@ -763,7 +760,7 @@ QList<QuestionDTO> QuizRepository::questionsForCustomTest(int testId) const
         "JOIN custom_test_questions ctq ON ctq.question_id = q.id "
         "WHERE ctq.test_id = :tid "
         "ORDER BY ctq.order_index"
-    );
+        );
     q.bindValue(":tid", testId);
     if (!q.exec()) {
         qWarning() << "[QuizRepository] questionsForCustomTest failed:" << q.lastError().text();

@@ -44,25 +44,18 @@ static QString snapshotDir()
 }
 
 void AdminPatchWorkflowService::writeJournalEntry(const QString& patchId,
-                                                   const QString& action,
-                                                   const QString& snapshotPath,
-                                                   const QString& status,
-                                                   const QString& details) const
+                                                  const QString& action,
+                                                  const QString& snapshotPath,
+                                                  const QString& status,
+                                                  const QString& details) const
 {
-    QSqlDatabase db = wfDb();
-    // Silently skip journal write if the table hasn't been created yet
-    // (i.e. the 2026_03_16_admin_patch_journal patch hasn't been applied).
-    QSqlQuery check(db);
-    check.exec("SELECT name FROM sqlite_master "
-               "WHERE type='table' AND name='admin_patch_journal'");
-    if (!check.next()) return;
-
-    QSqlQuery q(db);
+    // admin_patch_journal is guaranteed to exist since schema v4.
+    QSqlQuery q(wfDb());
     q.prepare(
         "INSERT INTO admin_patch_journal "
         "(patch_id, action, snapshot_path, status, details) "
         "VALUES (:pid, :act, :snap, :stat, :det)"
-    );
+        );
     q.bindValue(":pid",  patchId);
     q.bindValue(":act",  action);
     q.bindValue(":snap", snapshotPath);
@@ -103,12 +96,12 @@ QString AdminPatchWorkflowService::createSnapshot(const QString& label) const
 // ─────────────────────────────────────────────────────────────────────────────
 
 PatchWorkflowResult AdminPatchWorkflowService::applyPatch(const QString& patchId,
-                                                           const QString& patchFilePath)
+                                                          const QString& patchFilePath)
 {
     // 1. Create pre-apply snapshot
     const QString snap = createSnapshot(patchId);
     if (snap.isEmpty() && !QuizDatabase::instance().databasePath().isEmpty()
-                       && QuizDatabase::instance().databasePath() != ":memory:") {
+        && QuizDatabase::instance().databasePath() != ":memory:") {
         const QString msg = "Failed to create pre-apply snapshot — aborting for safety.";
         writeJournalEntry(patchId, "APPLY", QString(), "FAIL", msg);
         return {false, msg, QString()};
@@ -144,7 +137,7 @@ PatchWorkflowResult AdminPatchWorkflowService::applyPatch(const QString& patchId
         // Auto-restore snapshot
         const PatchWorkflowResult restoreResult = restoreSnapshot(snap);
         const QString details = QString("Apply failed: %1. Auto-restore %2.")
-            .arg(applyError, restoreResult.ok ? "succeeded" : "failed");
+                                    .arg(applyError, restoreResult.ok ? "succeeded" : "failed");
         writeJournalEntry(patchId, "APPLY", snap, "FAIL", details);
         return {false, details, snap};
     }
@@ -168,7 +161,7 @@ PatchWorkflowResult AdminPatchWorkflowService::rollbackLastPatch()
         "SELECT patch_id, snapshot_path FROM admin_patch_journal "
         "WHERE action = 'APPLY' AND status = 'OK' "
         "ORDER BY id DESC LIMIT 1"
-    );
+        );
 
     if (!q.next()) {
         return {false, "No applied patch found in journal.", QString()};
@@ -238,29 +231,22 @@ PatchWorkflowResult AdminPatchWorkflowService::restoreSnapshot(
 QStringList AdminPatchWorkflowService::journalTail(int n) const
 {
     QStringList lines;
-    QSqlDatabase db = wfDb();
-
-    QSqlQuery check(db);
-    check.exec("SELECT name FROM sqlite_master "
-               "WHERE type='table' AND name='admin_patch_journal'");
-    if (!check.next()) return lines;
-
-    QSqlQuery q(db);
+    QSqlQuery q(wfDb());
     q.prepare(
         "SELECT created_at, action, patch_id, status, details "
         "FROM admin_patch_journal "
         "ORDER BY id DESC LIMIT :n"
-    );
+        );
     q.bindValue(":n", n);
     if (!q.exec()) return lines;
 
     while (q.next()) {
         lines.prepend(QString("[%1] %2 %3 — %4 %5")
-            .arg(q.value(0).toString(),
-                 q.value(1).toString(),
-                 q.value(2).toString(),
-                 q.value(3).toString(),
-                 q.value(4).toString()));
+                          .arg(q.value(0).toString(),
+                               q.value(1).toString(),
+                               q.value(2).toString(),
+                               q.value(3).toString(),
+                               q.value(4).toString()));
     }
     return lines;
 }

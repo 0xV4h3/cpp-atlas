@@ -14,14 +14,6 @@ static QSqlDatabase cvDb()
     return QSqlDatabase::database(QuizDatabase::CONNECTION_NAME);
 }
 
-static bool tableExists(const QString& name)
-{
-    QSqlQuery q(cvDb());
-    q.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name=:n");
-    q.bindValue(":n", name);
-    return q.exec() && q.next();
-}
-
 /** Returns true when the token looks sentence-like. */
 static bool isSentenceLike(const QString& token)
 {
@@ -87,44 +79,32 @@ QList<ValidationFinding> ContentValidationService::validate() const
         }
     }
 
-    // ── Rule 2: fill_blank must have ≥1 accepted answer ───────────────────────
+    // ── Rule 2: fill_blank must have ≥1 row in fill_blank_answers ─────────────
+    // Schema v4 guarantees the table exists; no fallback to options.
     {
-        const bool hasFbTable = tableExists("fill_blank_answers");
         QSqlQuery q(db);
         q.exec("SELECT id FROM questions WHERE type = 'fill_blank' AND is_active = 1");
         while (q.next()) {
             const int qid = q.value(0).toInt();
-            bool hasAnswer = false;
 
-            if (hasFbTable) {
-                QSqlQuery chk(db);
-                chk.prepare("SELECT 1 FROM fill_blank_answers "
-                            "WHERE question_id = :qid AND is_active = 1 LIMIT 1");
-                chk.bindValue(":qid", qid);
-                hasAnswer = chk.exec() && chk.next();
-            }
-
-            if (!hasAnswer) {
-                // Fallback: check options table for a correct option
-                QSqlQuery chk(db);
-                chk.prepare("SELECT 1 FROM options "
-                            "WHERE question_id = :qid AND is_correct = 1 LIMIT 1");
-                chk.bindValue(":qid", qid);
-                hasAnswer = chk.exec() && chk.next();
-            }
+            QSqlQuery chk(db);
+            chk.prepare("SELECT 1 FROM fill_blank_answers "
+                        "WHERE question_id = :qid AND is_active = 1 LIMIT 1");
+            chk.bindValue(":qid", qid);
+            const bool hasAnswer = chk.exec() && chk.next();
 
             if (!hasAnswer) {
                 findings.append({
                     ValidationSeverity::Error, "question", qid,
                     "fill_blank question has no accepted answer.",
-                    "Add at least one entry to fill_blank_answers (or set a correct option)."
+                    "Add at least one entry to fill_blank_answers."
                 });
             }
         }
     }
 
     // ── Rule 3 & 4: fill_blank answer token quality ───────────────────────────
-    if (tableExists("fill_blank_answers")) {
+    {
         QSqlQuery q(db);
         q.exec("SELECT question_id, answer FROM fill_blank_answers WHERE is_active = 1");
         while (q.next()) {
@@ -149,26 +129,6 @@ QList<ValidationFinding> ContentValidationService::validate() const
                 });
             }
         }
-
-        // Also check old-style correct options that look like sentences
-        QSqlQuery q2(db);
-        q2.exec(
-            "SELECT o.question_id, o.content FROM options o "
-            "JOIN questions q ON q.id = o.question_id "
-            "WHERE q.type = 'fill_blank' AND o.is_correct = 1 AND q.is_active = 1"
-        );
-        while (q2.next()) {
-            const int     qid    = q2.value(0).toInt();
-            const QString answer = q2.value(1).toString();
-            if (isSentenceLike(answer) || answer.length() > 80) {
-                findings.append({
-                    ValidationSeverity::Warning, "option (fill_blank correct)", qid,
-                    QString("Correct option looks like a sentence rather than a token: \"%1\"")
-                        .arg(answer.left(60)),
-                    "Add a short token to fill_blank_answers and clear this option's content."
-                });
-            }
-        }
     }
 
     // ── Rule 5: MCQ questions must have ≥1 option and ≥1 correct option ───────
@@ -178,7 +138,7 @@ QList<ValidationFinding> ContentValidationService::validate() const
             "SELECT id FROM questions q "
             "WHERE q.type = 'mcq' AND q.is_active = 1 "
             "AND NOT EXISTS (SELECT 1 FROM options o WHERE o.question_id = q.id)"
-        );
+            );
         while (q.next()) {
             findings.append({
                 ValidationSeverity::Error, "question", q.value(0).toInt(),
@@ -193,7 +153,7 @@ QList<ValidationFinding> ContentValidationService::validate() const
             "WHERE q.type = 'mcq' AND q.is_active = 1 "
             "AND NOT EXISTS "
             "(SELECT 1 FROM options o WHERE o.question_id = q.id AND o.is_correct = 1)"
-        );
+            );
         while (q2.next()) {
             findings.append({
                 ValidationSeverity::Error, "question", q2.value(0).toInt(),
@@ -209,7 +169,7 @@ QList<ValidationFinding> ContentValidationService::validate() const
         q.exec(
             "SELECT id FROM options o "
             "WHERE NOT EXISTS (SELECT 1 FROM questions q WHERE q.id = o.question_id)"
-        );
+            );
         while (q.next()) {
             findings.append({
                 ValidationSeverity::Warning, "option", q.value(0).toInt(),

@@ -370,7 +370,7 @@ QString QuizSelectionWidget::difficultyLabel(int d) const
         case 2: return "Intermediate";
         case 3: return "Advanced";
         case 4: return "Expert";
-        default: return "Expert";
+        default: return QString("Invalid(%1)").arg(d);
     }
 }
 

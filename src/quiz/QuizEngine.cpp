@@ -18,9 +18,9 @@ QuizEngine::QuizEngine(QObject* parent)
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Session lifecycle
-// ────────────────────────────────────────────────────��────────────────────────
+// ─────────────────────────────────────────────────────────────────────────────
 bool QuizEngine::startSession(int quizId, int userId,
-                               const QString& mode, bool shuffle)
+                              const QString& mode, bool shuffle)
 {
     if (m_active) {
         qWarning() << "[QuizEngine] startSession called while session is active";
@@ -28,8 +28,8 @@ bool QuizEngine::startSession(int quizId, int userId,
     }
 
     m_questions = shuffle
-                  ? m_repo.questionsForQuizShuffled(quizId)
-                  : m_repo.questionsForQuiz(quizId);
+                      ? m_repo.questionsForQuizShuffled(quizId)
+                      : m_repo.questionsForQuiz(quizId);
 
     if (m_questions.isEmpty()) {
         qWarning() << "[QuizEngine] No active questions for quiz" << quizId;
@@ -58,7 +58,7 @@ bool QuizEngine::startSession(int quizId, int userId,
 }
 
 bool QuizEngine::startCustomSession(const QList<QuestionDTO>& questions,
-                                     int userId, const QString& mode)
+                                    int userId, const QString& mode)
 {
     if (m_active || questions.isEmpty()) return false;
 
@@ -92,8 +92,8 @@ void QuizEngine::submitAnswer(const QString& answer)
     const QuestionDTO& q  = m_questions[m_currentIndex];
     const bool correct    = evaluateAnswer(q, answer);
     const int  timeSpent  = m_elapsed.isValid()
-                            ? static_cast<int>(m_elapsed.elapsed() / 1000)
-                            : 0;
+                              ? static_cast<int>(m_elapsed.elapsed() / 1000)
+                              : 0;
 
     AttemptRecord rec;
     rec.questionId   = q.id;
@@ -162,7 +162,7 @@ int QuizEngine::secondsRemainingForQuestion() const
 void QuizEngine::advanceToNext()
 {
     m_totalTimeSec += m_elapsed.isValid()
-                      ? static_cast<int>(m_elapsed.elapsed() / 1000) : 0;
+    ? static_cast<int>(m_elapsed.elapsed() / 1000) : 0;
 
     ++m_currentIndex;
     if (m_currentIndex >= m_questions.size()) {
@@ -244,7 +244,7 @@ bool QuizEngine::evaluateAnswer(const QuestionDTO& q, const QString& answer) con
                 if (opt.id == optId && opt.isCorrect) return true;
             } else {
                 if (opt.content.trimmed().compare(answer.trimmed(),
-                    Qt::CaseInsensitive) == 0 && opt.isCorrect) return true;
+                                                  Qt::CaseInsensitive) == 0 && opt.isCorrect) return true;
             }
         }
         return false;
@@ -266,16 +266,16 @@ bool QuizEngine::evaluateAnswer(const QuestionDTO& q, const QString& answer) con
     }
 
     if (q.type == "fill_blank") {
-        // Use explicit accepted-answer list when available (loaded from
-        // fill_blank_answers table); otherwise fall back to correct options.
-        if (!q.acceptedAnswers.isEmpty())
-            return AnswerEvaluationService::isFillBlankMatchAny(answer, q.acceptedAnswers);
-
-        // Fallback: derive accepted tokens from correct options on the fly.
-        QStringList fallback;
-        for (const auto& opt : q.options)
-            if (opt.isCorrect) fallback << opt.content;
-        return AnswerEvaluationService::isFillBlankMatchAny(answer, fallback);
+        // acceptedAnswers is always populated from fill_blank_answers by the
+        // repository (schema v4 guarantees the table exists). A question that
+        // arrives here with an empty list has a data-integrity problem —
+        // log and fail safe rather than silently falling back to options.
+        if (q.acceptedAnswers.isEmpty()) {
+            qWarning() << "[QuizEngine] fill_blank question" << q.id
+                       << "has no entries in fill_blank_answers — check data integrity";
+            return false;
+        }
+        return AnswerEvaluationService::isFillBlankMatchAny(answer, q.acceptedAnswers);
     }
 
     return false;
