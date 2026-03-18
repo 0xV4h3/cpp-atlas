@@ -21,7 +21,7 @@ INSERT OR IGNORE INTO quizzes (title, description, topic_id, difficulty, type, i
 ('Concurrent Memory Safety Quiz', 'Ownership, lifetime, and synchronization interactions in multithreaded code', 13, 4, 'standard', 1, 0, 1),
 ('Futures Promises Async Mastery Quiz', 'Future/promise/async contracts and safe asynchronous result handling', 13, 4, 'standard', 1, 0, 1),
 ('Advanced Mutex Patterns Quiz', 'Timed/shared/recursive mutex scenarios and lock strategy tradeoffs', 13, 4, 'standard', 1, 0, 1),
-('Atomic Correctness Workshop Quiz', 'Atomic operations, atomic_ref, and data-race-free design patterns', 13, 5, 'standard', 1, 0, 1),
+('Atomic Correctness Workshop Quiz', 'Atomic operations, atomic_ref, and data-race-free design patterns', 13, 4, 'standard', 1, 0, 1),
 ('Resource Ownership in Systems Quiz', 'RAII, copy/move ownership transfer, and architecture-level best practices', 11, 4, 'standard', 1, 0, 1);
 
 -- -------------------------------------------------------------
@@ -455,7 +455,7 @@ INSERT INTO questions (quiz_id, topic_id, type, content, code_snippet, explanati
  'Atomic operations on one variable automatically synchronize all unrelated shared data safely.',
  NULL,
  'False. Need proper synchronization design; atomics on one variable do not magically protect everything.',
- 5, 18, 1037, 1,
+ 4, 18, 1037, 1,
  'Scope of synchronization matters.',
  'https://cppreference.com/w/cpp/atomic.html');
 INSERT INTO options (question_id, content, is_correct, order_index) VALUES
@@ -481,7 +481,7 @@ INSERT INTO questions (quiz_id, topic_id, type, content, code_snippet, explanati
  'atomic_ref requires what precondition on referenced object?',
  NULL,
  'Referenced object must meet atomic_ref requirements (alignment/lifetime and no conflicting non-atomic accesses).',
- 5, 18, 1039, 1,
+ 4, 18, 1039, 1,
  'Correctness contract.',
  'https://cppreference.com/w/cpp/atomic/atomic_ref.html');
 INSERT INTO options (question_id, content, is_correct, order_index) VALUES
@@ -495,7 +495,7 @@ INSERT INTO questions (quiz_id, topic_id, type, content, code_snippet, explanati
  'Select statements about atomic correctness.',
  NULL,
  'Atomics prevent races on guarded object; overall design still needs memory ordering and invariant reasoning.',
- 5, 18, 1040, 1,
+ 4, 18, 1040, 1,
  'Primitive-level vs system-level correctness.',
  'https://cppreference.com/w/cpp/atomic.html');
 INSERT INTO options (question_id, content, is_correct, order_index) VALUES
@@ -547,7 +547,7 @@ INSERT INTO questions (quiz_id, topic_id, type, content, code_snippet, explanati
  'Best practice before switching mutex-protected code to atomics?',
  NULL,
  'Prove correctness model, benchmark, and validate memory-order semantics.',
- 5, 18, 1044, 1,
+ 4, 18, 1044, 1,
  'Correctness before micro-optimization.',
  'https://cppreference.com/w/cpp/atomic.html');
 INSERT INTO options (question_id, content, is_correct, order_index) VALUES
