@@ -6,8 +6,10 @@
 #include "quiz/ContentValidationService.h"
 #include "quiz/AdminPatchWorkflowService.h"
 #include "ui/AdminQuestionEditorDialog.h"
+#include "ui/AdminContentMaintenanceWidget.h"
 
 #include <QLabel>
+#include <QSplitter>
 #include <QTabWidget>
 #include <QTextEdit>
 #include <QPushButton>
@@ -34,7 +36,7 @@ QuizAdminPanel::QuizAdminPanel(QWidget* parent)
 void QuizAdminPanel::setupUi()
 {
     setWindowTitle(tr("CppAtlas — Administrator Panel"));
-    resize(900, 650);
+    resize(1100, 780);
 
     // ── Central widget ───────────────────────────────────────────────────────
     QWidget* central = new QWidget(this);
@@ -59,6 +61,8 @@ void QuizAdminPanel::setupUi()
 
     // ── Tabs ─────────────────────────────────────────────────────────────────
     m_tabs = new QTabWidget(central);
+    m_tabs->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
+    m_tabs->setMinimumHeight(320);
     m_tabs->setObjectName("adminTabs");
 
     QWidget* contentTab     = new QWidget;
@@ -79,17 +83,29 @@ void QuizAdminPanel::setupUi()
     m_tabs->addTab(statsTab,       tr("Stats"));
     m_tabs->addTab(maintenanceTab, tr("Maintenance"));
 
-    mainLayout->addWidget(m_tabs);
+    QSplitter* split = new QSplitter(Qt::Vertical, central);
+    split->addWidget(m_tabs);
 
-    // ── Log view ─────────────────────────────────────────────────────────────
-    QLabel* logLabel = new QLabel(tr("Activity log:"), central);
-    mainLayout->addWidget(logLabel);
+    QWidget* logPane = new QWidget(central);
+    QVBoxLayout* logLayout = new QVBoxLayout(logPane);
+    logLayout->setContentsMargins(0,0,0,0);
+    logLayout->setSpacing(4);
 
-    m_logView = new QTextEdit(central);
+    QLabel* logLabel = new QLabel(tr("Activity log:"), logPane);
+    logLayout->addWidget(logLabel);
+
+    m_logView = new QTextEdit(logPane);
     m_logView->setObjectName("adminLogView");
     m_logView->setReadOnly(true);
     m_logView->setPlaceholderText(tr("Admin operations will be logged here."));
-    mainLayout->addWidget(m_logView, 1);
+    logLayout->addWidget(m_logView);
+
+    split->addWidget(logPane);
+    split->setStretchFactor(0, 3);
+    split->setStretchFactor(1, 2);
+    split->setSizes({560, 260});
+
+    mainLayout->addWidget(split, 1);
 
     // ── Status bar ───────────────────────────────────────────────────────────
     statusBar()->showMessage(tr("Administrator panel ready."));
@@ -102,10 +118,10 @@ void QuizAdminPanel::setupContentTab(QWidget* tab)
     connect(applyBtn, &QPushButton::clicked, this, &QuizAdminPanel::onApplyContentUpdates);
 
     createAdminTabLayout(tab,
-        tr("Apply incremental SQL content patches to the quiz database.\n"
-           "Patches are discovered from the configured patches directory,\n"
-           "sorted lexicographically, and applied only once."),
-        applyBtn);
+                         tr("Apply incremental SQL content patches to the quiz database.\n"
+                            "Patches are discovered from the configured patches directory,\n"
+                            "sorted lexicographically, and applied only once."),
+                         applyBtn);
 }
 
 void QuizAdminPanel::setupValidationTab(QWidget* tab)
@@ -115,9 +131,9 @@ void QuizAdminPanel::setupValidationTab(QWidget* tab)
     connect(validateBtn, &QPushButton::clicked, this, &QuizAdminPanel::onValidateContent);
 
     createAdminTabLayout(tab,
-        tr("Validate the consistency of quiz content: check for questions\n"
-           "without options, orphaned records, and broken references."),
-        validateBtn);
+                         tr("Validate the consistency of quiz content: check for questions\n"
+                            "without options, orphaned records, and broken references."),
+                         validateBtn);
 }
 
 void QuizAdminPanel::setupExportTab(QWidget* tab)
@@ -127,9 +143,9 @@ void QuizAdminPanel::setupExportTab(QWidget* tab)
     connect(exportBtn, &QPushButton::clicked, this, &QuizAdminPanel::onExportBackup);
 
     createAdminTabLayout(tab,
-        tr("Export a full backup of quiz content (questions, options,\n"
-           "topics, tags) to a SQL dump file."),
-        exportBtn);
+                         tr("Export a full backup of quiz content (questions, options,\n"
+                            "topics, tags) to a SQL dump file."),
+                         exportBtn);
 }
 
 void QuizAdminPanel::setupStatsTab(QWidget* tab)
@@ -139,9 +155,9 @@ void QuizAdminPanel::setupStatsTab(QWidget* tab)
     connect(refreshBtn, &QPushButton::clicked, this, &QuizAdminPanel::refreshStats);
 
     createAdminTabLayout(tab,
-        tr("Live database statistics: question counts, session counts,\n"
-           "user counts, and applied content patches."),
-        refreshBtn);
+                         tr("Live database statistics: question counts, session counts,\n"
+                            "user counts, and applied content patches."),
+                         refreshBtn);
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -149,8 +165,8 @@ void QuizAdminPanel::setupStatsTab(QWidget* tab)
 // ─────────────────────────────────────────────────────────────────────────────
 
 QVBoxLayout* QuizAdminPanel::createAdminTabLayout(QWidget* tab,
-                                                   const QString& description,
-                                                   QPushButton* actionBtn)
+                                                  const QString& description,
+                                                  QPushButton* actionBtn)
 {
     QVBoxLayout* layout = new QVBoxLayout(tab);
     layout->setContentsMargins(8, 8, 8, 8);
@@ -179,7 +195,7 @@ void QuizAdminPanel::onApplyContentUpdates()
         tr("Select Content Patches Directory"),
         lastPatchDir,
         QFileDialog::ShowDirsOnly | QFileDialog::DontResolveSymlinks
-    );
+        );
     if (dir.isEmpty()) {
         log(tr("[Content] Operation cancelled."));
         return;
@@ -205,7 +221,7 @@ void QuizAdminPanel::onApplyContentUpdates()
     }
 
     log(tr("[Content] Total: %1  Applied: %2  Pending: %3")
-        .arg(patches.size()).arg(alreadyApplied).arg(pending));
+            .arg(patches.size()).arg(alreadyApplied).arg(pending));
 
     if (pending == 0) {
         log(tr("[Content] All patches already applied."));
@@ -249,13 +265,13 @@ void QuizAdminPanel::onValidateContent()
     int warnings = 0;
     for (const ValidationFinding& f : findings) {
         const QString sev = (f.severity == ValidationSeverity::Error)
-                            ? tr("ERROR") : tr("WARN ");
+        ? tr("ERROR") : tr("WARN ");
         if (f.severity == ValidationSeverity::Error) ++errors;
         else ++warnings;
 
         log(tr("[Validation] %1 [%2 id=%3] %4 → %5")
-            .arg(sev, f.entityType).arg(f.entityId)
-            .arg(f.message, f.suggestedFix));
+                .arg(sev, f.entityType).arg(f.entityId)
+                .arg(f.message, f.suggestedFix));
     }
 
     log(tr("[Validation] Summary: %1 error(s), %2 warning(s).").arg(errors).arg(warnings));
@@ -274,7 +290,7 @@ void QuizAdminPanel::onExportBackup()
         QString("cppatlas_backup_%1.sql").arg(
             QDateTime::currentDateTime().toString("yyyyMMdd_hhmmss")),
         tr("SQL Files (*.sql);;All Files (*)")
-    );
+        );
     if (outFile.isEmpty()) {
         log(tr("[Export] Operation cancelled."));
         return;
@@ -346,32 +362,37 @@ void QuizAdminPanel::setupMaintenanceTab(QWidget* tab)
     layout->setSpacing(8);
 
     QLabel* info = new QLabel(
-        tr("Content Maintenance: create or edit questions, "
+        tr("Content Maintenance: create or edit questions and quizzes, "
            "and manage patch workflow with rollback support."), tab);
     info->setWordWrap(true);
     layout->addWidget(info);
 
-    // ── Question editor button ────────────────────────────────────────────────
-    QPushButton* editorBtn = new QPushButton(tr("Create Question"), tab);
-    editorBtn->setObjectName("adminOpenEditorBtn");
-    connect(editorBtn, &QPushButton::clicked,
-            this, &QuizAdminPanel::onOpenQuestionEditor);
-    layout->addWidget(editorBtn, 0, Qt::AlignLeft);
+    // ── AdminContentMaintenanceWidget ─────────────────────────────────────────
+    m_maintenanceWidget = new AdminContentMaintenanceWidget(tab);
+    connect(m_maintenanceWidget, &AdminContentMaintenanceWidget::operationCompleted,
+            this, [this](const QString& msg) {
+                log(tr("[Maintenance] %1").arg(msg));
+                statusBar()->showMessage(msg);
+            });
+    layout->addWidget(m_maintenanceWidget, 1);
 
     // ── Patch workflow buttons ────────────────────────────────────────────────
+    QHBoxLayout* patchBtnLayout = new QHBoxLayout;
+
     QPushButton* rollbackBtn = new QPushButton(tr("Rollback Last Patch"), tab);
     rollbackBtn->setObjectName("adminRollbackBtn");
     connect(rollbackBtn, &QPushButton::clicked,
             this, &QuizAdminPanel::onRollbackLastPatch);
-    layout->addWidget(rollbackBtn, 0, Qt::AlignLeft);
+    patchBtnLayout->addWidget(rollbackBtn);
 
     QPushButton* journalBtn = new QPushButton(tr("Show Journal History"), tab);
     journalBtn->setObjectName("adminJournalBtn");
     connect(journalBtn, &QPushButton::clicked,
             this, &QuizAdminPanel::onShowJournalHistory);
-    layout->addWidget(journalBtn, 0, Qt::AlignLeft);
+    patchBtnLayout->addWidget(journalBtn);
 
-    layout->addStretch(1);
+    patchBtnLayout->addStretch(1);
+    layout->addLayout(patchBtnLayout);
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -397,7 +418,7 @@ void QuizAdminPanel::onRollbackLastPatch()
            "last applied patch.\n\nAre you sure?"),
         QMessageBox::Yes | QMessageBox::No,
         QMessageBox::No
-    );
+        );
     if (btn != QMessageBox::Yes) {
         log(tr("[Maintenance] Rollback cancelled by user."));
         return;

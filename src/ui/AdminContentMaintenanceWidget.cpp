@@ -6,6 +6,7 @@
 
 #include <QComboBox>
 #include <QGroupBox>
+#include <QSplitter>
 #include <QHBoxLayout>
 #include <QHeaderView>
 #include <QLabel>
@@ -37,13 +38,21 @@ void AdminContentMaintenanceWidget::setupUi()
     root->setContentsMargins(4, 4, 4, 4);
     root->setSpacing(8);
 
-    QWidget* qzWidget = new QWidget(this);
-    setupQuizzesGroup(qzWidget);
-    root->addWidget(qzWidget);
+    QSplitter* split = new QSplitter(Qt::Vertical, this);
 
-    QWidget* qWidget = new QWidget(this);
+    QWidget* qzWidget = new QWidget(split);
+    setupQuizzesGroup(qzWidget);
+
+    QWidget* qWidget = new QWidget(split);
     setupQuestionsGroup(qWidget);
-    root->addWidget(qWidget, 1);
+
+    split->addWidget(qzWidget);
+    split->addWidget(qWidget);
+    split->setStretchFactor(0, 2);
+    split->setStretchFactor(1, 3);
+    split->setSizes({260, 420});
+
+    root->addWidget(split, 1);
 }
 
 void AdminContentMaintenanceWidget::setupQuizzesGroup(QWidget* parent)
