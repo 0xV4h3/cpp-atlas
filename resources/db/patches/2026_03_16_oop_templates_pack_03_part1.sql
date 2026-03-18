@@ -67,6 +67,8 @@ INSERT INTO options (question_id, content, is_correct, order_index) VALUES
 
 INSERT INTO questions (quiz_id, topic_id, type, content, code_snippet, explanation, difficulty, points, order_index, is_active, hint, ref_url) VALUES
 (8, 8, 'fill_blank', 'A constructor that calls another constructor of the same class is called a ____ constructor.', NULL, 'This is called a delegating constructor.', 2, 10, 306, 1, 'C++11 feature.', 'https://www.learncpp.com/cpp-tutorial/delegating-constructors/');
+INSERT OR IGNORE INTO fill_blank_answers (question_id, answer, order_index) VALUES
+((SELECT id FROM questions WHERE quiz_id=8 AND order_index=306), 'delegating', 1);
 
 INSERT INTO questions (quiz_id, topic_id, type, content, code_snippet, explanation, difficulty, points, order_index, is_active, hint, ref_url) VALUES
 (8, 8, 'mcq', 'What does static data member mean?', NULL, 'Static data members are shared across all instances of a class.', 2, 10, 307, 1, 'Per-class, not per-object.', 'https://www.learncpp.com/cpp-tutorial/static-member-variables/');
@@ -133,6 +135,9 @@ INSERT INTO options (question_id, content, is_correct, order_index) VALUES
 
 INSERT INTO questions (quiz_id, topic_id, type, content, code_snippet, explanation, difficulty, points, order_index, is_active, hint, ref_url) VALUES
 (9, 9, 'fill_blank', 'The keyword used to declare a template type parameter is ____.', NULL, 'Both typename and class are valid in this context; typename is common in explanations.', 1, 10, 315, 1, 'template <typename T>', 'https://cppreference.com/w/cpp/language/templates.html');
+INSERT OR IGNORE INTO fill_blank_answers (question_id, answer, order_index) VALUES
+((SELECT id FROM questions WHERE quiz_id=9 AND order_index=315), 'typename', 1),
+((SELECT id FROM questions WHERE quiz_id=9 AND order_index=315), 'class', 2);
 
 INSERT INTO questions (quiz_id, topic_id, type, content, code_snippet, explanation, difficulty, points, order_index, is_active, hint, ref_url) VALUES
 (9, 9, 'mcq', 'What is partial class template specialization?', NULL, 'Specializing a class template for a subset/pattern of template arguments.', 4, 15, 316, 1, 'Pattern-based specialization.', 'https://www.learncpp.com/cpp-tutorial/partial-template-specialization/');
@@ -215,6 +220,8 @@ INSERT INTO options (question_id, content, is_correct, order_index) VALUES
 
 INSERT INTO questions (quiz_id, topic_id, type, content, code_snippet, explanation, difficulty, points, order_index, is_active, hint, ref_url) VALUES
 ((SELECT id FROM quizzes WHERE title='Class Design Workshop Quiz' ORDER BY id DESC LIMIT 1), 8, 'fill_blank', 'In C++, access specifier used to expose class API publicly is ____.', NULL, 'The public access specifier exposes members to external users.', 1, 10, 326, 1, 'public/private/protected trio.', 'https://www.learncpp.com/cpp-tutorial/public-and-private-members-and-access-specifiers/');
+INSERT OR IGNORE INTO fill_blank_answers (question_id, answer, order_index) VALUES
+((SELECT id FROM questions WHERE order_index=326), 'public', 1);
 
 INSERT INTO questions (quiz_id, topic_id, type, content, code_snippet, explanation, difficulty, points, order_index, is_active, hint, ref_url) VALUES
 ((SELECT id FROM quizzes WHERE title='Class Design Workshop Quiz' ORDER BY id DESC LIMIT 1), 8, 'mcq', 'Which relationship is typically weak and non-owning?', NULL, 'Association is typically non-owning relationship.', 2, 10, 327, 1, 'Compare with composition/aggregation.', 'https://www.learncpp.com/cpp-tutorial/association/');
@@ -289,6 +296,9 @@ INSERT INTO options (question_id, content, is_correct, order_index) VALUES
 
 INSERT INTO questions (quiz_id, topic_id, type, content, code_snippet, explanation, difficulty, points, order_index, is_active, hint, ref_url) VALUES
 ((SELECT id FROM quizzes WHERE title='Inheritance Patterns Quiz' ORDER BY id DESC LIMIT 1), 8, 'fill_blank', 'A class that contains at least one pure virtual function is called ____ class.', NULL, 'Such class is abstract and cannot be instantiated directly.', 3, 12, 336, 1, 'Pure virtual => abstract.', 'https://www.studyplan.dev/pro-cpp/pure-virtual');
+INSERT OR IGNORE INTO fill_blank_answers (question_id, answer, order_index) VALUES
+((SELECT id FROM questions WHERE order_index=336), 'abstract', 1),
+((SELECT id FROM questions WHERE order_index=336), 'an abstract', 2);
 
 INSERT INTO questions (quiz_id, topic_id, type, content, code_snippet, explanation, difficulty, points, order_index, is_active, hint, ref_url) VALUES
 ((SELECT id FROM quizzes WHERE title='Inheritance Patterns Quiz' ORDER BY id DESC LIMIT 1), 8, 'mcq', 'What is multiple inheritance?', NULL, 'A class inheriting from more than one base class.', 3, 12, 337, 1, 'Two or more bases.', 'https://www.learncpp.com/cpp-tutorial/multiple-inheritance/');
@@ -363,6 +373,9 @@ INSERT INTO options (question_id, content, is_correct, order_index) VALUES
 
 INSERT INTO questions (quiz_id, topic_id, type, content, code_snippet, explanation, difficulty, points, order_index, is_active, hint, ref_url) VALUES
 ((SELECT id FROM quizzes WHERE title='Template Fundamentals Quiz' ORDER BY id DESC LIMIT 1), 9, 'fill_blank', 'Complete: A member function template belongs to a ____ template or non-template class.', NULL, 'Member function templates can appear in classes and class templates.', 3, 12, 346, 1, 'Template inside class context.', 'https://www.studyplan.dev/pro-cpp/member-function-templates');
+INSERT OR IGNORE INTO fill_blank_answers (question_id, answer, order_index) VALUES
+((SELECT id FROM questions WHERE order_index=346), 'class', 1),
+((SELECT id FROM questions WHERE order_index=346), 'class template', 2);
 
 INSERT INTO questions (quiz_id, topic_id, type, content, code_snippet, explanation, difficulty, points, order_index, is_active, hint, ref_url) VALUES
 ((SELECT id FROM quizzes WHERE title='Template Fundamentals Quiz' ORDER BY id DESC LIMIT 1), 9, 'mcq', 'What problem does template specialization for pointers often solve?', NULL, 'Pointer types may need distinct behavior (ownership/format/traits handling).', 4, 15, 347, 1, 'Pointer-specific semantics.', 'https://www.learncpp.com/cpp-tutorial/partial-template-specialization-for-pointers/');

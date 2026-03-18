@@ -67,6 +67,8 @@ INSERT INTO options (question_id, content, is_correct, order_index) VALUES
 
 INSERT INTO questions (quiz_id, topic_id, type, content, code_snippet, explanation, difficulty, points, order_index, is_active, hint, ref_url) VALUES
 ((SELECT id FROM quizzes WHERE title='STL Iterators & Containers Mastery Quiz' ORDER BY id DESC LIMIT 1), 10, 'fill_blank', 'Iterator category required by std::sort is ____-access iterator.', NULL, 'random.', 2, 10, 706, 1, 'Sort constraints.', 'https://www.learncpp.com/cpp-tutorial/stl-iterators-overview/');
+INSERT OR IGNORE INTO fill_blank_answers (question_id, answer, order_index) VALUES
+((SELECT id FROM questions WHERE order_index=706), 'random', 1);
 
 INSERT INTO questions (quiz_id, topic_id, type, content, code_snippet, explanation, difficulty, points, order_index, is_active, hint, ref_url) VALUES
 ((SELECT id FROM quizzes WHERE title='STL Iterators & Containers Mastery Quiz' ORDER BY id DESC LIMIT 1), 10, 'mcq', 'Which container is singly-linked?', NULL, 'std::forward_list.', 2, 10, 707, 1, 'Forward links only.', 'https://cppreference.com/w/cpp/container/forward_list.html');
@@ -141,6 +143,8 @@ INSERT INTO options (question_id, content, is_correct, order_index) VALUES
 
 INSERT INTO questions (quiz_id, topic_id, type, content, code_snippet, explanation, difficulty, points, order_index, is_active, hint, ref_url) VALUES
 ((SELECT id FROM quizzes WHERE title='Search & Counting Algorithms Quiz' ORDER BY id DESC LIMIT 1), 10, 'fill_blank', 'std::all_of returns true only if ____ elements satisfy predicate.', NULL, 'all.', 1, 10, 716, 1, 'Universal quantifier style.', 'https://www.learncpp.com/cpp-tutorial/stl-algorithms-overview/');
+INSERT OR IGNORE INTO fill_blank_answers (question_id, answer, order_index) VALUES
+((SELECT id FROM questions WHERE order_index=716), 'all', 1);
 
 INSERT INTO questions (quiz_id, topic_id, type, content, code_snippet, explanation, difficulty, points, order_index, is_active, hint, ref_url) VALUES
 ((SELECT id FROM quizzes WHERE title='Search & Counting Algorithms Quiz' ORDER BY id DESC LIMIT 1), 10, 'mcq', 'Which algorithm can be used to test if no elements satisfy condition?', NULL, 'std::none_of.', 2, 10, 717, 1, 'Companion of any_of/all_of.', 'https://www.learncpp.com/cpp-tutorial/stl-algorithms-overview/');
@@ -215,6 +219,9 @@ INSERT INTO options (question_id, content, is_correct, order_index) VALUES
 
 INSERT INTO questions (quiz_id, topic_id, type, content, code_snippet, explanation, difficulty, points, order_index, is_active, hint, ref_url) VALUES
 ((SELECT id FROM quizzes WHERE title='Lambdas in Real Workflows Quiz' ORDER BY id DESC LIMIT 1), 12, 'fill_blank', 'Lambda introducer and capture list begins with square ____.', NULL, 'brackets.', 1, 10, 726, 1, '[] syntax.', 'https://www.studyplan.dev/pro-cpp/lambda');
+INSERT OR IGNORE INTO fill_blank_answers (question_id, answer, order_index) VALUES
+((SELECT id FROM questions WHERE order_index=726), 'brackets', 1),
+((SELECT id FROM questions WHERE order_index=726), '[]', 2);
 
 INSERT INTO questions (quiz_id, topic_id, type, content, code_snippet, explanation, difficulty, points, order_index, is_active, hint, ref_url) VALUES
 ((SELECT id FROM quizzes WHERE title='Lambdas in Real Workflows Quiz' ORDER BY id DESC LIMIT 1), 12, 'mcq', 'What does empty capture list [] imply?', NULL, 'No local variables are captured.', 1, 10, 727, 1, 'Stateless lambda (unless globals/static used).', 'https://www.learncpp.com/cpp-tutorial/lambda-captures/');
@@ -289,6 +296,8 @@ INSERT INTO options (question_id, content, is_correct, order_index) VALUES
 
 INSERT INTO questions (quiz_id, topic_id, type, content, code_snippet, explanation, difficulty, points, order_index, is_active, hint, ref_url) VALUES
 ((SELECT id FROM quizzes WHERE title='Move Semantics & Value Categories Quiz' ORDER BY id DESC LIMIT 1), 12, 'fill_blank', 'Named variable expression is typically an ____ value category.', NULL, 'lvalue.', 2, 10, 736, 1, 'Identity-bearing expression.', 'https://www.learncpp.com/cpp-tutorial/rvalue-references/');
+INSERT OR IGNORE INTO fill_blank_answers (question_id, answer, order_index) VALUES
+((SELECT id FROM questions WHERE order_index=736), 'lvalue', 1);
 
 INSERT INTO questions (quiz_id, topic_id, type, content, code_snippet, explanation, difficulty, points, order_index, is_active, hint, ref_url) VALUES
 ((SELECT id FROM quizzes WHERE title='Move Semantics & Value Categories Quiz' ORDER BY id DESC LIMIT 1), 12, 'mcq', 'Which standard feature pair is strongly associated with C++11 modernization?', NULL, 'Lambdas and move semantics are hallmark C++11 features.', 2, 10, 737, 1, 'Modern baseline.', 'https://www.learncpp.com/cpp-tutorial/introduction-to-c11/');
@@ -363,6 +372,9 @@ INSERT INTO options (question_id, content, is_correct, order_index) VALUES
 
 INSERT INTO questions (quiz_id, topic_id, type, content, code_snippet, explanation, difficulty, points, order_index, is_active, hint, ref_url) VALUES
 ((SELECT id FROM quizzes WHERE title='Modern C++ Vocabulary Types Quiz' ORDER BY id DESC LIMIT 1), 12, 'fill_blank', 'std::_____ provides type-safe union-style alternatives.', NULL, 'variant.', 2, 10, 746, 1, 'One-of-many types.', 'https://www.studyplan.dev/pro-cpp/variants');
+INSERT OR IGNORE INTO fill_blank_answers (question_id, answer, order_index) VALUES
+((SELECT id FROM questions WHERE order_index=746), 'variant', 1),
+((SELECT id FROM questions WHERE order_index=746), 'std::variant', 2);
 
 INSERT INTO questions (quiz_id, topic_id, type, content, code_snippet, explanation, difficulty, points, order_index, is_active, hint, ref_url) VALUES
 ((SELECT id FROM quizzes WHERE title='Modern C++ Vocabulary Types Quiz' ORDER BY id DESC LIMIT 1), 12, 'mcq', 'Which modern standard is associated with ranges and concepts?', NULL, 'C++20.', 2, 10, 747, 1, 'Feature timeline.', 'https://www.learncpp.com/cpp-tutorial/introduction-to-c20/');

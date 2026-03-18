@@ -105,6 +105,9 @@ INSERT INTO questions (quiz_id, topic_id, type, content, code_snippet, explanati
  2, 10, 906, 1,
  'Observer pointer.',
  'https://www.studyplan.dev/pro-cpp/weak-pointers');
+INSERT OR IGNORE INTO fill_blank_answers (question_id, answer, order_index) VALUES
+((SELECT id FROM questions WHERE quiz_id=11 AND order_index=906), 'weak_ptr', 1),
+((SELECT id FROM questions WHERE quiz_id=11 AND order_index=906), 'std::weak_ptr', 2);
 
 -- -------------------------------------------------------------
 -- NEW Quiz: Smart Pointer Mastery Quiz (10 questions, 907..916)
@@ -185,6 +188,9 @@ INSERT INTO questions (quiz_id, topic_id, type, content, code_snippet, explanati
  3, 12, 912, 1,
  'Metadata for counts.',
  'https://www.learncpp.com/cpp-tutorial/stdshared_ptr/');
+INSERT OR IGNORE INTO fill_blank_answers (question_id, answer, order_index) VALUES
+((SELECT id FROM questions WHERE order_index=912), 'block', 1),
+((SELECT id FROM questions WHERE order_index=912), 'control block', 2);
 
 INSERT INTO questions (quiz_id, topic_id, type, content, code_snippet, explanation, difficulty, points, order_index, is_active, hint, ref_url) VALUES
 ((SELECT id FROM quizzes WHERE title='Smart Pointer Mastery Quiz' ORDER BY id DESC LIMIT 1), 11, 'mcq',
@@ -319,6 +325,8 @@ INSERT INTO questions (quiz_id, topic_id, type, content, code_snippet, explanati
  2, 10, 922, 1,
  'Scheduler hint API.',
  'https://cppreference.com/w/cpp/thread/yield.html');
+INSERT OR IGNORE INTO fill_blank_answers (question_id, answer, order_index) VALUES
+((SELECT id FROM questions WHERE order_index=922), 'yield', 1);
 
 INSERT INTO questions (quiz_id, topic_id, type, content, code_snippet, explanation, difficulty, points, order_index, is_active, hint, ref_url) VALUES
 ((SELECT id FROM quizzes WHERE title='Threading Fundamentals Quiz' ORDER BY id DESC LIMIT 1), 13, 'mcq',
@@ -453,6 +461,9 @@ INSERT INTO questions (quiz_id, topic_id, type, content, code_snippet, explanati
  3, 12, 932, 1,
  'Recursive lock semantics.',
  'https://cppreference.com/w/cpp/thread/recursive_mutex.html');
+INSERT OR IGNORE INTO fill_blank_answers (question_id, answer, order_index) VALUES
+((SELECT id FROM questions WHERE order_index=932), 'recursive_', 1),
+((SELECT id FROM questions WHERE order_index=932), 'recursive', 2);
 
 INSERT INTO questions (quiz_id, topic_id, type, content, code_snippet, explanation, difficulty, points, order_index, is_active, hint, ref_url) VALUES
 ((SELECT id FROM quizzes WHERE title='Mutexes & Locks Practice Quiz' ORDER BY id DESC LIMIT 1), 13, 'mcq',
@@ -587,6 +598,9 @@ INSERT INTO questions (quiz_id, topic_id, type, content, code_snippet, explanati
  2, 10, 942, 1,
  'Producer-consumer result channel.',
  'https://cppreference.com/w/cpp/thread/promise.html');
+INSERT OR IGNORE INTO fill_blank_answers (question_id, answer, order_index) VALUES
+((SELECT id FROM questions WHERE order_index=942), 'future', 1),
+((SELECT id FROM questions WHERE order_index=942), 'std::future', 2);
 
 INSERT INTO questions (quiz_id, topic_id, type, content, code_snippet, explanation, difficulty, points, order_index, is_active, hint, ref_url) VALUES
 ((SELECT id FROM quizzes WHERE title='Atomics & Synchronization Quiz' ORDER BY id DESC LIMIT 1), 13, 'mcq',
@@ -722,6 +736,9 @@ INSERT INTO questions (quiz_id, topic_id, type, content, code_snippet, explanati
  2, 10, 952, 1,
  'Producer-consumer result channel.',
  'https://cppreference.com/w/cpp/thread/promise.html');
+INSERT OR IGNORE INTO fill_blank_answers (question_id, answer, order_index) VALUES
+((SELECT id FROM questions WHERE order_index=952), 'promise', 1),
+((SELECT id FROM questions WHERE order_index=952), 'std::promise', 2);
 
 INSERT INTO questions (quiz_id, topic_id, type, content, code_snippet, explanation, difficulty, points, order_index, is_active, hint, ref_url) VALUES
 ((SELECT id FROM quizzes WHERE title='Async Patterns & Safety Quiz' ORDER BY id DESC LIMIT 1), 13, 'mcq',

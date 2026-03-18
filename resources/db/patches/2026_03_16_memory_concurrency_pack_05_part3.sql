@@ -103,6 +103,8 @@ INSERT INTO questions (quiz_id, topic_id, type, content, code_snippet, explanati
  2, 10, 1011, 1,
  'Atomic scalar type.',
  'https://cppreference.com/w/cpp/atomic/atomic.html');
+INSERT OR IGNORE INTO fill_blank_answers (question_id, answer, order_index) VALUES
+((SELECT id FROM questions WHERE order_index=1011), 'int', 1);
 
 INSERT INTO questions (quiz_id, topic_id, type, content, code_snippet, explanation, difficulty, points, order_index, is_active, hint, ref_url) VALUES
 ((SELECT id FROM quizzes WHERE title='Concurrent Memory Safety Quiz' ORDER BY id DESC LIMIT 1), 13, 'mcq',
@@ -237,6 +239,9 @@ INSERT INTO questions (quiz_id, topic_id, type, content, code_snippet, explanati
  1, 10, 1021, 1,
  'Consume result.',
  'https://cppreference.com/w/cpp/thread/future.html');
+INSERT OR IGNORE INTO fill_blank_answers (question_id, answer, order_index) VALUES
+((SELECT id FROM questions WHERE order_index=1021), 'get', 1),
+((SELECT id FROM questions WHERE order_index=1021), 'get()', 2);
 
 INSERT INTO questions (quiz_id, topic_id, type, content, code_snippet, explanation, difficulty, points, order_index, is_active, hint, ref_url) VALUES
 ((SELECT id FROM quizzes WHERE title='Futures Promises Async Mastery Quiz' ORDER BY id DESC LIMIT 1), 13, 'mcq',
@@ -371,6 +376,8 @@ INSERT INTO questions (quiz_id, topic_id, type, content, code_snippet, explanati
  3, 12, 1031, 1,
  'Lock tag type.',
  'https://cppreference.com/w/cpp/thread/lock_tag_t.html');
+INSERT OR IGNORE INTO fill_blank_answers (question_id, answer, order_index) VALUES
+((SELECT id FROM questions WHERE order_index=1031), 'lock', 1);
 
 INSERT INTO questions (quiz_id, topic_id, type, content, code_snippet, explanation, difficulty, points, order_index, is_active, hint, ref_url) VALUES
 ((SELECT id FROM quizzes WHERE title='Advanced Mutex Patterns Quiz' ORDER BY id DESC LIMIT 1), 13, 'mcq',
@@ -505,6 +512,9 @@ INSERT INTO questions (quiz_id, topic_id, type, content, code_snippet, explanati
  2, 10, 1041, 1,
  'Core atomic wrapper.',
  'https://cppreference.com/w/cpp/atomic/atomic.html');
+INSERT OR IGNORE INTO fill_blank_answers (question_id, answer, order_index) VALUES
+((SELECT id FROM questions WHERE order_index=1041), 'atomic', 1),
+((SELECT id FROM questions WHERE order_index=1041), 'std::atomic', 2);
 
 INSERT INTO questions (quiz_id, topic_id, type, content, code_snippet, explanation, difficulty, points, order_index, is_active, hint, ref_url) VALUES
 ((SELECT id FROM quizzes WHERE title='Atomic Correctness Workshop Quiz' ORDER BY id DESC LIMIT 1), 13, 'mcq',
@@ -639,6 +649,9 @@ INSERT INTO questions (quiz_id, topic_id, type, content, code_snippet, explanati
  2, 10, 1051, 1,
  'Transfer instead of duplicate.',
  'https://www.studyplan.dev/pro-cpp/move-semantics');
+INSERT OR IGNORE INTO fill_blank_answers (question_id, answer, order_index) VALUES
+((SELECT id FROM questions WHERE order_index=1051), 'copies', 1),
+((SELECT id FROM questions WHERE order_index=1051), 'copy', 2);
 
 INSERT INTO questions (quiz_id, topic_id, type, content, code_snippet, explanation, difficulty, points, order_index, is_active, hint, ref_url) VALUES
 ((SELECT id FROM quizzes WHERE title='Resource Ownership in Systems Quiz' ORDER BY id DESC LIMIT 1), 11, 'mcq',

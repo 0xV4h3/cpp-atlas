@@ -60,6 +60,8 @@ INSERT INTO options (question_id, content, is_correct, order_index) VALUES
 
 INSERT INTO questions (quiz_id, topic_id, type, content, code_snippet, explanation, difficulty, points, order_index, is_active, hint, ref_url) VALUES
 (8, 8, 'fill_blank', 'Member initializer lists run ____ constructor body execution.', NULL, 'They execute before constructor body.', 2, 10, 356, 1, 'Initialization phase ordering.', 'https://www.learncpp.com/cpp-tutorial/constructor-member-initializer-lists/');
+INSERT OR IGNORE INTO fill_blank_answers (question_id, answer, order_index) VALUES
+((SELECT id FROM questions WHERE quiz_id=8 AND order_index=356), 'before', 1);
 
 INSERT INTO questions (quiz_id, topic_id, type, content, code_snippet, explanation, difficulty, points, order_index, is_active, hint, ref_url) VALUES
 (8, 8, 'mcq', 'Why are delegating constructors useful?', NULL, 'They reduce duplicated initialization logic across constructors.', 2, 10, 357, 1, 'DRY for constructors.', 'https://www.learncpp.com/cpp-tutorial/delegating-constructors/');
@@ -134,6 +136,8 @@ INSERT INTO options (question_id, content, is_correct, order_index) VALUES
 
 INSERT INTO questions (quiz_id, topic_id, type, content, code_snippet, explanation, difficulty, points, order_index, is_active, hint, ref_url) VALUES
 (9, 9, 'fill_blank', 'A specialization that handles some, but not all, template argument patterns is called ____ specialization.', NULL, 'That is partial specialization.', 3, 12, 366, 1, 'Between primary and full specialization.', 'https://www.learncpp.com/cpp-tutorial/partial-template-specialization/');
+INSERT OR IGNORE INTO fill_blank_answers (question_id, answer, order_index) VALUES
+((SELECT id FROM questions WHERE quiz_id=9 AND order_index=366), 'partial', 1);
 
 INSERT INTO questions (quiz_id, topic_id, type, content, code_snippet, explanation, difficulty, points, order_index, is_active, hint, ref_url) VALUES
 (9, 9, 'mcq', 'Which statement about function template partial specialization is correct?', NULL, 'Function templates do not support partial specialization directly; overloading is used instead.', 4, 15, 367, 1, 'Function template nuance.', 'https://www.learncpp.com/cpp-tutorial/function-template-specialization/');
@@ -208,6 +212,8 @@ INSERT INTO options (question_id, content, is_correct, order_index) VALUES
 
 INSERT INTO questions (quiz_id, topic_id, type, content, code_snippet, explanation, difficulty, points, order_index, is_active, hint, ref_url) VALUES
 ((SELECT id FROM quizzes WHERE title='Class Lifecycle Mastery Quiz' ORDER BY id DESC LIMIT 1), 8, 'fill_blank', 'A function with the same name as its class and no return type is a ____.', NULL, 'That is a constructor.', 1, 10, 376, 1, 'Creation-time function.', 'https://www.studyplan.dev/intro-to-programming/constructors');
+INSERT OR IGNORE INTO fill_blank_answers (question_id, answer, order_index) VALUES
+((SELECT id FROM questions WHERE order_index=376), 'constructor', 1);
 
 INSERT INTO questions (quiz_id, topic_id, type, content, code_snippet, explanation, difficulty, points, order_index, is_active, hint, ref_url) VALUES
 ((SELECT id FROM quizzes WHERE title='Class Lifecycle Mastery Quiz' ORDER BY id DESC LIMIT 1), 8, 'mcq', 'When is copy constructor typically called?', NULL, 'During pass-by-value, return-by-value (subject to elision), and copy init.', 2, 10, 377, 1, 'Think value semantics paths.', 'https://www.learncpp.com/cpp-tutorial/introduction-to-the-copy-constructor/');
@@ -282,6 +288,9 @@ INSERT INTO options (question_id, content, is_correct, order_index) VALUES
 
 INSERT INTO questions (quiz_id, topic_id, type, content, code_snippet, explanation, difficulty, points, order_index, is_active, hint, ref_url) VALUES
 ((SELECT id FROM quizzes WHERE title='Inheritance & Polymorphism Practice Quiz' ORDER BY id DESC LIMIT 1), 8, 'fill_blank', 'A class with at least one pure virtual function cannot be directly ____.', NULL, 'It cannot be instantiated.', 2, 10, 386, 1, 'Abstract class rule.', 'https://www.studyplan.dev/pro-cpp/pure-virtual');
+INSERT OR IGNORE INTO fill_blank_answers (question_id, answer, order_index) VALUES
+((SELECT id FROM questions WHERE order_index=386), 'instantiated', 1),
+((SELECT id FROM questions WHERE order_index=386), 'instantiate', 2);
 
 INSERT INTO questions (quiz_id, topic_id, type, content, code_snippet, explanation, difficulty, points, order_index, is_active, hint, ref_url) VALUES
 ((SELECT id FROM quizzes WHERE title='Inheritance & Polymorphism Practice Quiz' ORDER BY id DESC LIMIT 1), 8, 'mcq', 'Which is true about base references?', NULL, 'Base references can bind to derived objects and enable polymorphic calls for virtual funcs.', 3, 12, 387, 1, 'Reference polymorphism.', 'https://www.learncpp.com/cpp-tutorial/basic-inheritance-in-c/');
@@ -356,6 +365,9 @@ INSERT INTO options (question_id, content, is_correct, order_index) VALUES
 
 INSERT INTO questions (quiz_id, topic_id, type, content, code_snippet, explanation, difficulty, points, order_index, is_active, hint, ref_url) VALUES
 ((SELECT id FROM quizzes WHERE title='Template Patterns Practice Quiz' ORDER BY id DESC LIMIT 1), 9, 'fill_blank', 'Specialization for exactly one template argument set is called ____ specialization.', NULL, 'That is full specialization.', 3, 12, 396, 1, 'Exact-case specialization.', 'https://www.learncpp.com/cpp-tutorial/class-template-specialization/');
+INSERT OR IGNORE INTO fill_blank_answers (question_id, answer, order_index) VALUES
+((SELECT id FROM questions WHERE order_index=396), 'full', 1),
+((SELECT id FROM questions WHERE order_index=396), 'explicit', 2);
 
 INSERT INTO questions (quiz_id, topic_id, type, content, code_snippet, explanation, difficulty, points, order_index, is_active, hint, ref_url) VALUES
 ((SELECT id FROM quizzes WHERE title='Template Patterns Practice Quiz' ORDER BY id DESC LIMIT 1), 9, 'mcq', 'Why do dependencies matter in template-heavy code?', NULL, 'Templates can amplify compile dependencies and rebuild cost.', 3, 12, 397, 1, 'Build scalability concern.', 'https://www.learncpp.com/cpp-tutorial/dependencies/');

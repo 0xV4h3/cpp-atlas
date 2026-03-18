@@ -103,6 +103,8 @@ INSERT INTO questions (quiz_id, topic_id, type, content, code_snippet, explanati
  1, 10, 961, 1,
  'Scalar delete syntax.',
  'https://www.studyplan.dev/intro-to-programming/manual-memory-management');
+INSERT OR IGNORE INTO fill_blank_answers (question_id, answer, order_index) VALUES
+((SELECT id FROM questions WHERE order_index=961), 'delete', 1);
 
 INSERT INTO questions (quiz_id, topic_id, type, content, code_snippet, explanation, difficulty, points, order_index, is_active, hint, ref_url) VALUES
 ((SELECT id FROM quizzes WHERE title='Memory Model Essentials Quiz' ORDER BY id DESC LIMIT 1), 11, 'mcq',
@@ -237,6 +239,9 @@ INSERT INTO questions (quiz_id, topic_id, type, content, code_snippet, explanati
  2, 10, 971, 1,
  'Factory ownership transfer.',
  'https://www.learncpp.com/cpp-tutorial/stdunique_ptr/');
+INSERT OR IGNORE INTO fill_blank_answers (question_id, answer, order_index) VALUES
+((SELECT id FROM questions WHERE order_index=971), 'unique_ptr', 1),
+((SELECT id FROM questions WHERE order_index=971), 'std::unique_ptr', 2);
 
 INSERT INTO questions (quiz_id, topic_id, type, content, code_snippet, explanation, difficulty, points, order_index, is_active, hint, ref_url) VALUES
 ((SELECT id FROM quizzes WHERE title='Smart Pointer Patterns Quiz' ORDER BY id DESC LIMIT 1), 11, 'mcq',
@@ -371,6 +376,8 @@ INSERT INTO questions (quiz_id, topic_id, type, content, code_snippet, explanati
  2, 10, 981, 1,
  'State readiness.',
  'https://cppreference.com/w/cpp/thread/future.html');
+INSERT OR IGNORE INTO fill_blank_answers (question_id, answer, order_index) VALUES
+((SELECT id FROM questions WHERE order_index=981), 'ready', 1);
 
 INSERT INTO questions (quiz_id, topic_id, type, content, code_snippet, explanation, difficulty, points, order_index, is_active, hint, ref_url) VALUES
 ((SELECT id FROM quizzes WHERE title='Thread Coordination Quiz' ORDER BY id DESC LIMIT 1), 13, 'mcq',
@@ -505,6 +512,10 @@ INSERT INTO questions (quiz_id, topic_id, type, content, code_snippet, explanati
  3, 12, 991, 1,
  'Reader-writer lock.',
  'https://cppreference.com/w/cpp/thread/shared_mutex.html');
+INSERT OR IGNORE INTO fill_blank_answers (question_id, answer, order_index) VALUES
+((SELECT id FROM questions WHERE order_index=991), 'mutex', 1),
+((SELECT id FROM questions WHERE order_index=991), 'shared_mutex', 2),
+((SELECT id FROM questions WHERE order_index=991), 'shared mutex', 3);
 
 INSERT INTO questions (quiz_id, topic_id, type, content, code_snippet, explanation, difficulty, points, order_index, is_active, hint, ref_url) VALUES
 ((SELECT id FROM quizzes WHERE title='Locking Strategies Quiz' ORDER BY id DESC LIMIT 1), 13, 'mcq',
@@ -638,6 +649,9 @@ INSERT INTO questions (quiz_id, topic_id, type, content, code_snippet, explanati
  'weak/strong.',
  4, 15, 1001, 1,
  'CAS operations.', 'https://cppreference.com/w/cpp/atomic/atomic.html');
+INSERT OR IGNORE INTO fill_blank_answers (question_id, answer, order_index) VALUES
+((SELECT id FROM questions WHERE order_index=1001), 'weak', 1),
+((SELECT id FROM questions WHERE order_index=1001), 'strong', 2);
 
 INSERT INTO questions (quiz_id, topic_id, type, content, code_snippet, explanation, difficulty, points, order_index, is_active, hint, ref_url) VALUES
 ((SELECT id FROM quizzes WHERE title='Atomic Design Quiz' ORDER BY id DESC LIMIT 1), 13, 'mcq',
