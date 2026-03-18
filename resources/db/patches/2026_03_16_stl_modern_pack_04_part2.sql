@@ -69,6 +69,8 @@ INSERT INTO options (question_id, content, is_correct, order_index) VALUES
 
 INSERT INTO questions (quiz_id, topic_id, type, content, code_snippet, explanation, difficulty, points, order_index, is_active, hint, ref_url) VALUES
 (10, 10, 'fill_blank', 'Container adaptor with LIFO behavior is std::_____.', NULL, 'stack.', 1, 10, 656, 1, 'Last-in first-out.', 'https://www.studyplan.dev/pro-cpp/stacks');
+INSERT OR IGNORE INTO fill_blank_answers (question_id, answer, order_index) VALUES
+((SELECT id FROM questions WHERE quiz_id=10 AND order_index=656), 'stack', 1);
 
 INSERT INTO questions (quiz_id, topic_id, type, content, code_snippet, explanation, difficulty, points, order_index, is_active, hint, ref_url) VALUES
 (10, 10, 'mcq', 'Which container has stable iterators for insert/erase in most cases and non-contiguous storage?', NULL, 'std::list is node-based and non-contiguous.', 3, 12, 657, 1, 'Doubly-linked list.', 'https://cppreference.com/w/cpp/container/list.html');
@@ -143,6 +145,9 @@ INSERT INTO options (question_id, content, is_correct, order_index) VALUES
 
 INSERT INTO questions (quiz_id, topic_id, type, content, code_snippet, explanation, difficulty, points, order_index, is_active, hint, ref_url) VALUES
 (12, 12, 'fill_blank', 'std::_____ can hold a value or no value (empty state).', NULL, 'optional.', 1, 10, 666, 1, 'Maybe-value type.', 'https://www.studyplan.dev/pro-cpp/optional');
+INSERT OR IGNORE INTO fill_blank_answers (question_id, answer, order_index) VALUES
+((SELECT id FROM questions WHERE quiz_id=12 AND order_index=666), 'optional', 1),
+((SELECT id FROM questions WHERE quiz_id=12 AND order_index=666), 'std::optional', 2);
 
 INSERT INTO questions (quiz_id, topic_id, type, content, code_snippet, explanation, difficulty, points, order_index, is_active, hint, ref_url) VALUES
 (12, 12, 'mcq', 'What does std::any primarily provide?', NULL, 'Type-erased storage for single value of arbitrary type.', 3, 12, 667, 1, 'Dynamic type-erased holder.', 'https://www.studyplan.dev/pro-cpp/any');
@@ -217,6 +222,9 @@ INSERT INTO options (question_id, content, is_correct, order_index) VALUES
 
 INSERT INTO questions (quiz_id, topic_id, type, content, code_snippet, explanation, difficulty, points, order_index, is_active, hint, ref_url) VALUES
 ((SELECT id FROM quizzes WHERE title='Associative Containers Deep Dive Quiz' ORDER BY id DESC LIMIT 1), 10, 'fill_blank', 'Ordered associative container storing unique key-value pairs is std::_____.', NULL, 'map.', 1, 10, 676, 1, 'Unique ordered key-value.', 'https://cppreference.com/w/cpp/container/map.html');
+INSERT OR IGNORE INTO fill_blank_answers (question_id, answer, order_index) VALUES
+((SELECT id FROM questions WHERE order_index=676), 'map', 1),
+((SELECT id FROM questions WHERE order_index=676), 'std::map', 2);
 
 INSERT INTO questions (quiz_id, topic_id, type, content, code_snippet, explanation, difficulty, points, order_index, is_active, hint, ref_url) VALUES
 ((SELECT id FROM quizzes WHERE title='Associative Containers Deep Dive Quiz' ORDER BY id DESC LIMIT 1), 10, 'mcq', 'Which statement about std::unordered_map average complexity is typically expected?', NULL, 'Average O(1) lookup/insert/erase under good hashing assumptions.', 3, 12, 677, 1, 'Average-case hash complexity.', 'https://cppreference.com/w/cpp/container/unordered_map.html');
@@ -291,6 +299,9 @@ INSERT INTO options (question_id, content, is_correct, order_index) VALUES
 
 INSERT INTO questions (quiz_id, topic_id, type, content, code_snippet, explanation, difficulty, points, order_index, is_active, hint, ref_url) VALUES
 ((SELECT id FROM quizzes WHERE title='Algorithmic Thinking with STL Quiz' ORDER BY id DESC LIMIT 1), 10, 'fill_blank', 'Algorithm returning true if any element matches predicate is std::_____.', NULL, 'any_of.', 2, 10, 686, 1, 'all_of/any_of/none_of trio.', 'https://www.learncpp.com/cpp-tutorial/stl-algorithms-overview/');
+INSERT OR IGNORE INTO fill_blank_answers (question_id, answer, order_index) VALUES
+((SELECT id FROM questions WHERE order_index=686), 'any_of', 1),
+((SELECT id FROM questions WHERE order_index=686), 'std::any_of', 2);
 
 INSERT INTO questions (quiz_id, topic_id, type, content, code_snippet, explanation, difficulty, points, order_index, is_active, hint, ref_url) VALUES
 ((SELECT id FROM quizzes WHERE title='Algorithmic Thinking with STL Quiz' ORDER BY id DESC LIMIT 1), 10, 'mcq', 'Which iterator category does std::sort require?', NULL, 'Random-access iterators.', 3, 12, 687, 1, 'Not all containers qualify.', 'https://www.learncpp.com/cpp-tutorial/stl-iterators-overview/');
@@ -365,6 +376,8 @@ INSERT INTO options (question_id, content, is_correct, order_index) VALUES
 
 INSERT INTO questions (quiz_id, topic_id, type, content, code_snippet, explanation, difficulty, points, order_index, is_active, hint, ref_url) VALUES
 ((SELECT id FROM quizzes WHERE title='Move Semantics & Value Categories Quiz' ORDER BY id DESC LIMIT 1), 12, 'fill_blank', 'An expression that refers to a persistent object identity is generally an ____.', NULL, 'lvalue.', 2, 10, 696, 1, 'Value categories.', 'https://www.learncpp.com/cpp-tutorial/rvalue-references/');
+INSERT OR IGNORE INTO fill_blank_answers (question_id, answer, order_index) VALUES
+((SELECT id FROM questions WHERE order_index=696), 'lvalue', 1);
 
 INSERT INTO questions (quiz_id, topic_id, type, content, code_snippet, explanation, difficulty, points, order_index, is_active, hint, ref_url) VALUES
 ((SELECT id FROM quizzes WHERE title='Move Semantics & Value Categories Quiz' ORDER BY id DESC LIMIT 1), 12, 'mcq', 'Which standard introduced lambdas and move semantics?', NULL, 'C++11.', 2, 10, 697, 1, 'Foundational modern release.', 'https://www.learncpp.com/cpp-tutorial/introduction-to-c11/');

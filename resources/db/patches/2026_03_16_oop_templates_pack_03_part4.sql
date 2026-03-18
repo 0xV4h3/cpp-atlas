@@ -65,6 +65,8 @@ INSERT INTO options (question_id, content, is_correct, order_index) VALUES
 
 INSERT INTO questions (quiz_id, topic_id, type, content, code_snippet, explanation, difficulty, points, order_index, is_active, hint, ref_url) VALUES
 (8, 8, 'fill_blank', 'A class member declared with keyword static is shared per ____.', NULL, 'Static data members are shared per class.', 1, 10, 456, 1, 'Not per instance.', 'https://www.learncpp.com/cpp-tutorial/static-member-variables/');
+INSERT OR IGNORE INTO fill_blank_answers (question_id, answer, order_index) VALUES
+((SELECT id FROM questions WHERE quiz_id=8 AND order_index=456), 'class', 1);
 
 INSERT INTO questions (quiz_id, topic_id, type, content, code_snippet, explanation, difficulty, points, order_index, is_active, hint, ref_url) VALUES
 (8, 8, 'mcq', 'Friendship in C++ primarily grants what?', NULL, 'Access rights to private/protected members for specified friend entities.', 2, 10, 457, 1, 'Access privilege only.', 'https://www.learncpp.com/cpp-tutorial/friend-classes-and-friend-member-functions/');
@@ -139,6 +141,9 @@ INSERT INTO options (question_id, content, is_correct, order_index) VALUES
 
 INSERT INTO questions (quiz_id, topic_id, type, content, code_snippet, explanation, difficulty, points, order_index, is_active, hint, ref_url) VALUES
 (9, 9, 'fill_blank', 'Template definitions are often placed in ____ files so instantiation can see them.', NULL, 'Headers.', 2, 10, 466, 1, 'Definition visibility.', 'https://www.studyplan.dev/pro-cpp/header-file-templates');
+INSERT OR IGNORE INTO fill_blank_answers (question_id, answer, order_index) VALUES
+((SELECT id FROM questions WHERE quiz_id=9 AND order_index=466), 'header', 1),
+((SELECT id FROM questions WHERE quiz_id=9 AND order_index=466), 'headers', 2);
 
 INSERT INTO questions (quiz_id, topic_id, type, content, code_snippet, explanation, difficulty, points, order_index, is_active, hint, ref_url) VALUES
 (9, 9, 'mcq', 'A non-type template parameter must generally be what?', NULL, 'A compile-time constant expression of allowed kind.', 3, 12, 467, 1, 'Compile-time value.', 'https://www.learncpp.com/cpp-tutorial/template-non-type-parameters/');
@@ -213,6 +218,8 @@ INSERT INTO options (question_id, content, is_correct, order_index) VALUES
 
 INSERT INTO questions (quiz_id, topic_id, type, content, code_snippet, explanation, difficulty, points, order_index, is_active, hint, ref_url) VALUES
 ((SELECT id FROM quizzes WHERE title='Constructor & Encapsulation Mastery Quiz' ORDER BY id DESC LIMIT 1), 8, 'fill_blank', 'A constructor with no parameters (or all defaulted) is a ____ constructor.', NULL, 'Default constructor.', 1, 10, 476, 1, 'No-arg construction.', 'https://www.learncpp.com/cpp-tutorial/default-constructors-and-default-arguments/');
+INSERT OR IGNORE INTO fill_blank_answers (question_id, answer, order_index) VALUES
+((SELECT id FROM questions WHERE order_index=476), 'default', 1);
 
 INSERT INTO questions (quiz_id, topic_id, type, content, code_snippet, explanation, difficulty, points, order_index, is_active, hint, ref_url) VALUES
 ((SELECT id FROM quizzes WHERE title='Constructor & Encapsulation Mastery Quiz' ORDER BY id DESC LIMIT 1), 8, 'mcq', 'What is an advantage of constructor delegation?', NULL, 'Reduces duplication and centralizes initialization logic.', 2, 10, 477, 1, 'DRY constructors.', 'https://www.learncpp.com/cpp-tutorial/delegating-constructors/');
@@ -287,6 +294,8 @@ INSERT INTO options (question_id, content, is_correct, order_index) VALUES
 
 INSERT INTO questions (quiz_id, topic_id, type, content, code_snippet, explanation, difficulty, points, order_index, is_active, hint, ref_url) VALUES
 ((SELECT id FROM quizzes WHERE title='Inheritance Architecture Quiz' ORDER BY id DESC LIMIT 1), 8, 'fill_blank', 'A function marked = 0 is called ____ virtual function.', NULL, 'Pure virtual.', 2, 10, 486, 1, 'Abstract interface marker.', 'https://www.studyplan.dev/pro-cpp/pure-virtual');
+INSERT OR IGNORE INTO fill_blank_answers (question_id, answer, order_index) VALUES
+((SELECT id FROM questions WHERE order_index=486), 'pure', 1);
 
 INSERT INTO questions (quiz_id, topic_id, type, content, code_snippet, explanation, difficulty, points, order_index, is_active, hint, ref_url) VALUES
 ((SELECT id FROM quizzes WHERE title='Inheritance Architecture Quiz' ORDER BY id DESC LIMIT 1), 8, 'mcq', 'Which base class feature is important for safe polymorphic deletion?', NULL, 'Virtual destructor.', 3, 12, 487, 1, 'Delete via base pointer safety.', 'https://www.studyplan.dev/pro-cpp/pure-virtual');
@@ -361,6 +370,8 @@ INSERT INTO options (question_id, content, is_correct, order_index) VALUES
 
 INSERT INTO questions (quiz_id, topic_id, type, content, code_snippet, explanation, difficulty, points, order_index, is_active, hint, ref_url) VALUES
 ((SELECT id FROM quizzes WHERE title='Template API Design Quiz' ORDER BY id DESC LIMIT 1), 9, 'fill_blank', 'Template code is generally instantiated at ____ time.', NULL, 'Compile time.', 1, 10, 496, 1, 'Not runtime.', 'https://cppreference.com/w/cpp/language/templates.html');
+INSERT OR IGNORE INTO fill_blank_answers (question_id, answer, order_index) VALUES
+((SELECT id FROM questions WHERE order_index=496), 'compile', 1);
 
 INSERT INTO questions (quiz_id, topic_id, type, content, code_snippet, explanation, difficulty, points, order_index, is_active, hint, ref_url) VALUES
 ((SELECT id FROM quizzes WHERE title='Template API Design Quiz' ORDER BY id DESC LIMIT 1), 9, 'mcq', 'Which choice best improves learner experience for generic code?', NULL, 'Good examples, clear errors, and progressive abstraction help learning.', 2, 10, 497, 1, 'Teaching-oriented API.', 'https://www.learncpp.com/cpp-tutorial/template-classes/');

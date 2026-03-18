@@ -65,6 +65,8 @@ INSERT INTO options (question_id, content, is_correct, order_index) VALUES
 
 INSERT INTO questions (quiz_id, topic_id, type, content, code_snippet, explanation, difficulty, points, order_index, is_active, hint, ref_url) VALUES
 (8, 8, 'fill_blank', 'A function allowed to access private members without being class member may be declared as ____.', NULL, 'That is a friend function.', 2, 10, 406, 1, 'Access grant keyword.', 'https://www.learncpp.com/cpp-tutorial/friend-non-member-functions/');
+INSERT OR IGNORE INTO fill_blank_answers (question_id, answer, order_index) VALUES
+((SELECT id FROM questions WHERE quiz_id=8 AND order_index=406), 'friend', 1);
 
 INSERT INTO questions (quiz_id, topic_id, type, content, code_snippet, explanation, difficulty, points, order_index, is_active, hint, ref_url) VALUES
 (8, 8, 'mcq', 'Which statement about static member functions is true?', NULL, 'They do not have this pointer and can access only static members directly.', 3, 12, 407, 1, 'No implicit object context.', 'https://www.learncpp.com/cpp-tutorial/static-member-variables/');
@@ -139,6 +141,9 @@ INSERT INTO options (question_id, content, is_correct, order_index) VALUES
 
 INSERT INTO questions (quiz_id, topic_id, type, content, code_snippet, explanation, difficulty, points, order_index, is_active, hint, ref_url) VALUES
 (9, 9, 'fill_blank', 'Template code clarity often improves with type ____ declarations (using).', NULL, 'Type aliases via using improve readability.', 2, 10, 416, 1, 'using Name = ...;', 'https://www.studyplan.dev/pro-cpp/type-alias');
+INSERT OR IGNORE INTO fill_blank_answers (question_id, answer, order_index) VALUES
+((SELECT id FROM questions WHERE quiz_id=9 AND order_index=416), 'alias', 1),
+((SELECT id FROM questions WHERE quiz_id=9 AND order_index=416), 'aliases', 2);
 
 INSERT INTO questions (quiz_id, topic_id, type, content, code_snippet, explanation, difficulty, points, order_index, is_active, hint, ref_url) VALUES
 (9, 9, 'mcq', 'What is a key risk of template-heavy APIs for newcomers?', NULL, 'Verbose diagnostics and complex type chains can harm learnability.', 3, 12, 417, 1, 'Educational ergonomics.', 'https://www.learncpp.com/cpp-tutorial/dependencies/');
@@ -213,6 +218,8 @@ INSERT INTO options (question_id, content, is_correct, order_index) VALUES
 
 INSERT INTO questions (quiz_id, topic_id, type, content, code_snippet, explanation, difficulty, points, order_index, is_active, hint, ref_url) VALUES
 ((SELECT id FROM quizzes WHERE title='Composition & Relationships Quiz' ORDER BY id DESC LIMIT 1), 8, 'fill_blank', 'A relationship where objects cooperate but neither owns the other is often called ____.', NULL, 'Association.', 2, 10, 426, 1, 'Non-owning relation.', 'https://www.learncpp.com/cpp-tutorial/association/');
+INSERT OR IGNORE INTO fill_blank_answers (question_id, answer, order_index) VALUES
+((SELECT id FROM questions WHERE order_index=426), 'association', 1);
 
 INSERT INTO questions (quiz_id, topic_id, type, content, code_snippet, explanation, difficulty, points, order_index, is_active, hint, ref_url) VALUES
 ((SELECT id FROM quizzes WHERE title='Composition & Relationships Quiz' ORDER BY id DESC LIMIT 1), 8, 'mcq', 'Which class design helps testability most?', NULL, 'Small cohesive classes with injected collaborators are easier to test.', 3, 12, 427, 1, 'Isolation and seams.', 'https://www.studyplan.dev/intro-to-programming/classes');
@@ -287,6 +294,8 @@ INSERT INTO options (question_id, content, is_correct, order_index) VALUES
 
 INSERT INTO questions (quiz_id, topic_id, type, content, code_snippet, explanation, difficulty, points, order_index, is_active, hint, ref_url) VALUES
 ((SELECT id FROM quizzes WHERE title='Advanced Inheritance Cases Quiz' ORDER BY id DESC LIMIT 1), 8, 'fill_blank', 'Access specifier in inheritance declaration that preserves base public API visibility is ____ inheritance.', NULL, 'Public inheritance.', 2, 10, 436, 1, 'Most common OO subtype form.', 'https://www.learncpp.com/cpp-tutorial/inheritance-and-access-specifiers/');
+INSERT OR IGNORE INTO fill_blank_answers (question_id, answer, order_index) VALUES
+((SELECT id FROM questions WHERE order_index=436), 'public', 1);
 
 INSERT INTO questions (quiz_id, topic_id, type, content, code_snippet, explanation, difficulty, points, order_index, is_active, hint, ref_url) VALUES
 ((SELECT id FROM quizzes WHERE title='Advanced Inheritance Cases Quiz' ORDER BY id DESC LIMIT 1), 8, 'mcq', 'What does protected member allow?', NULL, 'Accessible in class and derived classes (subject to context).', 2, 10, 437, 1, 'Between private and public.', 'https://www.studyplan.dev/intro-to-programming/protected-members');
@@ -361,6 +370,8 @@ INSERT INTO options (question_id, content, is_correct, order_index) VALUES
 
 INSERT INTO questions (quiz_id, topic_id, type, content, code_snippet, explanation, difficulty, points, order_index, is_active, hint, ref_url) VALUES
 ((SELECT id FROM quizzes WHERE title='Template Specialization Lab Quiz' ORDER BY id DESC LIMIT 1), 9, 'fill_blank', 'When compiler infers T from arguments in template call, this is called template argument ____.', NULL, 'Deduction.', 2, 10, 446, 1, 'Inference process.', 'https://www.studyplan.dev/pro-cpp/function-templates');
+INSERT OR IGNORE INTO fill_blank_answers (question_id, answer, order_index) VALUES
+((SELECT id FROM questions WHERE order_index=446), 'deduction', 1);
 
 INSERT INTO questions (quiz_id, topic_id, type, content, code_snippet, explanation, difficulty, points, order_index, is_active, hint, ref_url) VALUES
 ((SELECT id FROM quizzes WHERE title='Template Specialization Lab Quiz' ORDER BY id DESC LIMIT 1), 9, 'mcq', 'Which file organization is most common for template definitions?', NULL, 'Headers are common so definitions are visible at instantiation sites.', 2, 10, 447, 1, 'Visibility requirement.', 'https://www.studyplan.dev/pro-cpp/header-file-templates');

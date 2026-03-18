@@ -194,6 +194,11 @@ VALUES
  2, 10, 109, 1,
  'Syntax: static_cast<T>(value).',
  'https://www.learncpp.com/cpp-tutorial/introduction-to-type-conversion-and-static_cast/');
+INSERT OR IGNORE INTO fill_blank_answers (question_id, answer, order_index)
+VALUES
+((SELECT id FROM questions WHERE quiz_id=2 AND order_index=109), 'static_cast', 1),
+((SELECT id FROM questions WHERE quiz_id=2 AND order_index=109), 'static_cast<>', 2),
+((SELECT id FROM questions WHERE quiz_id=2 AND order_index=109), 'static cast', 3);
 
 -- Q110
 INSERT INTO questions
@@ -333,6 +338,9 @@ VALUES
  1, 10, 118, 1,
  'Not continue.',
  'https://www.learncpp.com/cpp-tutorial/break-and-continue/');
+INSERT OR IGNORE INTO fill_blank_answers (question_id, answer, order_index)
+VALUES
+((SELECT id FROM questions WHERE quiz_id=4 AND order_index=118), 'break', 1);
 
 -- Q119
 INSERT INTO questions
@@ -457,6 +465,11 @@ VALUES
  1, 10, 126, 1,
  'Arithmetic remainder operator.',
  'https://www.learncpp.com/cpp-tutorial/arithmetic-operators/');
+INSERT OR IGNORE INTO fill_blank_answers (question_id, answer, order_index)
+VALUES
+((SELECT id FROM questions WHERE quiz_id=3 AND order_index=126), '%', 1),
+((SELECT id FROM questions WHERE quiz_id=3 AND order_index=126), 'modulo', 2),
+((SELECT id FROM questions WHERE quiz_id=3 AND order_index=126), 'modulus', 3);
 
 -- Q127
 INSERT INTO questions
@@ -645,6 +658,9 @@ VALUES
  1, 10, 138, 1,
  'Core concept in programming.',
  'https://www.studyplan.dev/intro-to-programming/creating-variables');
+INSERT OR IGNORE INTO fill_blank_answers (question_id, answer, order_index)
+VALUES
+((SELECT id FROM questions WHERE quiz_id=2 AND order_index=138), 'variable', 1);
 
 -- Q139
 INSERT INTO questions
@@ -817,6 +833,10 @@ VALUES
  1, 10, 149, 1,
  'Namespace + stream name.',
  'https://www.learncpp.com/cpp-tutorial/introduction-to-iostream-cout-cin-and-endl/');
+INSERT OR IGNORE INTO fill_blank_answers (question_id, answer, order_index)
+VALUES
+((SELECT id FROM questions WHERE quiz_id=1 AND order_index=149), 'std::cout', 1),
+((SELECT id FROM questions WHERE quiz_id=1 AND order_index=149), 'cout', 2);
 
 -- Q150
 INSERT INTO questions

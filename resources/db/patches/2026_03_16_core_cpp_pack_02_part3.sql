@@ -100,6 +100,10 @@ INSERT INTO questions (quiz_id, topic_id, type, content, code_snippet, explanati
  'Loss of full type info.',
  'https://www.learncpp.com/cpp-tutorial/c-style-array-decay/');
 
+INSERT OR IGNORE INTO fill_blank_answers (question_id, answer, order_index) VALUES
+((SELECT id FROM questions WHERE order_index=1356), 'pointer', 1),
+((SELECT id FROM questions WHERE order_index=1356), 'ptr', 2);
+
 INSERT INTO questions (quiz_id, topic_id, type, content, code_snippet, explanation, difficulty, points, order_index, is_active, hint, ref_url) VALUES
 ((SELECT id FROM quizzes WHERE title='Arrays Edge Cases Quiz' ORDER BY id DESC LIMIT 1), 6, 'mcq',
  'Expression arr[i] is equivalent to which pointer form?',
@@ -222,6 +226,9 @@ INSERT INTO questions (quiz_id, topic_id, type, content, code_snippet, explanati
  'Avoid old NULL integer macro style.',
  'https://www.learncpp.com/cpp-tutorial/null-pointers/');
 
+INSERT OR IGNORE INTO fill_blank_answers (question_id, answer, order_index) VALUES
+((SELECT id FROM questions WHERE order_index=1366), 'nullptr', 1);
+
 INSERT INTO questions (quiz_id, topic_id, type, content, code_snippet, explanation, difficulty, points, order_index, is_active, hint, ref_url) VALUES
 ((SELECT id FROM quizzes WHERE title='Pointers Semantics Quiz' ORDER BY id DESC LIMIT 1), 8, 'mcq',
  'Which operation is equivalent to p[i] for pointer p?', NULL, 'Equivalent to *(p + i).', 2, 10, 1367, 1, 'Subscript desugaring.', 'https://www.learncpp.com/cpp-tutorial/pointer-arithmetic-and-subscripting/');
@@ -318,6 +325,9 @@ INSERT INTO options (question_id, content, is_correct, order_index) VALUES
 INSERT INTO questions (quiz_id, topic_id, type, content, code_snippet, explanation, difficulty, points, order_index, is_active, hint, ref_url) VALUES
 ((SELECT id FROM quizzes WHERE title='References Mastery Quiz' ORDER BY id DESC LIMIT 1), 9, 'fill_blank',
  'Reference declaration uses symbol ____ after type.', NULL, '&.', 1, 10, 1376, 1, 'int& ref syntax.', 'https://www.learncpp.com/cpp-tutorial/lvalue-references/');
+
+INSERT OR IGNORE INTO fill_blank_answers (question_id, answer, order_index) VALUES
+((SELECT id FROM questions WHERE order_index=1376), '&', 1);
 
 INSERT INTO questions (quiz_id, topic_id, type, content, code_snippet, explanation, difficulty, points, order_index, is_active, hint, ref_url) VALUES
 ((SELECT id FROM quizzes WHERE title='References Mastery Quiz' ORDER BY id DESC LIMIT 1), 9, 'mcq',
@@ -417,6 +427,10 @@ INSERT INTO questions (quiz_id, topic_id, type, content, code_snippet, explanati
  2, 10, 1386, 1,
  'Interop accessor.', 'https://www.learncpp.com/cpp-tutorial/stdstring-character-access-and-conversion-to-c-style-arrays/');
 
+INSERT OR IGNORE INTO fill_blank_answers (question_id, answer, order_index) VALUES
+((SELECT id FROM questions WHERE order_index=1386), 'c_str', 1),
+((SELECT id FROM questions WHERE order_index=1386), 'c_str()', 2);
+
 INSERT INTO questions (quiz_id, topic_id, type, content, code_snippet, explanation, difficulty, points, order_index, is_active, hint, ref_url) VALUES
 ((SELECT id FROM quizzes WHERE title='std::string Advanced Operations Quiz' ORDER BY id DESC LIMIT 1), 10, 'mcq',
  'Which operation most directly inserts at middle of string?', NULL, 'insert(index, text).', 2, 10, 1387, 1, 'Position-targeted mutation.', 'https://www.learncpp.com/cpp-tutorial/stdstring-inserting/');
@@ -511,6 +525,10 @@ INSERT INTO questions (quiz_id, topic_id, type, content, code_snippet, explanati
  2, 10, 1396, 1,
  'T& parameter.',
  'https://www.learncpp.com/cpp-tutorial/pass-by-lvalue-reference/');
+
+INSERT OR IGNORE INTO fill_blank_answers (question_id, answer, order_index) VALUES
+((SELECT id FROM questions WHERE order_index=1396), 'reference', 1),
+((SELECT id FROM questions WHERE order_index=1396), 'ref', 2);
 
 INSERT INTO questions (quiz_id, topic_id, type, content, code_snippet, explanation, difficulty, points, order_index, is_active, hint, ref_url) VALUES
 ((SELECT id FROM quizzes WHERE title='Function Interface Design Quiz' ORDER BY id DESC LIMIT 1), 5, 'mcq',

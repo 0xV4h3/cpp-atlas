@@ -102,6 +102,8 @@ INSERT INTO questions (quiz_id, topic_id, type, content, code_snippet, explanati
  'Double ampersand: &&.',
  2, 10, 756, 1, 'Syntax detail.',
  'https://www.learncpp.com/cpp-tutorial/rvalue-references/');
+INSERT OR IGNORE INTO fill_blank_answers (question_id, answer, order_index) VALUES
+((SELECT id FROM questions WHERE order_index=756), '&&', 1);
 
 INSERT INTO questions (quiz_id, topic_id, type, content, code_snippet, explanation, difficulty, points, order_index, is_active, hint, ref_url) VALUES
 ((SELECT id FROM quizzes WHERE title='Move Semantics Deep Practice Quiz' ORDER BY id DESC LIMIT 1), 12, 'mcq',
@@ -226,6 +228,9 @@ INSERT INTO questions (quiz_id, topic_id, type, content, code_snippet, explanati
  'concepts.',
  3, 12, 766, 1, 'Constraint mechanism.',
  'https://www.learncpp.com/cpp-tutorial/introduction-to-c20/');
+INSERT OR IGNORE INTO fill_blank_answers (question_id, answer, order_index) VALUES
+((SELECT id FROM questions WHERE order_index=766), 'concepts', 1),
+((SELECT id FROM questions WHERE order_index=766), 'concept', 2);
 
 INSERT INTO questions (quiz_id, topic_id, type, content, code_snippet, explanation, difficulty, points, order_index, is_active, hint, ref_url) VALUES
 ((SELECT id FROM quizzes WHERE title='Ranges & Modern Algorithms Quiz' ORDER BY id DESC LIMIT 1), 10, 'mcq',
@@ -349,6 +354,8 @@ INSERT INTO questions (quiz_id, topic_id, type, content, code_snippet, explanati
  NULL,
  'priority.',
  1, 10, 776, 1, 'Name says it.', 'https://www.studyplan.dev/pro-cpp/priority-queue');
+INSERT OR IGNORE INTO fill_blank_answers (question_id, answer, order_index) VALUES
+((SELECT id FROM questions WHERE order_index=776), 'priority', 1);
 
 INSERT INTO questions (quiz_id, topic_id, type, content, code_snippet, explanation, difficulty, points, order_index, is_active, hint, ref_url) VALUES
 ((SELECT id FROM quizzes WHERE title='Container Adaptors & Utilities Quiz' ORDER BY id DESC LIMIT 1), 10, 'mcq',
@@ -472,6 +479,8 @@ INSERT INTO questions (quiz_id, topic_id, type, content, code_snippet, explanati
  'auto.',
  2, 10, 786, 1,
  'C++14 generic lambdas.', 'https://www.learncpp.com/cpp-tutorial/introduction-to-c14/');
+INSERT OR IGNORE INTO fill_blank_answers (question_id, answer, order_index) VALUES
+((SELECT id FROM questions WHERE order_index=786), 'auto', 1);
 
 INSERT INTO questions (quiz_id, topic_id, type, content, code_snippet, explanation, difficulty, points, order_index, is_active, hint, ref_url) VALUES
 ((SELECT id FROM quizzes WHERE title='Lambda Patterns & Captures Quiz' ORDER BY id DESC LIMIT 1), 12, 'mcq',
@@ -596,6 +605,9 @@ INSERT INTO questions (quiz_id, topic_id, type, content, code_snippet, explanati
  '1.',
  2, 10, 796, 1,
  'Average-case hash table behavior.', 'https://cppreference.com/w/cpp/container/unordered_map.html');
+INSERT OR IGNORE INTO fill_blank_answers (question_id, answer, order_index) VALUES
+((SELECT id FROM questions WHERE order_index=796), '1', 1),
+((SELECT id FROM questions WHERE order_index=796), 'one', 2);
 
 INSERT INTO questions (quiz_id, topic_id, type, content, code_snippet, explanation, difficulty, points, order_index, is_active, hint, ref_url) VALUES
 ((SELECT id FROM quizzes WHERE title='STL Performance & Best Practices Quiz' ORDER BY id DESC LIMIT 1), 10, 'mcq',

@@ -21,7 +21,7 @@ INSERT OR IGNORE INTO quizzes (title, description, topic_id, difficulty, type, i
 ('Concurrent Memory Safety Quiz', 'Ownership, lifetime, and synchronization interactions in multithreaded code', 13, 4, 'standard', 1, 0, 1),
 ('Futures Promises Async Mastery Quiz', 'Future/promise/async contracts and safe asynchronous result handling', 13, 4, 'standard', 1, 0, 1),
 ('Advanced Mutex Patterns Quiz', 'Timed/shared/recursive mutex scenarios and lock strategy tradeoffs', 13, 4, 'standard', 1, 0, 1),
-('Atomic Correctness Workshop Quiz', 'Atomic operations, atomic_ref, and data-race-free design patterns', 13, 5, 'standard', 1, 0, 1),
+('Atomic Correctness Workshop Quiz', 'Atomic operations, atomic_ref, and data-race-free design patterns', 13, 4, 'standard', 1, 0, 1),
 ('Resource Ownership in Systems Quiz', 'RAII, copy/move ownership transfer, and architecture-level best practices', 11, 4, 'standard', 1, 0, 1);
 
 -- -------------------------------------------------------------
@@ -103,6 +103,8 @@ INSERT INTO questions (quiz_id, topic_id, type, content, code_snippet, explanati
  2, 10, 1011, 1,
  'Atomic scalar type.',
  'https://cppreference.com/w/cpp/atomic/atomic.html');
+INSERT OR IGNORE INTO fill_blank_answers (question_id, answer, order_index) VALUES
+((SELECT id FROM questions WHERE order_index=1011), 'int', 1);
 
 INSERT INTO questions (quiz_id, topic_id, type, content, code_snippet, explanation, difficulty, points, order_index, is_active, hint, ref_url) VALUES
 ((SELECT id FROM quizzes WHERE title='Concurrent Memory Safety Quiz' ORDER BY id DESC LIMIT 1), 13, 'mcq',
@@ -237,6 +239,9 @@ INSERT INTO questions (quiz_id, topic_id, type, content, code_snippet, explanati
  1, 10, 1021, 1,
  'Consume result.',
  'https://cppreference.com/w/cpp/thread/future.html');
+INSERT OR IGNORE INTO fill_blank_answers (question_id, answer, order_index) VALUES
+((SELECT id FROM questions WHERE order_index=1021), 'get', 1),
+((SELECT id FROM questions WHERE order_index=1021), 'get()', 2);
 
 INSERT INTO questions (quiz_id, topic_id, type, content, code_snippet, explanation, difficulty, points, order_index, is_active, hint, ref_url) VALUES
 ((SELECT id FROM quizzes WHERE title='Futures Promises Async Mastery Quiz' ORDER BY id DESC LIMIT 1), 13, 'mcq',
@@ -371,6 +376,8 @@ INSERT INTO questions (quiz_id, topic_id, type, content, code_snippet, explanati
  3, 12, 1031, 1,
  'Lock tag type.',
  'https://cppreference.com/w/cpp/thread/lock_tag_t.html');
+INSERT OR IGNORE INTO fill_blank_answers (question_id, answer, order_index) VALUES
+((SELECT id FROM questions WHERE order_index=1031), 'lock', 1);
 
 INSERT INTO questions (quiz_id, topic_id, type, content, code_snippet, explanation, difficulty, points, order_index, is_active, hint, ref_url) VALUES
 ((SELECT id FROM quizzes WHERE title='Advanced Mutex Patterns Quiz' ORDER BY id DESC LIMIT 1), 13, 'mcq',
@@ -448,7 +455,7 @@ INSERT INTO questions (quiz_id, topic_id, type, content, code_snippet, explanati
  'Atomic operations on one variable automatically synchronize all unrelated shared data safely.',
  NULL,
  'False. Need proper synchronization design; atomics on one variable do not magically protect everything.',
- 5, 18, 1037, 1,
+ 4, 18, 1037, 1,
  'Scope of synchronization matters.',
  'https://cppreference.com/w/cpp/atomic.html');
 INSERT INTO options (question_id, content, is_correct, order_index) VALUES
@@ -474,7 +481,7 @@ INSERT INTO questions (quiz_id, topic_id, type, content, code_snippet, explanati
  'atomic_ref requires what precondition on referenced object?',
  NULL,
  'Referenced object must meet atomic_ref requirements (alignment/lifetime and no conflicting non-atomic accesses).',
- 5, 18, 1039, 1,
+ 4, 18, 1039, 1,
  'Correctness contract.',
  'https://cppreference.com/w/cpp/atomic/atomic_ref.html');
 INSERT INTO options (question_id, content, is_correct, order_index) VALUES
@@ -488,7 +495,7 @@ INSERT INTO questions (quiz_id, topic_id, type, content, code_snippet, explanati
  'Select statements about atomic correctness.',
  NULL,
  'Atomics prevent races on guarded object; overall design still needs memory ordering and invariant reasoning.',
- 5, 18, 1040, 1,
+ 4, 18, 1040, 1,
  'Primitive-level vs system-level correctness.',
  'https://cppreference.com/w/cpp/atomic.html');
 INSERT INTO options (question_id, content, is_correct, order_index) VALUES
@@ -505,6 +512,9 @@ INSERT INTO questions (quiz_id, topic_id, type, content, code_snippet, explanati
  2, 10, 1041, 1,
  'Core atomic wrapper.',
  'https://cppreference.com/w/cpp/atomic/atomic.html');
+INSERT OR IGNORE INTO fill_blank_answers (question_id, answer, order_index) VALUES
+((SELECT id FROM questions WHERE order_index=1041), 'atomic', 1),
+((SELECT id FROM questions WHERE order_index=1041), 'std::atomic', 2);
 
 INSERT INTO questions (quiz_id, topic_id, type, content, code_snippet, explanation, difficulty, points, order_index, is_active, hint, ref_url) VALUES
 ((SELECT id FROM quizzes WHERE title='Atomic Correctness Workshop Quiz' ORDER BY id DESC LIMIT 1), 13, 'mcq',
@@ -537,7 +547,7 @@ INSERT INTO questions (quiz_id, topic_id, type, content, code_snippet, explanati
  'Best practice before switching mutex-protected code to atomics?',
  NULL,
  'Prove correctness model, benchmark, and validate memory-order semantics.',
- 5, 18, 1044, 1,
+ 4, 18, 1044, 1,
  'Correctness before micro-optimization.',
  'https://cppreference.com/w/cpp/atomic.html');
 INSERT INTO options (question_id, content, is_correct, order_index) VALUES
@@ -639,6 +649,9 @@ INSERT INTO questions (quiz_id, topic_id, type, content, code_snippet, explanati
  2, 10, 1051, 1,
  'Transfer instead of duplicate.',
  'https://www.studyplan.dev/pro-cpp/move-semantics');
+INSERT OR IGNORE INTO fill_blank_answers (question_id, answer, order_index) VALUES
+((SELECT id FROM questions WHERE order_index=1051), 'copies', 1),
+((SELECT id FROM questions WHERE order_index=1051), 'copy', 2);
 
 INSERT INTO questions (quiz_id, topic_id, type, content, code_snippet, explanation, difficulty, points, order_index, is_active, hint, ref_url) VALUES
 ((SELECT id FROM quizzes WHERE title='Resource Ownership in Systems Quiz' ORDER BY id DESC LIMIT 1), 11, 'mcq',

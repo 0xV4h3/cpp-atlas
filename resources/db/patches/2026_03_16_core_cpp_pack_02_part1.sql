@@ -167,6 +167,9 @@ VALUES
  'No-value return type.',
  'https://cppreference.com/w/cpp/language/functions.html');
 
+INSERT OR IGNORE INTO fill_blank_answers (question_id, answer, order_index) VALUES
+((SELECT id FROM questions WHERE quiz_id=5 AND order_index=206), 'void', 1);
+
 INSERT INTO questions
 (quiz_id, topic_id, type, content, code_snippet, explanation, difficulty, points, order_index, is_active, hint, ref_url)
 VALUES
@@ -299,6 +302,10 @@ VALUES
  2, 10, 214, 1,
  'a[3][4] means 3 rows, 4 cols.',
  'https://www.learncpp.com/cpp-tutorial/multidimensional-c-style-arrays/');
+
+INSERT OR IGNORE INTO fill_blank_answers (question_id, answer, order_index) VALUES
+((SELECT id FROM questions WHERE quiz_id=6 AND order_index=214), '4', 1),
+((SELECT id FROM questions WHERE quiz_id=6 AND order_index=214), 'four', 2);
 
 INSERT INTO questions
 (quiz_id, topic_id, type, content, code_snippet, explanation, difficulty, points, order_index, is_active, hint, ref_url)
@@ -448,6 +455,9 @@ VALUES
  'Modern null pointer literal.',
  'https://www.learncpp.com/cpp-tutorial/null-pointers/');
 
+INSERT OR IGNORE INTO fill_blank_answers (question_id, answer, order_index) VALUES
+((SELECT id FROM questions WHERE quiz_id=7 AND order_index=223), 'nullptr', 1);
+
 INSERT INTO questions
 (quiz_id, topic_id, type, content, code_snippet, explanation, difficulty, points, order_index, is_active, hint, ref_url)
 VALUES
@@ -569,6 +579,10 @@ VALUES
  1, 10, 230, 1,
  'Self-call concept.',
  'https://www.learncpp.com/cpp-tutorial/recursion/');
+
+INSERT OR IGNORE INTO fill_blank_answers (question_id, answer, order_index) VALUES
+((SELECT id FROM questions WHERE order_index=230), 'recursive', 1),
+((SELECT id FROM questions WHERE order_index=230), 'recursion', 2);
 
 INSERT INTO questions
 (quiz_id, topic_id, type, content, code_snippet, explanation, difficulty, points, order_index, is_active, hint, ref_url)
@@ -709,6 +723,9 @@ VALUES
  'Const binds to pointer object.',
  'https://www.learncpp.com/cpp-tutorial/pointers-and-const/');
 
+INSERT OR IGNORE INTO fill_blank_answers (question_id, answer, order_index) VALUES
+((SELECT id FROM questions WHERE order_index=238), 'const', 1);
+
 INSERT INTO questions
 (quiz_id, topic_id, type, content, code_snippet, explanation, difficulty, points, order_index, is_active, hint, ref_url)
 VALUES
@@ -847,6 +864,10 @@ VALUES
  2, 10, 246, 1,
  'a[rows][cols].',
  'https://www.learncpp.com/cpp-tutorial/multidimensional-c-style-arrays/');
+
+INSERT OR IGNORE INTO fill_blank_answers (question_id, answer, order_index) VALUES
+((SELECT id FROM questions WHERE order_index=246), '2', 1),
+((SELECT id FROM questions WHERE order_index=246), 'two', 2);
 
 INSERT INTO questions
 (quiz_id, topic_id, type, content, code_snippet, explanation, difficulty, points, order_index, is_active, hint, ref_url)

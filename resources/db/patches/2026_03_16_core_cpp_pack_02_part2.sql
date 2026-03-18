@@ -107,6 +107,9 @@ INSERT INTO questions (quiz_id, topic_id, type, content, code_snippet, explanati
  'Position-based addition.',
  'https://www.learncpp.com/cpp-tutorial/stdstring-inserting/');
 
+INSERT OR IGNORE INTO fill_blank_answers (question_id, answer, order_index) VALUES
+((SELECT id FROM questions WHERE order_index=1306), 'insert', 1);
+
 INSERT INTO questions (quiz_id, topic_id, type, content, code_snippet, explanation, difficulty, points, order_index, is_active, hint, ref_url) VALUES
 ((SELECT id FROM quizzes WHERE title='Arrays & Strings Deep Dive Quiz' ORDER BY id DESC LIMIT 1), 10, 'mcq',
  'What does std::string::c_str() provide?',
@@ -229,6 +232,9 @@ INSERT INTO questions (quiz_id, topic_id, type, content, code_snippet, explanati
  'const T&.',
  'https://www.learncpp.com/cpp-tutorial/lvalue-references-to-const/');
 
+INSERT OR IGNORE INTO fill_blank_answers (question_id, answer, order_index) VALUES
+((SELECT id FROM questions WHERE order_index=1316), 'const', 1);
+
 INSERT INTO questions (quiz_id, topic_id, type, content, code_snippet, explanation, difficulty, points, order_index, is_active, hint, ref_url) VALUES
 ((SELECT id FROM quizzes WHERE title='Pointers & References Intensive Quiz' ORDER BY id DESC LIMIT 1), 8, 'mcq',
  'Pointer subscripting p[i] is equivalent to which expression?', NULL, 'p[i] is defined as *(p + i).', 3, 12, 1317, 1, 'Array-pointer equivalence.', 'https://www.learncpp.com/cpp-tutorial/pointer-arithmetic-and-subscripting/');
@@ -314,6 +320,9 @@ INSERT INTO questions (quiz_id, topic_id, type, content, code_snippet, explanati
 ((SELECT id FROM quizzes WHERE title='Function Parameters & References Quiz' ORDER BY id DESC LIMIT 1), 5, 'fill_blank',
  'A reference parameter that should not modify argument is usually qualified with ____.', NULL, 'const.', 1, 10, 1326, 1, 'const T& parameter style.', 'https://www.learncpp.com/cpp-tutorial/pass-by-const-lvalue-reference/');
 
+INSERT OR IGNORE INTO fill_blank_answers (question_id, answer, order_index) VALUES
+((SELECT id FROM questions WHERE order_index=1326), 'const', 1);
+
 INSERT INTO questions (quiz_id, topic_id, type, content, code_snippet, explanation, difficulty, points, order_index, is_active, hint, ref_url) VALUES
 ((SELECT id FROM quizzes WHERE title='Function Parameters & References Quiz' ORDER BY id DESC LIMIT 1), 5, 'mcq',
  'What does this function return? int sum(int a,int b){ return a+b; } called with (2,5)', NULL, 'Returns 7.', 1, 10, 1327, 1, 'Simple value return.', 'https://www.studyplan.dev/intro-to-programming/functions');
@@ -390,6 +399,9 @@ INSERT INTO options (question_id, content, is_correct, order_index) VALUES
 INSERT INTO questions (quiz_id, topic_id, type, content, code_snippet, explanation, difficulty, points, order_index, is_active, hint, ref_url) VALUES
 ((SELECT id FROM quizzes WHERE title='C-Style Arrays Practice Quiz' ORDER BY id DESC LIMIT 1), 6, 'fill_blank', 'Expression p[i] is equivalent to *(p + ____).', NULL, 'i.', 2, 10, 1336, 1, 'Subscript equivalence.', 'https://www.learncpp.com/cpp-tutorial/pointer-arithmetic-and-subscripting/');
 
+INSERT OR IGNORE INTO fill_blank_answers (question_id, answer, order_index) VALUES
+((SELECT id FROM questions WHERE order_index=1336), 'i', 1);
+
 INSERT INTO questions (quiz_id, topic_id, type, content, code_snippet, explanation, difficulty, points, order_index, is_active, hint, ref_url) VALUES
 ((SELECT id FROM quizzes WHERE title='C-Style Arrays Practice Quiz' ORDER BY id DESC LIMIT 1), 6, 'mcq', 'What is common challenge after array decay in function parameter?', NULL, 'Array size information is not automatically preserved via raw pointer parameter.', 3, 12, 1337, 1, 'Need explicit size parameter.', 'https://www.learncpp.com/cpp-tutorial/c-style-array-decay/');
 INSERT INTO options (question_id, content, is_correct, order_index) VALUES
@@ -461,6 +473,10 @@ INSERT INTO options (question_id, content, is_correct, order_index) VALUES
 
 INSERT INTO questions (quiz_id, topic_id, type, content, code_snippet, explanation, difficulty, points, order_index, is_active, hint, ref_url) VALUES
 ((SELECT id FROM quizzes WHERE title='std::string Operations Workshop Quiz' ORDER BY id DESC LIMIT 1), 10, 'fill_blank', 'Method returning pointer to null-terminated char array view is ____().', NULL, 'c_str.', 2, 10, 1346, 1, 'C interop method.', 'https://www.learncpp.com/cpp-tutorial/stdstring-character-access-and-conversion-to-c-style-arrays/');
+
+INSERT OR IGNORE INTO fill_blank_answers (question_id, answer, order_index) VALUES
+((SELECT id FROM questions WHERE order_index=1346), 'c_str', 1),
+((SELECT id FROM questions WHERE order_index=1346), 'c_str()', 2);
 
 INSERT INTO questions (quiz_id, topic_id, type, content, code_snippet, explanation, difficulty, points, order_index, is_active, hint, ref_url) VALUES
 ((SELECT id FROM quizzes WHERE title='std::string Operations Workshop Quiz' ORDER BY id DESC LIMIT 1), 10, 'mcq', 'What does reserve(n) primarily affect?', NULL, 'It adjusts capacity reservation, not logical size directly.', 3, 12, 1347, 1, 'Capacity planning.', 'https://www.learncpp.com/cpp-tutorial/stdstring-length-and-capacity/');

@@ -61,6 +61,11 @@ INSERT INTO options (question_id, content, is_correct, order_index) VALUES
 
 INSERT INTO questions (quiz_id, topic_id, type, content, code_snippet, explanation, difficulty, points, order_index, is_active, hint, ref_url) VALUES
 ((SELECT id FROM quizzes WHERE title='Program Structure Basics Quiz' ORDER BY id DESC LIMIT 1), 1, 'fill_blank', 'C++ standard library symbols like cout are in namespace ____.', NULL, 'std.', 1, 10, 1206, 1, 'std:: prefix.', 'https://www.learncpp.com/cpp-tutorial/naming-collisions-and-an-introduction-to-namespaces/');
+INSERT OR IGNORE INTO fill_blank_answers (question_id, answer, order_index)
+VALUES
+((SELECT id FROM questions WHERE order_index=1206), 'std', 1),
+((SELECT id FROM questions WHERE order_index=1206), 'std.', 2),
+((SELECT id FROM questions WHERE order_index=1206), 'std::', 3);
 
 INSERT INTO questions (quiz_id, topic_id, type, content, code_snippet, explanation, difficulty, points, order_index, is_active, hint, ref_url) VALUES
 ((SELECT id FROM quizzes WHERE title='Program Structure Basics Quiz' ORDER BY id DESC LIMIT 1), 1, 'mcq', 'Why use namespaces?', NULL, 'They avoid naming collisions and organize symbols.', 1, 10, 1207, 1, 'Scope management.', 'https://www.learncpp.com/cpp-tutorial/naming-collisions-and-an-introduction-to-namespaces/');
@@ -133,6 +138,9 @@ INSERT INTO options (question_id, content, is_correct, order_index) VALUES
 
 INSERT INTO questions (quiz_id, topic_id, type, content, code_snippet, explanation, difficulty, points, order_index, is_active, hint, ref_url) VALUES
 ((SELECT id FROM quizzes WHERE title='Variables & Literals Deep Dive Quiz' ORDER BY id DESC LIMIT 1), 2, 'fill_blank', 'Keyword often used for compile-time constant variables is _____.', NULL, 'constexpr.', 2, 10, 1216, 1, 'Modern constant style.', 'https://www.learncpp.com/cpp-tutorial/constant-variables-named-constants/');
+INSERT OR IGNORE INTO fill_blank_answers (question_id, answer, order_index)
+VALUES
+((SELECT id FROM questions WHERE order_index=1216), 'constexpr', 1);
 
 INSERT INTO questions (quiz_id, topic_id, type, content, code_snippet, explanation, difficulty, points, order_index, is_active, hint, ref_url) VALUES
 ((SELECT id FROM quizzes WHERE title='Variables & Literals Deep Dive Quiz' ORDER BY id DESC LIMIT 1), 3, 'mcq', 'What is special about comma operator in expressions?', NULL, 'It evaluates left expression then right and yields right expression value.', 3, 12, 1217, 1, 'Rare operator; avoid overuse.', 'https://www.learncpp.com/cpp-tutorial/the-comma-operator/');
@@ -205,6 +213,11 @@ INSERT INTO options (question_id, content, is_correct, order_index) VALUES
 
 INSERT INTO questions (quiz_id, topic_id, type, content, code_snippet, explanation, difficulty, points, order_index, is_active, hint, ref_url) VALUES
 ((SELECT id FROM quizzes WHERE title='Operators Drill Quiz' ORDER BY id DESC LIMIT 1), 3, 'fill_blank', 'Operator with highest common arithmetic precedence among + and * is ____.', NULL, '*.', 1, 10, 1226, 1, 'Multiplication binds tighter.', 'https://www.learncpp.com/cpp-tutorial/operator-precedence-and-associativity/');
+INSERT OR IGNORE INTO fill_blank_answers (question_id, answer, order_index)
+VALUES
+((SELECT id FROM questions WHERE order_index=1226), '*', 1),
+((SELECT id FROM questions WHERE order_index=1226), 'multiplication', 2),
+((SELECT id FROM questions WHERE order_index=1226), 'multiply', 3);
 
 INSERT INTO questions (quiz_id, topic_id, type, content, code_snippet, explanation, difficulty, points, order_index, is_active, hint, ref_url) VALUES
 ((SELECT id FROM quizzes WHERE title='Operators Drill Quiz' ORDER BY id DESC LIMIT 1), 3, 'mcq', 'What does (x, y) evaluate to with comma operator?', NULL, 'It evaluates to y value after evaluating x first.', 3, 12, 1227, 1, 'Comma operator semantics.', 'https://www.learncpp.com/cpp-tutorial/the-comma-operator/');
@@ -277,6 +290,9 @@ INSERT INTO options (question_id, content, is_correct, order_index) VALUES
 
 INSERT INTO questions (quiz_id, topic_id, type, content, code_snippet, explanation, difficulty, points, order_index, is_active, hint, ref_url) VALUES
 ((SELECT id FROM quizzes WHERE title='Control Flow Intensive Quiz' ORDER BY id DESC LIMIT 1), 4, 'fill_blank', 'Statement that exits current loop immediately is ____.', NULL, 'break.', 1, 10, 1236, 1, 'Not continue.', 'https://www.learncpp.com/cpp-tutorial/break-and-continue/');
+INSERT OR IGNORE INTO fill_blank_answers (question_id, answer, order_index)
+VALUES
+((SELECT id FROM questions WHERE order_index=1236), 'break', 1);
 
 INSERT INTO questions (quiz_id, topic_id, type, content, code_snippet, explanation, difficulty, points, order_index, is_active, hint, ref_url) VALUES
 ((SELECT id FROM quizzes WHERE title='Control Flow Intensive Quiz' ORDER BY id DESC LIMIT 1), 4, 'mcq', 'What does continue do?', NULL, 'Skips remaining current iteration and proceeds with next iteration.', 1, 10, 1237, 1, 'Loop iteration control.', 'https://www.learncpp.com/cpp-tutorial/break-and-continue/');
@@ -349,6 +365,9 @@ INSERT INTO options (question_id, content, is_correct, order_index) VALUES
 
 INSERT INTO questions (quiz_id, topic_id, type, content, code_snippet, explanation, difficulty, points, order_index, is_active, hint, ref_url) VALUES
 ((SELECT id FROM quizzes WHERE title='Random & Loop Patterns Quiz' ORDER BY id DESC LIMIT 1), 4, 'fill_blank', 'Pseudo-random generation utilities are provided in header <____>.', NULL, 'random.', 2, 10, 1246, 1, 'C++ random header.', 'https://www.learncpp.com/cpp-tutorial/introduction-to-random-number-generation/');
+INSERT OR IGNORE INTO fill_blank_answers (question_id, answer, order_index)
+VALUES
+((SELECT id FROM questions WHERE order_index=1246), 'random', 1);
 
 INSERT INTO questions (quiz_id, topic_id, type, content, code_snippet, explanation, difficulty, points, order_index, is_active, hint, ref_url) VALUES
 ((SELECT id FROM quizzes WHERE title='Random & Loop Patterns Quiz' ORDER BY id DESC LIMIT 1), 4, 'mcq', 'What is a common while-loop bug?', NULL, 'Forgetting to update loop variable can cause infinite loop.', 2, 10, 1247, 1, 'Progress toward termination.', 'https://www.studyplan.dev/intro-to-programming/loops');

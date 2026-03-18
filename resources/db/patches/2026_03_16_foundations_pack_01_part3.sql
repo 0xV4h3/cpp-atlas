@@ -61,6 +61,9 @@ INSERT INTO options (question_id, content, is_correct, order_index) VALUES
 
 INSERT INTO questions (quiz_id, topic_id, type, content, code_snippet, explanation, difficulty, points, order_index, is_active, hint, ref_url) VALUES
 ((SELECT id FROM quizzes WHERE title='Foundations Syntax Review Quiz' ORDER BY id DESC LIMIT 1), 1, 'fill_blank', 'Directive used to include declarations from another file is #_____.', NULL, 'include.', 1, 10, 1256, 1, 'Preprocessor include directive.', 'https://www.learncpp.com/cpp-tutorial/header-files/');
+INSERT OR IGNORE INTO fill_blank_answers (question_id, answer, order_index)
+VALUES
+((SELECT id FROM questions WHERE order_index=1256), 'include', 1);
 
 INSERT INTO questions (quiz_id, topic_id, type, content, code_snippet, explanation, difficulty, points, order_index, is_active, hint, ref_url) VALUES
 ((SELECT id FROM quizzes WHERE title='Foundations Syntax Review Quiz' ORDER BY id DESC LIMIT 1), 1, 'mcq', 'What is one benefit of splitting program into multiple code files?', NULL, 'Improves modularity, maintainability, and build organization.', 1, 10, 1257, 1, 'Separation of concerns.', 'https://www.learncpp.com/cpp-tutorial/programs-with-multiple-code-files/');
@@ -133,6 +136,9 @@ INSERT INTO options (question_id, content, is_correct, order_index) VALUES
 
 INSERT INTO questions (quiz_id, topic_id, type, content, code_snippet, explanation, difficulty, points, order_index, is_active, hint, ref_url) VALUES
 ((SELECT id FROM quizzes WHERE title='Types & Constants Intensive Quiz' ORDER BY id DESC LIMIT 1), 2, 'fill_blank', 'Named compile-time constant keyword is often _____.', NULL, 'constexpr.', 2, 10, 1266, 1, 'Compile-time const expression.', 'https://www.learncpp.com/cpp-tutorial/constant-variables-named-constants/');
+INSERT OR IGNORE INTO fill_blank_answers (question_id, answer, order_index)
+VALUES
+((SELECT id FROM questions WHERE order_index=1266), 'constexpr', 1);
 
 INSERT INTO questions (quiz_id, topic_id, type, content, code_snippet, explanation, difficulty, points, order_index, is_active, hint, ref_url) VALUES
 ((SELECT id FROM quizzes WHERE title='Types & Constants Intensive Quiz' ORDER BY id DESC LIMIT 1), 3, 'mcq', 'What is an object in C++ basics context?', NULL, 'Region of storage with a type and associated value/lifetime.', 2, 10, 1267, 1, 'Storage + type notion.', 'https://www.learncpp.com/cpp-tutorial/introduction-to-objects-and-variables/');
@@ -205,6 +211,10 @@ INSERT INTO options (question_id, content, is_correct, order_index) VALUES
 
 INSERT INTO questions (quiz_id, topic_id, type, content, code_snippet, explanation, difficulty, points, order_index, is_active, hint, ref_url) VALUES
 ((SELECT id FROM quizzes WHERE title='Expression Semantics Quiz' ORDER BY id DESC LIMIT 1), 3, 'fill_blank', 'Comparison operators like < and > return type ____ in C++.', NULL, 'bool.', 1, 10, 1276, 1, 'Boolean result.', 'https://www.learncpp.com/cpp-tutorial/relational-operators-and-floating-point-comparisons/');
+INSERT OR IGNORE INTO fill_blank_answers (question_id, answer, order_index)
+VALUES
+((SELECT id FROM questions WHERE order_index=1276), 'bool', 1),
+((SELECT id FROM questions WHERE order_index=1276), 'boolean', 2);
 
 INSERT INTO questions (quiz_id, topic_id, type, content, code_snippet, explanation, difficulty, points, order_index, is_active, hint, ref_url) VALUES
 ((SELECT id FROM quizzes WHERE title='Expression Semantics Quiz' ORDER BY id DESC LIMIT 1), 3, 'mcq', 'What is a safer approach for floating-point equality checks in many practical cases?', NULL, 'Compare with tolerance (epsilon) instead of exact equality in many numeric contexts.', 3, 12, 1277, 1, 'Precision-aware comparisons.', 'https://www.learncpp.com/cpp-tutorial/relational-operators-and-floating-point-comparisons/');
@@ -277,6 +287,9 @@ INSERT INTO options (question_id, content, is_correct, order_index) VALUES
 
 INSERT INTO questions (quiz_id, topic_id, type, content, code_snippet, explanation, difficulty, points, order_index, is_active, hint, ref_url) VALUES
 ((SELECT id FROM quizzes WHERE title='Conditional Logic Workshop Quiz' ORDER BY id DESC LIMIT 1), 4, 'fill_blank', 'Keyword that starts alternative branch after if is ____.', NULL, 'else.', 1, 10, 1286, 1, 'if ... else.', 'https://www.learncpp.com/cpp-tutorial/if-statements-and-blocks/');
+INSERT OR IGNORE INTO fill_blank_answers (question_id, answer, order_index)
+VALUES
+((SELECT id FROM questions WHERE order_index=1286), 'else', 1);
 
 INSERT INTO questions (quiz_id, topic_id, type, content, code_snippet, explanation, difficulty, points, order_index, is_active, hint, ref_url) VALUES
 ((SELECT id FROM quizzes WHERE title='Conditional Logic Workshop Quiz' ORDER BY id DESC LIMIT 1), 4, 'mcq', 'switch is most suitable when branching on what kind of cases?', NULL, 'Discrete known constant cases of integral/enumeration expression.', 2, 10, 1287, 1, 'Case labels are constants.', 'https://www.learncpp.com/cpp-tutorial/switch-statement-basics/');
@@ -349,6 +362,9 @@ INSERT INTO options (question_id, content, is_correct, order_index) VALUES
 
 INSERT INTO questions (quiz_id, topic_id, type, content, code_snippet, explanation, difficulty, points, order_index, is_active, hint, ref_url) VALUES
 ((SELECT id FROM quizzes WHERE title='Looping & Flow Practice Quiz' ORDER BY id DESC LIMIT 1), 4, 'fill_blank', 'Loop statement that may execute zero times due to precondition is ____.', NULL, 'while.', 1, 10, 1296, 1, 'Condition checked first.', 'https://www.learncpp.com/cpp-tutorial/introduction-to-loops-and-while-statements/');
+INSERT OR IGNORE INTO fill_blank_answers (question_id, answer, order_index)
+VALUES
+((SELECT id FROM questions WHERE order_index=1296), 'while', 1);
 
 INSERT INTO questions (quiz_id, topic_id, type, content, code_snippet, explanation, difficulty, points, order_index, is_active, hint, ref_url) VALUES
 ((SELECT id FROM quizzes WHERE title='Looping & Flow Practice Quiz' ORDER BY id DESC LIMIT 1), 4, 'mcq', 'What often makes goto especially problematic in larger code?', NULL, 'Non-local jumps make control flow hard to trace/debug.', 2, 10, 1297, 1, 'Spaghetti flow risk.', 'https://www.learncpp.com/cpp-tutorial/goto-statements/');

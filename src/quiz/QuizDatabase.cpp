@@ -180,6 +180,100 @@ bool QuizDatabase::applyMigrations()
         ver3.exec();
     }
 
+    // Migration v4: add fill_blank_answers, admin_patch_journal, admin_deletion_log tables and indexes.
+    {
+        // fill_blank_answers
+        QSqlQuery checkFillBlank(db);
+        if (!checkFillBlank.exec("SELECT name FROM sqlite_master WHERE type='table' AND name='fill_blank_answers'")) {
+            qWarning() << "[QuizDatabase] Migration v4 check failed (fill_blank_answers):"
+                       << checkFillBlank.lastError().text();
+            return false;
+        }
+        if (!checkFillBlank.next()) {
+            QSqlQuery create(db);
+            if (!create.exec(
+                    "CREATE TABLE fill_blank_answers ("
+                    "  id          INTEGER PRIMARY KEY AUTOINCREMENT,"
+                    "  question_id INTEGER NOT NULL REFERENCES questions(id) ON DELETE CASCADE,"
+                    "  answer      TEXT    NOT NULL,"
+                    "  is_active   INTEGER DEFAULT 1,"
+                    "  order_index INTEGER DEFAULT 0"
+                    ")")) {
+                qWarning() << "[QuizDatabase] Migration v4 failed (fill_blank_answers):"
+                           << create.lastError().text();
+                return false;
+            }
+            create.exec(
+                "CREATE INDEX IF NOT EXISTS idx_fill_blank_answers_qid "
+                "ON fill_blank_answers(question_id)"
+                );
+            qDebug() << "[QuizDatabase] Applied migration v4: fill_blank_answers";
+        }
+
+        // admin_patch_journal
+        QSqlQuery checkPatchJournal(db);
+        if (!checkPatchJournal.exec("SELECT name FROM sqlite_master WHERE type='table' AND name='admin_patch_journal'")) {
+            qWarning() << "[QuizDatabase] Migration v4 check failed (admin_patch_journal):"
+                       << checkPatchJournal.lastError().text();
+            return false;
+        }
+        if (!checkPatchJournal.next()) {
+            QSqlQuery create(db);
+            if (!create.exec(
+                    "CREATE TABLE admin_patch_journal ("
+                    "  id            INTEGER  PRIMARY KEY AUTOINCREMENT,"
+                    "  patch_id      TEXT     NOT NULL,"
+                    "  action        TEXT     NOT NULL,"
+                    "  snapshot_path TEXT,"
+                    "  status        TEXT     NOT NULL,"
+                    "  details       TEXT,"
+                    "  created_at    DATETIME DEFAULT CURRENT_TIMESTAMP"
+                    ")")) {
+                qWarning() << "[QuizDatabase] Migration v4 failed (admin_patch_journal):"
+                           << create.lastError().text();
+                return false;
+            }
+            create.exec(
+                "CREATE INDEX IF NOT EXISTS idx_admin_patch_journal_created_at "
+                "ON admin_patch_journal(created_at)"
+                );
+            qDebug() << "[QuizDatabase] Applied migration v4: admin_patch_journal";
+        }
+
+        // admin_deletion_log
+        QSqlQuery checkDeletionLog(db);
+        if (!checkDeletionLog.exec("SELECT name FROM sqlite_master WHERE type='table' AND name='admin_deletion_log'")) {
+            qWarning() << "[QuizDatabase] Migration v4 check failed (admin_deletion_log):"
+                       << checkDeletionLog.lastError().text();
+            return false;
+        }
+        if (!checkDeletionLog.next()) {
+            QSqlQuery create(db);
+            if (!create.exec(
+                    "CREATE TABLE admin_deletion_log ("
+                    "  id          INTEGER  PRIMARY KEY AUTOINCREMENT,"
+                    "  entity_type TEXT     NOT NULL,"
+                    "  entity_id   INTEGER  NOT NULL,"
+                    "  reason      TEXT,"
+                    "  deleted_at  DATETIME DEFAULT CURRENT_TIMESTAMP"
+                    ")")) {
+                qWarning() << "[QuizDatabase] Migration v4 failed (admin_deletion_log):"
+                           << create.lastError().text();
+                return false;
+            }
+            create.exec(
+                "CREATE INDEX IF NOT EXISTS idx_admin_deletion_log_entity "
+                "ON admin_deletion_log(entity_type, entity_id)"
+                );
+            qDebug() << "[QuizDatabase] Applied migration v4: admin_deletion_log";
+        }
+
+        QSqlQuery ver4(db);
+        ver4.prepare("INSERT OR IGNORE INTO schema_version (version, description) "
+                     "VALUES (4, 'Add fill_blank_answers, admin_patch_journal, admin_deletion_log tables')");
+        ver4.exec();
+    }
+
     return true;
 }
 

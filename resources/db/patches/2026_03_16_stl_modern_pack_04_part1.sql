@@ -69,6 +69,9 @@ INSERT INTO options (question_id, content, is_correct, order_index) VALUES
 
 INSERT INTO questions (quiz_id, topic_id, type, content, code_snippet, explanation, difficulty, points, order_index, is_active, hint, ref_url) VALUES
 (10, 10, 'fill_blank', 'std::_____ provides O(1) average key lookup using hashing.', NULL, 'unordered_map.', 2, 10, 606, 1, 'Hash-based associative container.', 'https://cppreference.com/w/cpp/container/unordered_map.html');
+INSERT OR IGNORE INTO fill_blank_answers (question_id, answer, order_index) VALUES
+((SELECT id FROM questions WHERE quiz_id=10 AND order_index=606), 'unordered_map', 1),
+((SELECT id FROM questions WHERE quiz_id=10 AND order_index=606), 'unordered map', 2);
 
 INSERT INTO questions (quiz_id, topic_id, type, content, code_snippet, explanation, difficulty, points, order_index, is_active, hint, ref_url) VALUES
 (10, 10, 'mcq', 'Which container is optimized for frequent insertion/removal at both ends?', NULL, 'std::deque supports efficient push/pop at both front and back.', 2, 10, 607, 1, 'Double-ended queue.', 'https://cppreference.com/w/cpp/container/deque.html');
@@ -143,6 +146,8 @@ INSERT INTO options (question_id, content, is_correct, order_index) VALUES
 
 INSERT INTO questions (quiz_id, topic_id, type, content, code_snippet, explanation, difficulty, points, order_index, is_active, hint, ref_url) VALUES
 (12, 12, 'fill_blank', 'Move constructor parameter type is usually ClassName&& (an ____ reference).', NULL, 'rvalue.', 2, 10, 616, 1, 'Category of temporary resources.', 'https://www.learncpp.com/cpp-tutorial/move-constructors-and-move-assignment/');
+INSERT OR IGNORE INTO fill_blank_answers (question_id, answer, order_index) VALUES
+((SELECT id FROM questions WHERE quiz_id=12 AND order_index=616), 'rvalue', 1);
 
 INSERT INTO questions (quiz_id, topic_id, type, content, code_snippet, explanation, difficulty, points, order_index, is_active, hint, ref_url) VALUES
 (12, 12, 'mcq', 'What is one reason move semantics can improve performance?', NULL, 'It may transfer ownership of resources instead of deep copying them.', 3, 12, 617, 1, 'Resource transfer vs copy.', 'https://www.learncpp.com/cpp-tutorial/introduction-to-smart-pointers-move-semantics/');
@@ -217,6 +222,8 @@ INSERT INTO options (question_id, content, is_correct, order_index) VALUES
 
 INSERT INTO questions (quiz_id, topic_id, type, content, code_snippet, explanation, difficulty, points, order_index, is_active, hint, ref_url) VALUES
 ((SELECT id FROM quizzes WHERE title='STL Containers in Practice Quiz' ORDER BY id DESC LIMIT 1), 10, 'fill_blank', 'Container adaptor with FIFO semantics is std::_____.', NULL, 'queue.', 1, 10, 626, 1, 'First-in, first-out.', 'https://www.studyplan.dev/pro-cpp/queue');
+INSERT OR IGNORE INTO fill_blank_answers (question_id, answer, order_index) VALUES
+((SELECT id FROM questions WHERE order_index=626), 'queue', 1);
 
 INSERT INTO questions (quiz_id, topic_id, type, content, code_snippet, explanation, difficulty, points, order_index, is_active, hint, ref_url) VALUES
 ((SELECT id FROM quizzes WHERE title='STL Containers in Practice Quiz' ORDER BY id DESC LIMIT 1), 10, 'mcq', 'Which associative container is hash-based and allows duplicate keys?', NULL, 'std::unordered_multimap.', 3, 12, 627, 1, 'Hash + duplicate keys.', 'https://cppreference.com/w/cpp/container/unordered_multimap.html');
@@ -291,6 +298,9 @@ INSERT INTO options (question_id, content, is_correct, order_index) VALUES
 
 INSERT INTO questions (quiz_id, topic_id, type, content, code_snippet, explanation, difficulty, points, order_index, is_active, hint, ref_url) VALUES
 ((SELECT id FROM quizzes WHERE title='Algorithms & Lambdas Practice Quiz' ORDER BY id DESC LIMIT 1), 12, 'fill_blank', 'Lambda capture list syntax uses square ____.', NULL, 'brackets.', 1, 10, 636, 1, '[] around captures.', 'https://www.studyplan.dev/pro-cpp/lambda');
+INSERT OR IGNORE INTO fill_blank_answers (question_id, answer, order_index) VALUES
+((SELECT id FROM questions WHERE order_index=636), 'brackets', 1),
+((SELECT id FROM questions WHERE order_index=636), '[]', 2);
 
 INSERT INTO questions (quiz_id, topic_id, type, content, code_snippet, explanation, difficulty, points, order_index, is_active, hint, ref_url) VALUES
 ((SELECT id FROM quizzes WHERE title='Algorithms & Lambdas Practice Quiz' ORDER BY id DESC LIMIT 1), 10, 'mcq', 'What does std::minmax_element return?', NULL, 'Pair of iterators to min and max elements.', 3, 12, 637, 1, 'Two iterators result.', 'https://www.studyplan.dev/pro-cpp/minimum-maximum-algorithms');
@@ -365,6 +375,8 @@ INSERT INTO options (question_id, content, is_correct, order_index) VALUES
 
 INSERT INTO questions (quiz_id, topic_id, type, content, code_snippet, explanation, difficulty, points, order_index, is_active, hint, ref_url) VALUES
 ((SELECT id FROM quizzes WHERE title='Modern C++ Features Quiz' ORDER BY id DESC LIMIT 1), 12, 'fill_blank', 'Move assignment operator typically has signature Type& operator=(Type&&) ____.', NULL, 'noexcept is often recommended when possible.', 4, 15, 646, 1, 'Strong move semantics practice.', 'https://www.learncpp.com/cpp-tutorial/move-constructors-and-move-assignment/');
+INSERT OR IGNORE INTO fill_blank_answers (question_id, answer, order_index) VALUES
+((SELECT id FROM questions WHERE order_index=646), 'noexcept', 1);
 
 INSERT INTO questions (quiz_id, topic_id, type, content, code_snippet, explanation, difficulty, points, order_index, is_active, hint, ref_url) VALUES
 ((SELECT id FROM quizzes WHERE title='Modern C++ Features Quiz' ORDER BY id DESC LIMIT 1), 12, 'mcq', 'std::any is most useful when you need ____.', NULL, 'Type-erased value storage for arbitrary copyable types.', 3, 12, 647, 1, 'Type erasure container.', 'https://www.studyplan.dev/pro-cpp/any');
