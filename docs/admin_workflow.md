@@ -4,103 +4,122 @@
 
 | Method | Description |
 |---|---|
-| `--admin` CLI flag | Launch the app with `./CppAtlas --admin`. Opens the admin panel immediately after login. |
-| `Ctrl+Alt+Shift+M` | Keyboard shortcut while the main window is active. |
+| `--admin` CLI flag | Launch the app with `./CppAtlas --admin`. Opens admin flow after login. |
+| `Ctrl+Alt+Shift+M` | Hidden hotkey while main window is active. |
 
-## Password requirements
+## Access model
 
 | Build type | Second password gate |
 |---|---|
-| **Debug** (`QT_DEBUG`) | Disabled — panel opens after a single admin-account login. |
-| **Release** | Enabled — admin must pass a second SHA-256 hash check. |
+| **Debug** (`QT_DEBUG`) | Disabled — admin account login is sufficient. |
+| **Release** | Enabled — second SHA-256 password check is required. |
 
-### Setting the release admin password hash
-
-Export the environment variable before launching the app:
+### Setting release admin hash
 
 ```bash
-# Compute SHA-256 hex of your chosen admin password:
-echo -n "MySecretPassword" | sha256sum   # Linux/macOS
-# Example output: 8b8f79a0d0...  -
-
-export CPPATLAS_ADMIN_HASH="8b8f79a0d0..."
+echo -n "MySecretPassword" | sha256sum
+export CPPATLAS_ADMIN_HASH="<64-lowercase-hex>"
 ./CppAtlas
 ```
 
-`CPPATLAS_ADMIN_HASH` must be a **SHA-256 hex digest** (64 lowercase hex characters) of the
-admin password.  If the variable is absent or empty, `verifyAccess()` returns `Error` in
-release builds (access denied).
+`CPPATLAS_ADMIN_HASH` must be exactly 64 lowercase hex chars (SHA-256 digest).
+
+---
+
+## Admin Panel Tabs
+
+- **Content**: apply incremental SQL patches.
+- **Validation**: run content-integrity checks.
+- **Export**: export deterministic SQL backup.
+- **Stats**: DB/entity statistics.
+- **Maintenance**: full CRUD for quizzes/questions + patch rollback tools.
+
+---
 
 ## Content patch workflow
 
-Patches are plain SQL files placed in a directory you control (not shipped in the app bundle).
+### Naming convention
 
-### Patch naming convention
-
-```
-YYYY_MM_DD_description.sql
+```text
+YYYY_MM_DD_pack_name_partN.sql
 ```
 
-Examples:
-- `2025_01_15_add_cpp20_questions.sql`
-- `2025_03_01_fix_typos.sql`
+Patches are discovered and applied in **lexicographic order**.
 
-Patches are discovered and sorted **lexicographically by filename**, so the date prefix ensures
-correct application order.
+### Apply (UI)
 
-### Applying patches
+1. Admin Panel → **Content**
+2. Click **Apply Content Updates**
+3. Select patch directory
+4. Review log output (applied/skipped/failed)
 
-**Via admin UI (QuizAdminPanel → "Apply Content Updates"):**
-
-1. Click **Apply Content Updates**.
-2. Select the directory containing your `*.sql` patch files.
-3. The panel reports total / already-applied / applied-now counts.
-4. The last-used directory is remembered between sessions.
-
-**Via CLI:**
+### Apply (CLI)
 
 ```bash
 quiz_admin --db /path/to/cppatlas.db apply-content --content-dir ./patches
 ```
 
-### Rollback behaviour
+---
 
-Each patch is wrapped in a database transaction.  If SQL execution **or** `commit()` fails:
+## Rollback workflow
 
-- The transaction is rolled back automatically.
-- The patch is **not** recorded in `content_patches`.
-- Processing stops at the failing patch; subsequent patches are not attempted.
-- The error message is printed to `stderr` (CLI) or the log panel (UI).
+Patch operations are transaction-safe and tracked:
 
-## Backup / Export
+- `content_patches` records applied patch IDs.
+- `admin_patch_journal` records apply/rollback actions.
+- Snapshot restore is available for rollback flows.
 
-Export a deterministic SQL dump of all content tables:
+If apply fails, operation is aborted and logged.
 
-**Via admin UI (QuizAdminPanel → "Export Backup"):**
+---
 
-1. Click **Export Backup**.
-2. Choose a destination `.sql` file.
-3. The panel reports how many rows were written.
+## Validation rules
 
-**Via CLI:**
+Validation checks include:
 
-```bash
-quiz_admin --db /path/to/cppatlas.db export --out backup_$(date +%Y%m%d).sql
-```
+1. Quiz/question difficulty in range `[1..4]`
+2. Every active `fill_blank` question has ≥1 active row in `fill_blank_answers`
+3. `fill_blank` answer token quality (length/sentence-like warnings)
+4. MCQ has options
+5. MCQ has at least one correct option
+6. Orphan options detection
 
-Tables exported (in order):  
-`topics`, `tags`, `quizzes`, `questions`, `options`, `question_tags`, `quiz_tags`
-
-## Validate content
-
-Run integrity checks without writing anything:
+### Run validation (CLI)
 
 ```bash
 quiz_admin --db /path/to/cppatlas.db validate --content-dir ./patches
 ```
 
-Reports:
-- Patch status (applied / pending) for each `*.sql` file found.
-- MCQ questions without any options.
-- MCQ questions without a correct option.
-- Orphan options (referencing deleted questions).
+---
+
+## Export
+
+Export SQL backup:
+
+```bash
+quiz_admin --db /path/to/cppatlas.db export --out backup_$(date +%Y%m%d).sql
+```
+
+Exported tables include:
+`topics`, `tags`, `quizzes`, `questions`, `options`, `fill_blank_answers`, `question_tags`, `quiz_tags` (and other content tables if configured).
+
+---
+
+## Maintenance (Full CRUD)
+
+### Quizzes
+- Create / Edit / Soft-delete / Restore
+- Filter by title
+- Active state visible in table
+
+### Questions
+- Create / Edit / Soft-delete / Restore
+- Filter by text, quiz, type, state
+- Explicit quiz assignment on create/edit
+- `Order` = sorting position inside selected quiz
+
+### fill_blank authoring
+For `type=fill_blank`, accepted answers are managed via `fill_blank_answers` (canonical source).  
+`explanation` is pedagogical text only and is **not** used for scoring.
+
+---
