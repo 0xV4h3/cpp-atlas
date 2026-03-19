@@ -1,3 +1,10 @@
+// WelcomeScreen.cpp — complete file
+// Changes vs original:
+//   + IDE Mode button emits ideModeRequested() instead of being a checkable toggle
+//   + "Continue without Project" text fixed (capital P)
+//   + setReturnToProjectVisible() hides/shows both footer buttons (mutex)
+//   + setCurrentUser() unchanged
+
 #include "ui/WelcomeScreen.h"
 #include "core/RecentProjectsManager.h"
 #include "ui/ThemeManager.h"
@@ -5,7 +12,6 @@
 
 #include <QVBoxLayout>
 #include <QHBoxLayout>
-#include <QGroupBox>
 #include <QFileInfo>
 #include <QFont>
 #include <QFile>
@@ -13,35 +19,32 @@
 #include <QJsonObject>
 #include <QShortcut>
 
-WelcomeScreen::WelcomeScreen(QWidget *parent)
-    : QWidget(parent)
+WelcomeScreen::WelcomeScreen(QWidget *parent) : QWidget(parent)
 {
     setupUI();
     loadRecentProjects();
     applyTheme();
 
-    // Connect to theme changes
     connect(ThemeManager::instance(), &ThemeManager::themeChanged,
             this, &WelcomeScreen::applyTheme);
 
-    // F11 fullscreen toggle — bubbles up to MainWindow
-    QShortcut* fullscreenShortcut = new QShortcut(QKeySequence(Qt::Key_F11), this);
-    connect(fullscreenShortcut, &QShortcut::activated, this, [this]() {
+    QShortcut* fs = new QShortcut(QKeySequence(Qt::Key_F11), this);
+    connect(fs, &QShortcut::activated, this, [this]() {
         if (QWidget* mw = window()) {
             if (mw->isFullScreen()) mw->showNormal();
-            else mw->showFullScreen();
+            else                    mw->showFullScreen();
         }
     });
 }
 
-void WelcomeScreen::setupUI() {
+void WelcomeScreen::setupUI()
+{
     QVBoxLayout* mainLayout = new QVBoxLayout(this);
     mainLayout->setContentsMargins(60, 40, 60, 40);
     mainLayout->setSpacing(30);
 
-    // === Header with logo and title ===
+    // Header
     QHBoxLayout* headerLayout = new QHBoxLayout();
-
     m_logoLabel = new QLabel(this);
     m_logoLabel->setText("C++");
     m_logoLabel->setObjectName("welcomeLogo");
@@ -49,10 +52,8 @@ void WelcomeScreen::setupUI() {
     QVBoxLayout* titleLayout = new QVBoxLayout();
     m_titleLabel = new QLabel("CppAtlas", this);
     m_titleLabel->setObjectName("welcomeTitle");
-
     m_subtitleLabel = new QLabel("C++ Learning IDE", this);
     m_subtitleLabel->setObjectName("welcomeSubtitle");
-
     titleLayout->addWidget(m_titleLabel);
     titleLayout->addWidget(m_subtitleLabel);
     titleLayout->addStretch();
@@ -61,7 +62,6 @@ void WelcomeScreen::setupUI() {
     headerLayout->addSpacing(20);
     headerLayout->addLayout(titleLayout);
     headerLayout->addStretch();
-
     mainLayout->addLayout(headerLayout);
 
     // User info bar
@@ -70,27 +70,24 @@ void WelcomeScreen::setupUI() {
     m_userInfoLabel->setVisible(false);
     mainLayout->addWidget(m_userInfoLabel);
 
-    // === Mode Selection (IDE vs Quiz) ===
+    // Mode selection
     createModeSelectionArea();
     mainLayout->addWidget(m_modeSelector);
 
-    // === Main content: Recent Projects + Quick Actions ===
+    // Main content
     QHBoxLayout* contentLayout = new QHBoxLayout();
     contentLayout->setSpacing(40);
 
-    // Left side: Recent Projects
     QWidget* recentWidget = new QWidget(this);
     createRecentProjectsArea(recentWidget);
     contentLayout->addWidget(recentWidget, 2);
 
-    // Right side: Quick Actions
     QWidget* actionsWidget = new QWidget(this);
     createQuickActionsArea(actionsWidget);
     contentLayout->addWidget(actionsWidget, 1);
-
     mainLayout->addLayout(contentLayout, 1);
 
-    // === Footer ===
+    // Footer: Return to Project | Continue without Project (mutual exclusion)
     QHBoxLayout* footerLayout = new QHBoxLayout();
 
     m_returnToProjectBtn = new QPushButton("Return to Project", this);
@@ -102,16 +99,19 @@ void WelcomeScreen::setupUI() {
 
     footerLayout->addStretch();
 
-    QPushButton* continueBtn = new QPushButton("Continue without project", this);
-    continueBtn->setObjectName("continueButton");
-    connect(continueBtn, &QPushButton::clicked,
+    // "Continue without Project" — capital P, visible by default (no project open at start)
+    m_continueWithoutProjectBtn = new QPushButton("Continue without Project", this);
+    m_continueWithoutProjectBtn->setObjectName("continueButton");
+    m_continueWithoutProjectBtn->setVisible(true);
+    connect(m_continueWithoutProjectBtn, &QPushButton::clicked,
             this, &WelcomeScreen::continueWithoutProjectRequested);
-    footerLayout->addWidget(continueBtn);
+    footerLayout->addWidget(m_continueWithoutProjectBtn);
 
     mainLayout->addLayout(footerLayout);
 }
 
-void WelcomeScreen::createModeSelectionArea() {
+void WelcomeScreen::createModeSelectionArea()
+{
     m_modeSelector = new QWidget(this);
     m_modeSelector->setObjectName("modeSelector");
 
@@ -119,30 +119,21 @@ void WelcomeScreen::createModeSelectionArea() {
     layout->setContentsMargins(0, 0, 0, 0);
     layout->setSpacing(20);
 
-    // IDE Mode button (large card-style)
+    // IDE Mode: action button (not checkable) — emits ideModeRequested()
     m_ideModeBtn = new QPushButton(this);
     m_ideModeBtn->setObjectName("modeButton");
     m_ideModeBtn->setText("IDE Mode\nC++ Development Environment");
-    m_ideModeBtn->setCheckable(true);
-    m_ideModeBtn->setChecked(true);
     m_ideModeBtn->setMinimumSize(250, 80);
+    connect(m_ideModeBtn, &QPushButton::clicked,
+            this, &WelcomeScreen::ideModeRequested);
 
-    // Quiz Mode button (large card-style)
+    // Quiz Mode
     m_quizModeBtn = new QPushButton(this);
     m_quizModeBtn->setObjectName("modeButton");
     m_quizModeBtn->setText("Quiz Mode\nC++ Learning & Assessment");
-    m_quizModeBtn->setCheckable(true);
     m_quizModeBtn->setMinimumSize(250, 80);
     connect(m_quizModeBtn, &QPushButton::clicked,
             this, &WelcomeScreen::quizModeRequested);
-
-    // Make them exclusive
-    connect(m_ideModeBtn, &QPushButton::toggled, this, [this](bool checked) {
-        if (checked) m_quizModeBtn->setChecked(false);
-    });
-    connect(m_quizModeBtn, &QPushButton::toggled, this, [this](bool checked) {
-        if (checked) m_ideModeBtn->setChecked(false);
-    });
 
     layout->addStretch();
     layout->addWidget(m_ideModeBtn);
@@ -150,9 +141,9 @@ void WelcomeScreen::createModeSelectionArea() {
     layout->addStretch();
 }
 
-void WelcomeScreen::createQuickActionsArea(QWidget* actionsWidget) {
+void WelcomeScreen::createQuickActionsArea(QWidget* actionsWidget)
+{
     actionsWidget->setObjectName("quickActionsPanel");
-
     QVBoxLayout* layout = new QVBoxLayout(actionsWidget);
     layout->setSpacing(12);
 
@@ -160,56 +151,30 @@ void WelcomeScreen::createQuickActionsArea(QWidget* actionsWidget) {
     title->setObjectName("sectionTitle");
     layout->addWidget(title);
 
-    // New File button
-    m_newFileBtn = new QPushButton("New File", actionsWidget);
-    m_newFileBtn->setObjectName("quickActionButton");
-    m_newFileBtn->setMinimumHeight(40);
-    connect(m_newFileBtn, &QPushButton::clicked,
-            this, &WelcomeScreen::newFileRequested);
-    layout->addWidget(m_newFileBtn);
+    auto addBtn = [&](const QString& text, auto signal) -> QPushButton* {
+        QPushButton* btn = new QPushButton(text, actionsWidget);
+        btn->setObjectName("quickActionButton");
+        btn->setMinimumHeight(40);
+        connect(btn, &QPushButton::clicked, this, signal);
+        layout->addWidget(btn);
+        return btn;
+    };
 
-    // Open File button
-    m_openFileBtn = new QPushButton("Open File...", actionsWidget);
-    m_openFileBtn->setObjectName("quickActionButton");
-    m_openFileBtn->setMinimumHeight(40);
-    connect(m_openFileBtn, &QPushButton::clicked,
-            this, &WelcomeScreen::openFileRequested);
-    layout->addWidget(m_openFileBtn);
-
-    // Open Folder button
-    m_openFolderBtn = new QPushButton("Open Folder...", actionsWidget);
-    m_openFolderBtn->setObjectName("quickActionButton");
-    m_openFolderBtn->setMinimumHeight(40);
-    connect(m_openFolderBtn, &QPushButton::clicked,
-            this, &WelcomeScreen::openFolderRequested);
-    layout->addWidget(m_openFolderBtn);
-
-    // Create Project button
-    m_createProjectBtn = new QPushButton("Create Project...", actionsWidget);
-    m_createProjectBtn->setObjectName("quickActionButton");
-    m_createProjectBtn->setMinimumHeight(40);
-    connect(m_createProjectBtn, &QPushButton::clicked,
-            this, &WelcomeScreen::createProjectRequested);
-    layout->addWidget(m_createProjectBtn);
-
-    // Open Project button
-    m_openProjectBtn = new QPushButton("Open Project...", actionsWidget);
-    m_openProjectBtn->setObjectName("quickActionButton");
-    m_openProjectBtn->setMinimumHeight(40);
-    connect(m_openProjectBtn, &QPushButton::clicked,
-            this, &WelcomeScreen::openProjectRequested);
-    layout->addWidget(m_openProjectBtn);
+    m_newFileBtn       = addBtn("New File",          &WelcomeScreen::newFileRequested);
+    m_openFileBtn      = addBtn("Open File...",      &WelcomeScreen::openFileRequested);
+    m_openFolderBtn    = addBtn("Open Folder...",    &WelcomeScreen::openFolderRequested);
+    m_createProjectBtn = addBtn("Create Project...", &WelcomeScreen::createProjectRequested);
+    m_openProjectBtn   = addBtn("Open Project...",   &WelcomeScreen::openProjectRequested);
 
     layout->addStretch();
 }
 
-void WelcomeScreen::createRecentProjectsArea(QWidget* recentWidget) {
+void WelcomeScreen::createRecentProjectsArea(QWidget* recentWidget)
+{
     recentWidget->setObjectName("recentProjectsPanel");
-
     QVBoxLayout* layout = new QVBoxLayout(recentWidget);
     layout->setSpacing(12);
 
-    // Header with title and clear button
     QHBoxLayout* headerLayout = new QHBoxLayout();
     QLabel* title = new QLabel("Recent Projects", recentWidget);
     title->setObjectName("sectionTitle");
@@ -221,65 +186,47 @@ void WelcomeScreen::createRecentProjectsArea(QWidget* recentWidget) {
     connect(m_clearRecentBtn, &QPushButton::clicked,
             this, &WelcomeScreen::clearRecentProjects);
     headerLayout->addWidget(m_clearRecentBtn);
-
     layout->addLayout(headerLayout);
 
-    // Projects list
     m_recentProjectsList = new QListWidget(recentWidget);
     m_recentProjectsList->setObjectName("recentProjectsList");
     m_recentProjectsList->setAlternatingRowColors(false);
     m_recentProjectsList->setSpacing(2);
-
     connect(m_recentProjectsList, &QListWidget::itemClicked,
             this, &WelcomeScreen::onRecentProjectClicked);
     connect(m_recentProjectsList, &QListWidget::itemDoubleClicked,
             this, &WelcomeScreen::onRecentProjectDoubleClicked);
-
     layout->addWidget(m_recentProjectsList, 1);
 }
 
-void WelcomeScreen::loadRecentProjects() {
+void WelcomeScreen::loadRecentProjects()
+{
     m_recentProjectsList->clear();
+    const QStringList recent = RecentProjectsManager::instance()->recentProjects();
 
-    QStringList recentProjects = RecentProjectsManager::instance()->recentProjects();
-
-    for (const QString& projectPath : recentProjects) {
-        QFileInfo info(projectPath);
+    for (const QString& path : recent) {
+        QFileInfo info(path);
         if (!info.exists()) continue;
 
-        QListWidgetItem* item = new QListWidgetItem(m_recentProjectsList);
-
         QString displayName;
-
-        // Parse .cppatlas to get project name
         if (info.suffix() == "cppatlas") {
-            QFile file(projectPath);
+            QFile file(path);
             if (file.open(QIODevice::ReadOnly)) {
-                QJsonDocument doc = QJsonDocument::fromJson(file.readAll());
-                QString name = doc.object()["name"].toString();
-                if (!name.isEmpty()) {
-                    displayName = name;
-                } else {
-                    displayName = info.completeBaseName();
-                }
+                displayName = QJsonDocument::fromJson(file.readAll())
+                .object()["name"].toString();
                 file.close();
-            } else {
-                displayName = info.completeBaseName();
             }
+            if (displayName.isEmpty()) displayName = info.completeBaseName();
         } else {
             displayName = info.fileName().isEmpty() ? info.absolutePath() : info.fileName();
         }
 
-        QString displayText = QString("%1\n%2")
-                                  .arg(displayName)
-                                  .arg(info.absoluteFilePath());
-
-        item->setText(displayText);
-        item->setData(Qt::UserRole, projectPath);
-        item->setToolTip(projectPath);
+        QListWidgetItem* item = new QListWidgetItem(m_recentProjectsList);
+        item->setText(QString("%1\n%2").arg(displayName).arg(info.absoluteFilePath()));
+        item->setData(Qt::UserRole, path);
+        item->setToolTip(path);
     }
 
-    // Show placeholder if empty
     if (m_recentProjectsList->count() == 0) {
         QListWidgetItem* item = new QListWidgetItem("No recent projects");
         item->setFlags(item->flags() & ~Qt::ItemIsEnabled);
@@ -287,25 +234,26 @@ void WelcomeScreen::loadRecentProjects() {
     }
 }
 
-void WelcomeScreen::onRecentProjectClicked(QListWidgetItem* item) {
-    // Reserved for future single-click behavior (e.g., preview or details)
-    Q_UNUSED(item);
+void WelcomeScreen::onRecentProjectClicked(QListWidgetItem*) {}
+
+void WelcomeScreen::onRecentProjectDoubleClicked(QListWidgetItem* item)
+{
+    const QString path = item->data(Qt::UserRole).toString();
+    if (!path.isEmpty()) emit recentProjectSelected(path);
 }
 
-void WelcomeScreen::onRecentProjectDoubleClicked(QListWidgetItem* item) {
-    QString path = item->data(Qt::UserRole).toString();
-    if (!path.isEmpty()) {
-        emit recentProjectSelected(path);
-    }
-}
-
-void WelcomeScreen::clearRecentProjects() {
+void WelcomeScreen::clearRecentProjects()
+{
     RecentProjectsManager::instance()->clearRecent();
     loadRecentProjects();
 }
 
-void WelcomeScreen::setReturnToProjectVisible(bool visible) {
-    m_returnToProjectBtn->setVisible(visible);
+// FIX: mutual exclusion — Return to Project and Continue without Project
+// are never both visible at the same time.
+void WelcomeScreen::setReturnToProjectVisible(bool visible)
+{
+    if (m_returnToProjectBtn)         m_returnToProjectBtn->setVisible(visible);
+    if (m_continueWithoutProjectBtn)  m_continueWithoutProjectBtn->setVisible(!visible);
 }
 
 void WelcomeScreen::setCurrentUser(const QString& displayName,
@@ -313,19 +261,17 @@ void WelcomeScreen::setCurrentUser(const QString& displayName,
                                    bool isAdmin)
 {
     if (!m_userInfoLabel) return;
-    const QString badge = isAdmin ? " 👑 Admin" : "";
     m_userInfoLabel->setText(
-        QString("👤  %1  (@%2)%3").arg(displayName, username, badge));
+        QString("\xf0\x9f\x91\xa4  %1  (@%2)%3")
+            .arg(displayName, username, isAdmin ? " \xf0\x9f\x91\x91 Admin" : ""));
     m_userInfoLabel->setVisible(true);
 }
 
-void WelcomeScreen::applyTheme() {
-    Theme theme = ThemeManager::instance()->currentTheme();
-
+void WelcomeScreen::applyTheme()
+{
+    const Theme& theme = ThemeManager::instance()->currentTheme();
     setStyleSheet(QString(R"(
-        WelcomeScreen {
-            background-color: %1;
-        }
+        WelcomeScreen { background-color: %1; }
 
         #welcomeLogo {
             font-size: 48px;
@@ -333,24 +279,9 @@ void WelcomeScreen::applyTheme() {
             color: %2;
             font-family: "Consolas", monospace;
         }
-
-        #welcomeTitle {
-            font-size: 32px;
-            font-weight: bold;
-            color: %3;
-        }
-
-        #welcomeSubtitle {
-            font-size: 14px;
-            color: %4;
-        }
-
-        #sectionTitle {
-            font-size: 16px;
-            font-weight: bold;
-            color: %3;
-            padding-bottom: 8px;
-        }
+        #welcomeTitle   { font-size: 32px; font-weight: bold; color: %3; }
+        #welcomeSubtitle { font-size: 14px; color: %4; }
+        #sectionTitle   { font-size: 16px; font-weight: bold; color: %3; padding-bottom: 8px; }
 
         #modeButton {
             background-color: %5;
@@ -361,15 +292,8 @@ void WelcomeScreen::applyTheme() {
             text-align: left;
             font-size: 13px;
         }
-
-        #modeButton:checked {
-            border-color: %2;
-            background-color: %7;
-        }
-
-        #modeButton:hover {
-            background-color: %7;
-        }
+        #modeButton:hover  { background-color: %7; border-color: %2; }
+        #modeButton:pressed { background-color: %2; color: white; }
 
         #quickActionButton {
             background-color: transparent;
@@ -379,11 +303,7 @@ void WelcomeScreen::applyTheme() {
             padding: 10px 15px;
             font-size: 14px;
         }
-
-        #quickActionButton:hover {
-            background-color: %5;
-            border-radius: 4px;
-        }
+        #quickActionButton:hover { background-color: %5; border-radius: 4px; }
 
         #recentProjectsList {
             background-color: %5;
@@ -391,23 +311,13 @@ void WelcomeScreen::applyTheme() {
             border-radius: 4px;
             color: %3;
         }
-
         #recentProjectsList::item {
             padding: 10px;
             border-bottom: 1px solid %6;
-            background-color: %5;
             color: %3;
         }
-
-        #recentProjectsList::item:hover {
-            background-color: %2;
-            border-radius: 4px;
-        }
-
-        #recentProjectsList::item:selected {
-            background-color: %8;
-            color: %3;
-        }
+        #recentProjectsList::item:hover    { background-color: %2; color: white; border-radius: 4px; }
+        #recentProjectsList::item:selected { background-color: %8; color: %3; }
 
         #linkButton {
             background: transparent;
@@ -416,31 +326,18 @@ void WelcomeScreen::applyTheme() {
             text-decoration: underline;
             font-weight: bold;
         }
-        #linkButton:hover,
-        #linkButton:focus {
-            color: %2;
-            opacity: 0.8;
-        }
+        #linkButton:hover { color: %8; }
 
-        #continueButton, #continueButton:focus {
+        #continueButton {
             background-color: %2;
-            color: #fff;
+            color: white;
             border: none;
             border-radius: 4px;
             font-weight: bold;
             padding: 8px 20px;
         }
-
-        #continueButton:hover {
-            background-color: %8;
-            color: #fff;
-        }
-
-        #continueButton:disabled {
-            background-color: %5;
-            color: %4;
-            border: 1px solid %6;
-        }
+        #continueButton:hover   { background-color: %8; }
+        #continueButton:pressed { background-color: %2; }
 
         #userInfoBar {
             color: %4;
@@ -449,13 +346,16 @@ void WelcomeScreen::applyTheme() {
             border-bottom: 1px solid %6;
             margin-bottom: 4px;
         }
-    )").arg(theme.windowBackground.name())     // %1
+
+        QLabel { color: %3; }
+    )")
+                      .arg(theme.windowBackground.name())     // %1
                       .arg(theme.accent.name())               // %2
                       .arg(theme.textPrimary.name())          // %3
                       .arg(theme.textSecondary.name())        // %4
                       .arg(theme.panelBackground.name())      // %5
                       .arg(theme.border.name())               // %6
                       .arg(theme.sidebarBackground.name())    // %7
-                      .arg(theme.accent.lighter(110).name())  // %8
+                      .arg(theme.accent.lighter(115).name())  // %8
                   );
 }

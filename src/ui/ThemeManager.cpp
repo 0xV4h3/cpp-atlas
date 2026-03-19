@@ -47,291 +47,200 @@ QString ThemeManager::currentThemeName() const {
 
 QString ThemeManager::generateStylesheet() const {
     Theme theme = currentTheme();
-    
     QString qss;
-    
-    // Custom frameless title bar
+
+    // ── Custom title bar ───────────────────────────────────────────────────
     qss += QString(R"(
-/* Custom Title Bar */
 #customTitleBar {
     background-color: %1;
     border: none;
     border-bottom: 1px solid %2;
 }
+#windowTitle, #windowTitleLeft { color: %3; font-size: 12px; font-weight: normal; }
+#titleBarMenu { background-color: transparent; border: none; padding: 0; margin: 0; }
+#titleBarMenu::item { background-color: transparent; color: %3; padding: 5px 10px; margin: 0; }
+#titleBarMenu::item:selected { background-color: %4; }
+#minimizeButton, #maximizeButton { background-color: transparent; color: %3; border: none; font-size: 11px; }
+#minimizeButton:hover, #maximizeButton:hover { background-color: %5; }
+#closeButton { background-color: transparent; color: %3; border: none; font-size: 10px; }
+#closeButton:hover { background-color: #E81123; color: white; }
+#appIcon { color: %3; font-size: 12px; font-weight: bold; font-family: "Consolas","Monaco","Courier New",monospace; padding: 0 8px; }
+)")
+               .arg(theme.toolbarBackground.name())
+               .arg(theme.border.name())
+               .arg(theme.textPrimary.name())
+               .arg(theme.accent.name())
+               .arg(theme.accent.lighter(170).name());
 
-#windowTitle {
-    color: %3;
-    font-size: 12px;
-    font-weight: normal;
-}
-
-/* Menu bar in title bar */
-#titleBarMenu {
-    background-color: transparent;
-    border: none;
-    padding: 0;
-    margin: 0;
-}
-
-#titleBarMenu::item {
-    background-color: transparent;
-    color: %3;
-    padding: 5px 10px;
-    margin: 0;
-}
-
-#titleBarMenu::item:selected {
-    background-color: %4;
-}
-
-/* Window control buttons */
-#minimizeButton, #maximizeButton {
-    background-color: transparent;
-    color: %3;
-    border: none;
-    font-size: 11px;
-}
-
-#minimizeButton:hover, #maximizeButton:hover {
-    background-color: %5;
-}
-
-#closeButton {
-    background-color: transparent;
-    color: %3;
-    border: none;
-    font-size: 10px;
-}
-
-#closeButton:hover {
-    background-color: #E81123;
-    color: white;
-}
-
-/* App icon */
-#appIcon {
-    color: %3;
-    font-size: 12px;
-    font-weight: bold;
-    font-family: "Consolas", "Monaco", "Courier New", monospace;
-    padding: 0 8px;
-}
-
-)").arg(theme.toolbarBackground.name())      // %1 - title bar bg
-   .arg(theme.border.name())                  // %2 - subtle border
-   .arg(theme.textPrimary.name())             // %3 - text color
-   .arg(theme.accent.name())                  // %4 - menu hover
-   .arg(theme.accent.lighter(170).name());    // %5 - button hover
-    
-    // QMainWindow
-    
-    // QMainWindow - no borders
+    // ── QMainWindow ────────────────────────────────────────────────────────
     qss += QString("QMainWindow { background-color: %1; color: %2; border: none; }\n")
-        .arg(theme.windowBackground.name())
-        .arg(theme.textPrimary.name());
-    
-    // QMenuBar
+               .arg(theme.windowBackground.name()).arg(theme.textPrimary.name());
+
+    // ── QMenuBar / QMenu ───────────────────────────────────────────────────
     qss += QString("QMenuBar { background-color: %1; color: %2; border-bottom: 1px solid %3; }\n")
-        .arg(theme.toolbarBackground.name())
-        .arg(theme.textPrimary.name())
-        .arg(theme.border.name());
+               .arg(theme.toolbarBackground.name()).arg(theme.textPrimary.name()).arg(theme.border.name());
     qss += QString("QMenuBar::item { padding: 4px 8px; }\n");
-    qss += QString("QMenuBar::item:selected { background-color: %1; }\n")
-        .arg(theme.accent.name());
-    
-    // QMenu
+    qss += QString("QMenuBar::item:selected { background-color: %1; }\n").arg(theme.accent.name());
     qss += QString("QMenu { background-color: %1; color: %2; border: 1px solid %3; }\n")
-        .arg(theme.panelBackground.name())
-        .arg(theme.textPrimary.name())
-        .arg(theme.border.name());
+               .arg(theme.panelBackground.name()).arg(theme.textPrimary.name()).arg(theme.border.name());
     qss += QString("QMenu::item { padding: 5px 25px; }\n");
-    qss += QString("QMenu::item:selected { background-color: %1; }\n")
-        .arg(theme.accent.name());
-    qss += QString("QMenu::separator { height: 1px; background: %1; margin: 5px 0px; }\n")
-        .arg(theme.border.name());
-    
-    // QToolBar
-    qss += QString("QToolBar { background-color: %1; border: none; spacing: 3px; }\n")
-        .arg(theme.toolbarBackground.name());
-    qss += QString("QToolButton { background-color: transparent; color: %1; border: none; padding: 5px; }\n")
-        .arg(theme.textPrimary.name());
-    qss += QString("QToolButton:hover { background-color: %1; }\n")
-        .arg(theme.accent.name());
-    qss += QString("QToolButton:pressed { background-color: %1; }\n")
-        .arg(theme.accent.darker(120).name());
-    
-    // QTabWidget and QTabBar - without extra borders
-    qss += QString("QTabWidget::pane { border: none; background-color: %1; }\n")
-        .arg(theme.windowBackground.name());
+    qss += QString("QMenu::item:selected { background-color: %1; }\n").arg(theme.accent.name());
+    qss += QString("QMenu::separator { height: 1px; background: %1; margin: 5px 0px; }\n").arg(theme.border.name());
+
+    // ── QToolBar ──────────────────────────────────────────────────────────
+    qss += QString("QToolBar { background-color: %1; border: none; spacing: 3px; }\n").arg(theme.toolbarBackground.name());
+    qss += QString("QToolButton { background-color: transparent; color: %1; border: none; padding: 5px; }\n").arg(theme.textPrimary.name());
+    qss += QString("QToolButton:hover { background-color: %1; }\n").arg(theme.accent.name());
+    qss += QString("QToolButton:pressed { background-color: %1; }\n").arg(theme.accent.darker(120).name());
+
+    // ── QTabWidget / QTabBar ───────────────────────────────────────────────
+    qss += QString("QTabWidget::pane { border: none; background-color: %1; }\n").arg(theme.windowBackground.name());
     qss += QString("QTabBar::tab { background-color: %1; color: %2; padding: 8px 16px; border: 1px solid %3; border-bottom: none; }\n")
-        .arg(theme.tabInactive.name())
-        .arg(theme.textSecondary.name())
-        .arg(theme.border.name());
+               .arg(theme.tabInactive.name()).arg(theme.textSecondary.name()).arg(theme.border.name());
     qss += QString("QTabBar::tab:selected { background-color: %1; color: %2; }\n")
-        .arg(theme.tabActive.name())
-        .arg(theme.textPrimary.name());
-    qss += QString("QTabBar::tab:hover:!selected { background-color: %1; }\n")
-        .arg(theme.tabInactive.lighter(110).name());
-    
-    // QTabBar close button
+               .arg(theme.tabActive.name()).arg(theme.textPrimary.name());
+    qss += QString("QTabBar::tab:hover:!selected { background-color: %1; }\n").arg(theme.tabInactive.lighter(110).name());
     qss += QString("QTabBar::close-button { subcontrol-position: right; }\n");
-    qss += QString("QTabBar::close-button:hover { background-color: %1; }\n")
-        .arg(theme.error.name());
-    
-    // QDockWidget title bar
+    qss += QString("QTabBar::close-button:hover { background-color: %1; }\n").arg(theme.error.name());
+
+    // ── QDockWidget ────────────────────────────────────────────────────────
     qss += QString(R"(
-QDockWidget {
-    color: %1;
-}
-
+QDockWidget { color: %1; }
 QDockWidget::title {
-    background-color: %2;
-    color: %1;
-    padding: 6px 8px;
-    border: none;
-    text-align: left;
-    font-weight: bold;
+    background-color: %2; color: %1; padding: 6px 8px;
+    border: none; text-align: left; font-weight: bold;
 }
+QDockWidget::close-button {
+    background-color: transparent; border: none;
+    padding: 4px; width: 20px; height: 20px;
+}
+QDockWidget::close-button:hover { background-color: %3; border-radius: 3px; }
+QDockWidget QLabel { color: %1; }
+QDockWidget QTabBar::tab { color: %1; }
+)").arg(theme.textPrimary.name()).arg(theme.sidebarBackground.name()).arg(theme.accent.name());
 
-QDockWidget::close-button, QDockWidget::float-button {
-    background-color: transparent;
-    border: none;
-    padding: 4px;
-    width: 20px;
-    height: 20px;
-}
-
-QDockWidget::close-button:hover, QDockWidget::float-button:hover {
-    background-color: %3;
-    border-radius: 3px;
-}
-
-/* Labels and tabs inside dock widgets */
-QDockWidget QLabel {
-    color: %1;
-}
-
-QDockWidget QTabBar::tab {
-    color: %1;
-}
-)").arg(theme.textPrimary.name())       // %1 - text color (visible!)
-   .arg(theme.sidebarBackground.name()) // %2 - title bg
-   .arg(theme.accent.name());           // %3 - button hover
-    
-    // QTreeView (FileTree)
+    // ── QTreeView ─────────────────────────────────────────────────────────
     qss += QString("QTreeView { background-color: %1; color: %2; border: none; }\n")
-        .arg(theme.sidebarBackground.name())
-        .arg(theme.textPrimary.name());
+               .arg(theme.sidebarBackground.name()).arg(theme.textPrimary.name());
     qss += QString("QTreeView::item { padding: 2px; }\n");
-    qss += QString("QTreeView::item:hover { background-color: %1; }\n")
-        .arg(theme.accent.lighter(150).name());
+    qss += QString("QTreeView::item:hover { background-color: %1; }\n").arg(theme.accent.lighter(150).name());
     qss += QString("QTreeView::item:selected { background-color: %1; color: %2; }\n")
-        .arg(theme.accent.name())
-        .arg(theme.textPrimary.name());
-    qss += QString("QTreeView::branch { background-color: %1; }\n")
-        .arg(theme.sidebarBackground.name());
-    
-    // QScrollBar
-    qss += QString("QScrollBar:vertical { background-color: %1; width: 12px; }\n")
-        .arg(theme.panelBackground.name());
-    qss += QString("QScrollBar::handle:vertical { background-color: %1; min-height: 20px; border-radius: 6px; }\n")
-        .arg(theme.textSecondary.name());
-    qss += QString("QScrollBar::handle:vertical:hover { background-color: %1; }\n")
-        .arg(theme.textPrimary.name());
+               .arg(theme.accent.name()).arg(theme.textPrimary.name());
+    qss += QString("QTreeView::branch { background-color: %1; }\n").arg(theme.sidebarBackground.name());
+
+    // ── QScrollBar ────────────────────────────────────────────────────────
+    qss += QString("QScrollBar:vertical { background-color: %1; width: 12px; }\n").arg(theme.panelBackground.name());
+    qss += QString("QScrollBar::handle:vertical { background-color: %1; min-height: 20px; border-radius: 6px; }\n").arg(theme.textSecondary.name());
+    qss += QString("QScrollBar::handle:vertical:hover { background-color: %1; }\n").arg(theme.textPrimary.name());
     qss += QString("QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical { height: 0px; }\n");
-    qss += QString("QScrollBar:horizontal { background-color: %1; height: 12px; }\n")
-        .arg(theme.panelBackground.name());
-    qss += QString("QScrollBar::handle:horizontal { background-color: %1; min-width: 20px; border-radius: 6px; }\n")
-        .arg(theme.textSecondary.name());
-    qss += QString("QScrollBar::handle:horizontal:hover { background-color: %1; }\n")
-        .arg(theme.textPrimary.name());
+    qss += QString("QScrollBar:horizontal { background-color: %1; height: 12px; }\n").arg(theme.panelBackground.name());
+    qss += QString("QScrollBar::handle:horizontal { background-color: %1; min-width: 20px; border-radius: 6px; }\n").arg(theme.textSecondary.name());
+    qss += QString("QScrollBar::handle:horizontal:hover { background-color: %1; }\n").arg(theme.textPrimary.name());
     qss += QString("QScrollBar::add-line:horizontal, QScrollBar::sub-line:horizontal { width: 0px; }\n");
-    
-    // QPushButton
+
+    // ── QPushButton ───────────────────────────────────────────────────────
     qss += QString("QPushButton { background-color: %1; color: %2; border: 1px solid %3; padding: 5px 15px; border-radius: 3px; }\n")
-        .arg(theme.accent.name())
-        .arg(theme.textPrimary.name())
-        .arg(theme.border.name());
-    qss += QString("QPushButton:hover { background-color: %1; }\n")
-        .arg(theme.accent.lighter(110).name());
-    qss += QString("QPushButton:pressed { background-color: %1; }\n")
-        .arg(theme.accent.darker(110).name());
+               .arg(theme.accent.name()).arg(theme.textPrimary.name()).arg(theme.border.name());
+    qss += QString("QPushButton:hover { background-color: %1; }\n").arg(theme.accent.lighter(110).name());
+    qss += QString("QPushButton:pressed { background-color: %1; }\n").arg(theme.accent.darker(110).name());
     qss += QString("QPushButton:disabled { background-color: %1; color: %2; }\n")
-        .arg(theme.panelBackground.name())
-        .arg(theme.textSecondary.name());
-    
-    // QLineEdit
+               .arg(theme.panelBackground.name()).arg(theme.textSecondary.name());
+
+    // ── QLineEdit / QComboBox ─────────────────────────────────────────────
     qss += QString("QLineEdit { background-color: %1; color: %2; border: 1px solid %3; padding: 4px; border-radius: 3px; }\n")
-        .arg(theme.panelBackground.name())
-        .arg(theme.textPrimary.name())
-        .arg(theme.border.name());
-    qss += QString("QLineEdit:focus { border: 1px solid %1; }\n")
-        .arg(theme.accent.name());
-    
-    // QComboBox
+               .arg(theme.panelBackground.name()).arg(theme.textPrimary.name()).arg(theme.border.name());
+    qss += QString("QLineEdit:focus { border: 1px solid %1; }\n").arg(theme.accent.name());
     qss += QString("QComboBox { background-color: %1; color: %2; border: 1px solid %3; padding: 4px; border-radius: 3px; }\n")
-        .arg(theme.panelBackground.name())
-        .arg(theme.textPrimary.name())
-        .arg(theme.border.name());
-    qss += QString("QComboBox:hover { border: 1px solid %1; }\n")
-        .arg(theme.accent.name());
+               .arg(theme.panelBackground.name()).arg(theme.textPrimary.name()).arg(theme.border.name());
+    qss += QString("QComboBox:hover { border: 1px solid %1; }\n").arg(theme.accent.name());
     qss += QString("QComboBox::drop-down { border: none; }\n");
     qss += QString("QComboBox QAbstractItemView { background-color: %1; color: %2; selection-background-color: %3; }\n")
-        .arg(theme.panelBackground.name())
-        .arg(theme.textPrimary.name())
-        .arg(theme.accent.name());
-    
-    // QSplitter
-    qss += QString("QSplitter::handle { background-color: %1; }\n")
-        .arg(theme.border.name());
-    qss += QString("QSplitter::handle:hover { background-color: %1; }\n")
-        .arg(theme.accent.name());
-    
-    // QPlainTextEdit (output panels) - ensure text visibility
+               .arg(theme.panelBackground.name()).arg(theme.textPrimary.name()).arg(theme.accent.name());
+
+    // ── QSplitter ─────────────────────────────────────────────────────────
+    qss += QString("QSplitter::handle { background-color: %1; }\n").arg(theme.border.name());
+    qss += QString("QSplitter::handle:hover { background-color: %1; }\n").arg(theme.accent.name());
+
+    // ── QPlainTextEdit ────────────────────────────────────────────────────
     qss += QString("QPlainTextEdit { background-color: %1; color: %2; border: none; font-family: monospace; }\n")
-        .arg(theme.editorBackground.name())
-        .arg(theme.editorForeground.name());
-    
-    // QLabel - ensure text visibility in panels
-    qss += QString("QLabel { color: %1; }\n")
-        .arg(theme.textPrimary.name());
-    
-    // QGroupBox - ensure title text visibility (e.g., "Standard Input" label)
+               .arg(theme.editorBackground.name()).arg(theme.editorForeground.name());
+
+    // ── QLabel ────────────────────────────────────────────────────────────
+    qss += QString("QLabel { color: %1; }\n").arg(theme.textPrimary.name());
+
+    // ── QGroupBox ─────────────────────────────────────────────────────────
     qss += QString("QGroupBox { color: %1; border: 1px solid %2; border-radius: 3px; margin-top: 1ex; padding-top: 10px; }\n")
-               .arg(theme.textPrimary.name())
-               .arg(theme.border.name());
+               .arg(theme.textPrimary.name()).arg(theme.border.name());
     qss += QString("QGroupBox::title { color: %1; subcontrol-origin: margin; left: 10px; padding: 0 3px; }\n")
                .arg(theme.textPrimary.name());
 
-    // QTableView (problems)
+    // ── QTableView / QTableWidget (generic) ──────────────────────────────
     qss += QString("QTableView { background-color: %1; color: %2; border: none; gridline-color: %3; }\n")
-        .arg(theme.panelBackground.name())
-        .arg(theme.textPrimary.name())
-        .arg(theme.border.name());
-    qss += QString("QTableView::item:selected { background-color: %1; }\n")
-        .arg(theme.accent.name());
+               .arg(theme.panelBackground.name()).arg(theme.textPrimary.name()).arg(theme.border.name());
+    qss += QString("QTableView::item:selected { background-color: %1; }\n").arg(theme.accent.name());
     qss += QString("QHeaderView::section { background-color: %1; color: %2; border: none; padding: 4px; }\n")
-        .arg(theme.sidebarBackground.name())
-        .arg(theme.textPrimary.name());
-    
-    // QStatusBar
+               .arg(theme.sidebarBackground.name()).arg(theme.textPrimary.name());
+
+    // ── QStatusBar ────────────────────────────────────────────────────────
     qss += QString("QStatusBar { background-color: %1; color: %2; border-top: 1px solid %3; }\n")
-        .arg(theme.statusBarBackground.name())
-        .arg(theme.textPrimary.name())
-        .arg(theme.border.name());
-    
-    // QMessageBox and QDialog - theme modal dialogs
+               .arg(theme.statusBarBackground.name()).arg(theme.textPrimary.name()).arg(theme.border.name());
+
+    // ── QDialog / QMessageBox ─────────────────────────────────────────────
     qss += QString("QMessageBox { background-color: %1; color: %2; }\n")
-        .arg(theme.windowBackground.name())
-        .arg(theme.textPrimary.name());
-    qss += QString("QMessageBox QLabel { color: %1; }\n")
-        .arg(theme.textPrimary.name());
+               .arg(theme.windowBackground.name()).arg(theme.textPrimary.name());
+    qss += QString("QMessageBox QLabel { color: %1; }\n").arg(theme.textPrimary.name());
     qss += QString("QDialog { background-color: %1; color: %2; }\n")
-        .arg(theme.windowBackground.name())
-        .arg(theme.textPrimary.name());
-    qss += QString("QDialog QLabel { color: %1; }\n")
-        .arg(theme.textPrimary.name());
-    
+               .arg(theme.windowBackground.name()).arg(theme.textPrimary.name());
+    qss += QString("QDialog QLabel { color: %1; }\n").arg(theme.textPrimary.name());
+
+    // ── FIX: Benchmark widget — white margin in Table/Charts tabs ─────────
+    // Force all child backgrounds to panel color, prevent white bleed-through
+    qss += QString(R"(
+BenchmarkWidget QTabWidget::pane {
+    background-color: %1;
+    border: none;
+}
+BenchmarkWidget QTabWidget > QWidget {
+    background-color: %1;
+}
+BenchmarkWidget > QWidget {
+    background-color: %1;
+}
+BenchmarkWidget QTableWidget {
+    background-color: %1;
+    alternate-background-color: %2;
+    gridline-color: %3;
+    color: %4;
+    border: none;
+}
+BenchmarkWidget QHeaderView::section {
+    background-color: %5;
+    color: %4;
+    border: 1px solid %3;
+    padding: 4px;
+}
+BenchmarkWidget QHeaderView {
+    background-color: %5;
+}
+BenchmarkWidget QTableView > QAbstractButton {
+    background-color: %5;
+    border: 1px solid %3;
+}
+BenchmarkWidget QPlainTextEdit {
+    background-color: %2;
+    color: %4;
+    border: none;
+}
+BenchmarkWidget QSplitter::handle { background-color: %3; }
+BenchmarkChartWidget { background-color: %1; }
+BenchmarkChartWidget > QWidget { background-color: %1; }
+)")
+               .arg(theme.panelBackground.name())      // %1
+               .arg(theme.editorBackground.name())     // %2
+               .arg(theme.border.name())               // %3
+               .arg(theme.textPrimary.name())          // %4
+               .arg(theme.sidebarBackground.name());   // %5
+
     return qss;
 }
 

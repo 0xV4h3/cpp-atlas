@@ -14,7 +14,6 @@
 #include "quiz/QuizRepository.h"
 #include "quiz/ProgressAnalyzer.h"
 
-// Forward declaration — RadarChartWidget defined in QuizResultsWidget.h
 class RadarChartWidget;
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -122,7 +121,7 @@ private:
 
     // ── XP / level helpers ──────────────────────────────────────────────────
     static int  computeLevel(int totalXp);
-    static int  xpForLevel(int level);        ///< XP needed to reach that level
+    static int  xpForLevel(int level);
     static QString levelTitle(int level);
     static int  computeXpFromSessions(int userId);
     static int  computeStreak(int userId);
@@ -136,11 +135,11 @@ private:
 
     // Avatar card
     QWidget*          m_avatarCard      = nullptr;
-    QLabel*           m_avatarLabel     = nullptr;  ///< large "C++" monogram
+    QLabel*           m_avatarLabel     = nullptr;
     QLabel*           m_usernameLabel   = nullptr;
     QLabel*           m_levelLabel      = nullptr;
-    QLabel*           m_xpBarOuter      = nullptr;  ///< container for XP bar
-    QWidget*          m_xpBarFill       = nullptr;  ///< colored fill (width%)
+    QLabel*           m_xpBarOuter      = nullptr;
+    QWidget*          m_xpBarFill       = nullptr;
 
     // Analytics row (3-column)
     QWidget*          m_analyticsRow    = nullptr;

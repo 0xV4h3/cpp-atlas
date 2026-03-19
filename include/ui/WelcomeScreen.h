@@ -1,94 +1,63 @@
-#ifndef WELCOMESCREEN_H
-#define WELCOMESCREEN_H
+#pragma once
 
 #include <QWidget>
-#include <QListWidget>
-#include <QPushButton>
 #include <QLabel>
+#include <QPushButton>
+#include <QListWidget>
 
 class WelcomeScreen : public QWidget
 {
     Q_OBJECT
-
 public:
-    explicit WelcomeScreen(QWidget *parent = nullptr);
-    ~WelcomeScreen() = default;
+    explicit WelcomeScreen(QWidget* parent = nullptr);
 
-    /**
-     * @brief Show/hide the Return to Project button
-     * @param visible true if a project is open
-     */
     void setReturnToProjectVisible(bool visible);
-
-    /**
-     * @brief Update the displayed current user info on the welcome screen.
-     * @param displayName The user's display name
-     * @param username The user's username
-     * @param isAdmin true if user is admin
-     */
-    void setCurrentUser(const QString& displayName,
-                        const QString& username,
-                        bool isAdmin);
+    void setCurrentUser(const QString& displayName, const QString& username, bool isAdmin);
 
 signals:
-    // IDE Mode signals
     void newFileRequested();
     void openFileRequested();
     void openFolderRequested();
-    void recentProjectSelected(const QString& projectPath);
-
-    // Project signals
     void createProjectRequested();
     void openProjectRequested();
-
-    // Quiz Mode signal (for future implementation)
+    void recentProjectSelected(const QString& path);
     void quizModeRequested();
-
-    // Continue without project
     void continueWithoutProjectRequested();
-
-    // Return to open project
     void returnToProjectRequested();
+    void ideModeRequested();   // NEW: emitted when IDE Mode button clicked
 
 private slots:
     void onRecentProjectClicked(QListWidgetItem* item);
     void onRecentProjectDoubleClicked(QListWidgetItem* item);
     void clearRecentProjects();
+    void applyTheme();
 
 private:
     void setupUI();
-    void loadRecentProjects();
     void createModeSelectionArea();
-    void createQuickActionsArea(QWidget* parent);
-    void createRecentProjectsArea(QWidget* parent);
-    void applyTheme();
+    void createQuickActionsArea(QWidget* actionsWidget);
+    void createRecentProjectsArea(QWidget* recentWidget);
+    void loadRecentProjects();
 
-    // Mode selection
-    QWidget* m_modeSelector;
-    QPushButton* m_ideModeBtn;
-    QPushButton* m_quizModeBtn;
+    QLabel*      m_logoLabel      = nullptr;
+    QLabel*      m_titleLabel     = nullptr;
+    QLabel*      m_subtitleLabel  = nullptr;
+    QLabel*      m_userInfoLabel  = nullptr;
 
-    // Quick actions (IDE mode)
-    QPushButton* m_newFileBtn;
-    QPushButton* m_openFileBtn;
-    QPushButton* m_openFolderBtn;
-    QPushButton* m_createProjectBtn;
-    QPushButton* m_openProjectBtn;
+    QWidget*     m_modeSelector   = nullptr;
+    QPushButton* m_ideModeBtn     = nullptr;
+    QPushButton* m_quizModeBtn    = nullptr;
 
-    // Recent projects
-    QListWidget* m_recentProjectsList;
-    QPushButton* m_clearRecentBtn;
+    QPushButton* m_newFileBtn         = nullptr;
+    QPushButton* m_openFileBtn        = nullptr;
+    QPushButton* m_openFolderBtn      = nullptr;
+    QPushButton* m_createProjectBtn   = nullptr;
+    QPushButton* m_openProjectBtn     = nullptr;
 
-    // Labels
-    QLabel* m_logoLabel;
-    QLabel* m_titleLabel;
-    QLabel* m_subtitleLabel;
+    QListWidget* m_recentProjectsList     = nullptr;
+    QPushButton* m_clearRecentBtn         = nullptr;
 
-    // Return to project
-    QPushButton* m_returnToProjectBtn;
-
-    // Current user info display
-    QLabel* m_userInfoLabel = nullptr;
+    // Footer — only one is visible at a time (controlled by mainwindow)
+    QPushButton* m_returnToProjectBtn     = nullptr;
+    QPushButton* m_continueWithoutProjectBtn = nullptr;
 };
-
-#endif // WELCOMESCREEN_H

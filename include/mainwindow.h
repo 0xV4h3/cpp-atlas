@@ -1,58 +1,57 @@
-#ifndef MAINWINDOW_H
-#define MAINWINDOW_H
+#pragma once
 
 #include <QMainWindow>
-#include <QDockWidget>
-#include <QComboBox>
-#include <QLabel>
-#include <QMenu>
-#include <QProcess>
-#include <QPushButton>
-#include <QPoint>
-#include <QShortcut>
 #include <QSplitter>
 #include <QStackedWidget>
+#include <QLabel>
+#include <QComboBox>
 #include <QToolBar>
+#include <QDockWidget>
+#include <QMenu>
+#include <QAction>
+#include <QShortcut>
+#include <QPointer>
+#include <QPoint>
+#include <QPushButton>
+
 #include "core/Project.h"
+#include "ui/FindReplaceDialog.h"
 
 QT_BEGIN_NAMESPACE
-namespace Ui {
-class MainWindow;
-}
+namespace Ui { class MainWindow; }
 QT_END_NAMESPACE
 
 class EditorTabWidget;
+class CodeEditor;
 class OutputPanel;
 class FileTreeWidget;
-class FileManager;
-class Project;
-class ICompiler;
-class WelcomeScreen;
-class QuizModeWindow;
-class QuizAdminPanel;
-class NewFileDialog;
-class NewProjectDialog;
 class AnalysisPanel;
-class CodeEditor;
+class QuizModeWindow;
+class WelcomeScreen;
+class FileManager;
 class SettingsDialog;
+class QuizAdminPanel;
 
 class MainWindow : public QMainWindow
 {
     Q_OBJECT
 
 public:
-    MainWindow(QWidget *parent = nullptr);
+    explicit MainWindow(QWidget *parent = nullptr);
     ~MainWindow();
 
     void setStartupAdminRequested(bool enabled);
+
+public slots:
     void tryOpenAdminPanelFromStartupRequest();
+    void showWelcomeScreen();
 
 protected:
     void closeEvent(QCloseEvent *event) override;
-    void mousePressEvent(QMouseEvent* event) override;
-    void mouseMoveEvent(QMouseEvent* event) override;
-    void mouseReleaseEvent(QMouseEvent* event) override;
-    void mouseDoubleClickEvent(QMouseEvent* event) override;
+    void mousePressEvent(QMouseEvent *event) override;
+    void mouseMoveEvent(QMouseEvent *event) override;
+    void mouseReleaseEvent(QMouseEvent *event) override;
+    void mouseDoubleClickEvent(QMouseEvent *event) override;
 #if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
     bool nativeEvent(const QByteArray &eventType, void *message, qintptr *result) override;
 #else
@@ -92,9 +91,11 @@ private slots:
     void onViewToggleFileTree();
     void onViewToggleOutputPanel();
     void onViewFullscreen();
+    void onViewToggleFileTreeSide();
 
-    // Help menu
-    void showAboutDialog();
+    // Tools / Settings
+    void onOpenSettings();
+    void onSettingsChanged();
 
     // Toolbar
     void onCompilerChanged(int index);
@@ -105,134 +106,129 @@ private slots:
     void onNewFileRequested(const QString& directory);
 
     // Editor
-    void onEditorChanged(class CodeEditor* editor);
+    void onEditorChanged(CodeEditor* editor);
     void onActiveEditorTextChanged();
 
     // Problems
     void onDiagnosticClicked(const QString& file, int line, int column);
 
-    // Quiz mode
+    // Quiz / Welcome
     void onQuizModeRequested();
     void onQuizModeExit();
 
-    // Settings
-    void onOpenSettings();
-    void onSettingsChanged();
-
-    // Admin panel
+    // Admin
     void showQuizAdminPanel();
 
+    // Output panel full-height toggle
+    void onToggleOutputFullHeight();
+
 private:
-    Ui::MainWindow *ui;
-
-    // Title bar constants
-    static constexpr int TITLE_BAR_HEIGHT = 32;
-    static constexpr int WINDOW_BUTTON_WIDTH = 46;
-    static constexpr int WINDOW_BUTTON_COUNT = 3;
-    static constexpr int RESIZE_BORDER_WIDTH = 8;
-
-    // Custom title bar widgets
-    QWidget* m_titleBar = nullptr;
-    QLabel* m_titleLabel = nullptr;
-    QLabel* m_titleLabelLeft = nullptr;
-    QLabel* m_iconLabel = nullptr;
-    QPushButton* m_minimizeBtn = nullptr;
-    QPushButton* m_maximizeBtn = nullptr;
-    QPushButton* m_closeBtn = nullptr;
-
-    // Drag handling
-    QPoint m_dragPosition;
-    bool m_dragging = false;
-
-    // Main widgets
-    EditorTabWidget* m_editorTabs;
-    OutputPanel* m_outputPanel;
-    FileTreeWidget* m_fileTree;
-    FileManager* m_fileManager;
-    Project* m_project;
-    AnalysisPanel* m_analysisPanel = nullptr;
-    CodeEditor* m_previousEditor = nullptr;
-
-    // Welcome screen
-    WelcomeScreen* m_welcomeScreen = nullptr;
-    QStackedWidget* m_modeStack = nullptr;
-    QSplitter*      m_mainSplitter;
-    bool m_analysisDockWasVisible = false;
-    QuizModeWindow* m_quizModeWindow = nullptr;
-
-    // Dock widgets
-    QDockWidget* m_fileTreeDock;
-    QDockWidget* m_outputPanelDock;
-
-    // Toolbar widgets
-    QComboBox* m_compilerCombo;
-    QComboBox* m_standardCombo;
-
-    // Status bar
-    QLabel* m_statusLabel;
-    QLabel* m_cursorPosLabel;
-    QLabel* m_standardLabel;
-    QLabel* m_compilerLabel;
-
-    // Current compilation
-    QString m_currentExecutable;
-
-    // Menus
-    QMenu* m_fileMenu = nullptr;
-    QMenu* m_buildMenu = nullptr;
-    QMenu* m_editMenu = nullptr;
-    QMenu* m_viewMenu = nullptr;
-    QMenu* m_toolsMenu = nullptr;
-    QMenu* m_settingsMenu = nullptr;
-    QMenu* m_helpMenu = nullptr;
-    QAction* m_closeProjectAction = nullptr;
-    QAction* m_runAction = nullptr;
-    QAction* m_toggleFileTreeAction = nullptr;
-    QAction* m_toggleOutputAction = nullptr;
-    QAction* m_toggleAnalysisAction = nullptr;
-
-    // Edit menu actions that should be disabled in welcome screen
-    QAction* m_findAction = nullptr;
-    QAction* m_replaceAction = nullptr;
-    QAction* m_gotoLineAction = nullptr;
-
-    // Main toolbar
-    QToolBar* m_mainToolbar = nullptr;
-
-    // Settings dialog (modeless, persisted between opens)
-    SettingsDialog* m_settingsDialog = nullptr;
-
-    // Admin panel
-    bool m_startupAdminRequested = false;
-    QShortcut* m_adminShortcut = nullptr;
-    QuizAdminPanel* m_adminPanel = nullptr;
-
     void setupUi();
     void setupCustomTitleBar();
     void setupMenus();
     void setupToolbar();
     void setupDockWidgets();
-    void showIDE();
     void setupStatusBar();
     void setupConnections();
     void setupWelcomeScreen();
-    void showWelcomeScreen();
+
+    void showIDE();
     void hideWelcomeScreen();
-    void updateMenuState(bool isWelcomeVisible);
-    void loadCompilers();
-    void updateStatusBar();
-    void updateWindowTitle();
-    void updateCustomTitleLabel(const QString& title);
-    void saveCurrentSession();
-    void showProjectLoadError(Project::LoadResult result);
-    void restoreProjectSession(Project* project);
     void showQuizModeWindow();
     void hideQuizModeWindow();
+    void updateMenuState(bool isWelcomeOrQuiz);
+    void updateWindowTitle();
+    void updateCustomTitleLabel(const QString& title);
     void updateTitlePosition();
+    void updateStatusBar();
+    void loadCompilers();
 
     QString getCurrentSourceFile();
     QString getExecutablePath(const QString& sourceFile);
     void showBuildError(const QString& message);
-};
+    void saveCurrentSession();
+    void restoreProjectSession(Project* project);
+    void showProjectLoadError(Project::LoadResult result);
+    void showAboutDialog();
+    void wireFindReplaceDialog(FindReplaceDialog* dialog, CodeEditor* editor);
 
-#endif // MAINWINDOW_H
+    // Constants
+    static constexpr int TITLE_BAR_HEIGHT    = 32;
+    static constexpr int WINDOW_BUTTON_WIDTH = 46;
+    static constexpr int WINDOW_BUTTON_COUNT = 3;
+    static constexpr int RESIZE_BORDER_WIDTH = 8;
+
+    // UI
+    Ui::MainWindow *ui;
+
+    // Custom title bar
+    QWidget*      m_titleBar        = nullptr;
+    QLabel*       m_iconLabel       = nullptr;
+    QLabel*       m_titleLabel      = nullptr;
+    QLabel*       m_titleLabelLeft  = nullptr;
+    QPushButton*  m_minimizeBtn     = nullptr;
+    QPushButton*  m_maximizeBtn     = nullptr;
+    QPushButton*  m_closeBtn        = nullptr;
+
+    // Main layout
+    QStackedWidget*   m_modeStack       = nullptr;
+    QSplitter*        m_mainSplitter    = nullptr;
+    QSplitter*        m_vertSplitter    = nullptr;
+
+    // Widgets
+    EditorTabWidget*  m_editorTabs      = nullptr;
+    AnalysisPanel*    m_analysisPanel   = nullptr;
+    OutputPanel*      m_outputPanel     = nullptr;
+    FileTreeWidget*   m_fileTree        = nullptr;
+    WelcomeScreen*    m_welcomeScreen   = nullptr;
+    QuizModeWindow*   m_quizModeWindow  = nullptr;
+
+    // Dock widgets
+    QDockWidget*      m_fileTreeDock    = nullptr;
+
+    // Toolbar
+    QToolBar*   m_mainToolbar    = nullptr;
+    QComboBox*  m_compilerCombo  = nullptr;
+    QComboBox*  m_standardCombo  = nullptr;
+
+    // Status bar
+    QLabel* m_statusLabel     = nullptr;
+    QLabel* m_cursorPosLabel  = nullptr;
+    QLabel* m_standardLabel   = nullptr;
+    QLabel* m_compilerLabel   = nullptr;
+
+    // Menus
+    QMenu*    m_fileMenu               = nullptr;
+    QMenu*    m_editMenu               = nullptr;
+    QMenu*    m_buildMenu              = nullptr;
+    QMenu*    m_viewMenu               = nullptr;
+    QMenu*    m_toolsMenu              = nullptr;
+    QMenu*    m_settingsMenu           = nullptr;
+    QMenu*    m_helpMenu               = nullptr;
+    QAction*  m_toggleFileTreeAction   = nullptr;
+    QAction*  m_toggleOutputAction     = nullptr;
+    QAction*  m_toggleAnalysisAction   = nullptr;
+    QAction*  m_findAction             = nullptr;
+    QAction*  m_replaceAction          = nullptr;
+    QAction*  m_gotoLineAction         = nullptr;
+    QAction*  m_runAction              = nullptr;
+    QAction*  m_closeProjectAction     = nullptr;
+    QAction*  m_fileTreeSideAction     = nullptr;
+    QAction*  m_outputFullHeightAction = nullptr;
+
+    // State
+    FileManager*  m_fileManager      = nullptr;
+    Project*      m_project          = nullptr;
+    QString       m_currentExecutable;
+    bool          m_dragging         = false;
+    QPoint        m_dragPosition;
+    bool          m_fileTreeOnLeft   = true;
+    bool          m_outputFullHeight = false;
+    QPointer<CodeEditor> m_previousEditor;
+    bool          m_startupAdminRequested = false;
+
+    // Dialogs
+    SettingsDialog*  m_settingsDialog = nullptr;
+    QuizAdminPanel*  m_adminPanel     = nullptr;
+    QShortcut*       m_adminShortcut  = nullptr;
+};
