@@ -1,6 +1,8 @@
 #ifndef BENCHMARKWIDGET_H
 #define BENCHMARKWIDGET_H
 
+#include <QColor>
+#include <QEvent>
 #include <QScopedPointer>
 #include <QWidget>
 #include <QTemporaryFile>
@@ -13,8 +15,31 @@ class QPushButton;
 class QLabel;
 class QTabWidget;
 class QTableWidget;
+class QScrollArea;
+class QVBoxLayout;
 class QPlainTextEdit;
 class BenchmarkChartWidget;
+
+// ── Result record ─────────────────────────────────────────────────────────────
+
+/**
+ * @brief One accumulated benchmark result with user-assigned display metadata.
+ *
+ * Stored in m_records; the Results Manager tab lets the user edit name/color
+ * and choose which record is shown in Charts/Table/JSON and which records
+ * participate in Comparison.
+ */
+struct BenchmarkResultRecord {
+    BenchmarkResult result;
+
+    // User-editable display metadata
+    QString userLabel;
+    QColor  color;
+
+    // Selection state
+    bool showInView   = false;
+    bool inComparison = false;
+};
 
 /**
  * @brief Full benchmark authoring and results widget.
@@ -47,17 +72,7 @@ public:
     explicit BenchmarkWidget(QWidget* parent = nullptr);
     ~BenchmarkWidget() override = default;
 
-    // ── Set from MainWindow ───────────────────────────────────────
-    /**
-     * @brief Called by MainWindow when the toolbar compiler changes.
-     * Forwarded directly to BenchmarkRunner::setCompilerId().
-     */
     void setCompilerId(const QString& id);
-
-    /**
-     * @brief Called by MainWindow when the toolbar standard changes.
-     * Stored and passed as -std=<standard> flag on next Run.
-     */
     void setStandard(const QString& standard);
 
 public slots:
@@ -68,11 +83,6 @@ public slots:
     void openBenchmarkFile();
     void saveBenchmarkFile();
     void importResults();
-
-    /**
-     * @brief Apply font/line-numbers/wrap to all benchmark code-editor tabs.
-     * Called from AnalysisPanel::applyToolEditorSettings().
-     */
     void applyEditorSettings(const QFont& font, bool showLineNumbers, bool wordWrap);
 
 signals:
@@ -85,54 +95,91 @@ private slots:
     void onCompareClicked();
     void stopProcess();
 
+    // Results Manager slots
+    void onResultColorClicked(int row);
+    void onDeleteResultClicked(int row);
+    void onExportResultClicked(int row);
+    void onClearAllResults();
+
+protected:
+    bool eventFilter(QObject* obj, QEvent* event) override;
+
 private:
+    // ── Layout ────────────────────────────────────────────────────────────────
     void setupUi();
     void setupToolbar(QWidget* parent, class QHBoxLayout* layout);
     void setupCodeEditor();
     void setupResultsTabs();
+    void setupResultsManagerTab();
+
+    // ── Helpers ───────────────────────────────────────────────────────────────
+    void addRecord(const BenchmarkResult& result,
+                   const QString& userLabel = QString(),
+                   const QColor&  color     = QColor());
+
+    /** Rebuild the Results Manager rows from m_records. */
+    void refreshResultsTable();
+
+    /** Show the single record marked showInView in Charts / Table / Raw JSON. */
+    void refreshDisplayedResult();
+
+    /** Push all records with inComparison=true to the Comparison chart. */
+    void refreshComparison();
+
+    /** Apply display metadata from m_records[row] to the BenchmarkResult
+     *  passed to buildComparisonChart so bar colors and labels are correct. */
+    BenchmarkResult decoratedResult(int recordIndex) const;
+
     void updateResultsView(const BenchmarkResult& result);
     void applyThemeToEditor(const QString& themeName);
 
-    // Multi-tab editor helpers
+    // ── Code editor helpers ───────────────────────────────────────────────────
     QsciScintilla* currentBenchEditor() const;
     QString        currentBenchFilePath() const;
-    void           addBenchTab(const QString& title, const QString& filePath,
-                     const QString& content);
-    bool           closeBenchTab(int index);
-    void           loadTemplateInCurrentTab();
+    void addBenchTab(const QString& title, const QString& filePath, const QString& content);
+    bool closeBenchTab(int index);
+    void loadTemplateInCurrentTab();
 
-    // ── Toolbar ────────────────────────────────────────────────────
-    QComboBox* m_optimizationCombo = nullptr;
-    QPushButton* m_openFileButton = nullptr;
-    QPushButton* m_saveFileButton = nullptr;
-    QPushButton* m_importButton = nullptr;
-    QPushButton* m_runButton = nullptr;
-    QPushButton* m_stopButton = nullptr;
-    QPushButton* m_exportButton = nullptr;
-    QPushButton* m_compareButton = nullptr;
-    QLabel* m_statusLabel = nullptr;
+    // ── Toolbar widgets ───────────────────────────────────────────────────────
+    QComboBox*   m_optimizationCombo = nullptr;
+    QPushButton* m_openFileButton    = nullptr;
+    QPushButton* m_saveFileButton    = nullptr;
+    QPushButton* m_importButton      = nullptr;
+    QPushButton* m_runButton         = nullptr;
+    QPushButton* m_stopButton        = nullptr;
+    QPushButton* m_exportButton      = nullptr;
+    QPushButton* m_compareButton     = nullptr;
+    QLabel*      m_statusLabel       = nullptr;
 
-    // ── Code editor tabs ───────────────────────────────────────────
-    QTabWidget* m_editorTabs = nullptr;
+    // ── Code editor tabs ──────────────────────────────────────────────────────
+    QTabWidget* m_editorTabs      = nullptr;
     int         m_newBenchCounter = 1;
 
-    // ── Results ────────────────────────────────────────────────────
-    QTabWidget* m_resultsTabs = nullptr;
-    BenchmarkChartWidget* m_chartWidget = nullptr;
-    BenchmarkChartWidget* m_comparisonChartWidget = nullptr;
-    QTableWidget* m_tableWidget = nullptr;
-    QPlainTextEdit* m_rawJsonView = nullptr;
+    // ── Results tabs ──────────────────────────────────────────────────────────
+    QTabWidget*           m_resultsTabs            = nullptr;
+    BenchmarkChartWidget* m_chartWidget            = nullptr;
+    BenchmarkChartWidget* m_comparisonChartWidget  = nullptr;
+    QTableWidget*         m_tableWidget            = nullptr;
+    QPlainTextEdit*       m_rawJsonView            = nullptr;
 
-    // ── Backend ────────────────────────────────────────────────────
+    // Results Manager tab (index 4) — scroll area of QFrame rows, no QTableWidget
+    QScrollArea*  m_recordsScrollArea = nullptr;
+    QWidget*      m_recordsContainer  = nullptr;
+    QVBoxLayout*  m_recordsLayout     = nullptr;
+    QPushButton*  m_clearAllBtn       = nullptr;
+
+    // ── Backend ───────────────────────────────────────────────────────────────
     BenchmarkRunner* m_runner = nullptr;
 
-    // ── State ──────────────────────────────────────────────────────
+    // ── State ─────────────────────────────────────────────────────────────────
     QString m_compilerId;
     QString m_standard = QStringLiteral("c++17");
     QScopedPointer<QTemporaryFile> m_tempBenchSource;
 
-    static constexpr int MAX_COMPARE = 5;
-    QList<BenchmarkResult> m_savedResults;
+    QList<BenchmarkResultRecord> m_records;
+
+    // Palette for auto-assigning colors to new records
+    static const QList<QColor>& recordPalette();
 };
 
 #endif // BENCHMARKWIDGET_H
