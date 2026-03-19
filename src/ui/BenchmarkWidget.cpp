@@ -241,8 +241,8 @@ void BenchmarkWidget::addBenchTab(const QString& title,
 }
 
 bool BenchmarkWidget::closeBenchTab(int index) {
-    if (m_editorTabs->count() <= 1)
-        return false; // keep at least one tab
+    // if (m_editorTabs->count() <= 1)
+    //     return false; // keep at least one tab
     m_editorTabs->removeTab(index);
     return true;
 }
