@@ -139,7 +139,7 @@ void MainWindow::setupUi()
     m_vertSplitter = new QSplitter(Qt::Vertical, this);
     m_vertSplitter->addWidget(m_mainSplitter);
     m_vertSplitter->addWidget(m_outputPanel);
-    m_vertSplitter->setStretchFactor(0, 4);
+    m_vertSplitter->setStretchFactor(0, 5);
     m_vertSplitter->setStretchFactor(1, 1);
     // Allow output to collapse to min height
     m_vertSplitter->setCollapsible(1, true);
@@ -157,7 +157,7 @@ void MainWindow::setupUi()
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// setupCustomTitleBar  (unchanged from original)
+// setupCustomTitleBar
 // ─────────────────────────────────────────────────────────────────────────────
 void MainWindow::setupCustomTitleBar()
 {
@@ -464,7 +464,7 @@ void MainWindow::setupMenus()
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// setupToolbar  (unchanged from original)
+// setupToolbar
 // ─────────────────────────────────────────────────────────────────────────────
 void MainWindow::setupToolbar()
 {

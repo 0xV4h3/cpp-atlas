@@ -6,7 +6,6 @@
 #include <QPainter>
 
 #ifdef CPPATLAS_CHARTS_AVAILABLE
-// Qt Charts includes — only compiled when the module is available
 #include <QtCharts/QBarSeries>
 #include <QtCharts/QBarSet>
 #include <QtCharts/QBarCategoryAxis>
@@ -15,14 +14,10 @@
 #include <QtCharts/QLineSeries>
 #include <QtCharts/QValueAxis>
 
-// Qt5 only: QT_CHARTS_USE_NAMESPACE
 #if (QT_VERSION < QT_VERSION_CHECK(6, 0, 0))
 QT_CHARTS_USE_NAMESPACE
 #endif
-
 #endif
-
-// ── Construction ─────────────────────────────────────────────────────────────
 
 BenchmarkChartWidget::BenchmarkChartWidget(QWidget* parent)
     : QWidget(parent)
@@ -31,8 +26,6 @@ BenchmarkChartWidget::BenchmarkChartWidget(QWidget* parent)
     connect(ThemeManager::instance(), &ThemeManager::themeChanged,
             this, &BenchmarkChartWidget::onThemeChanged);
 }
-
-// ── UI setup ──────────────────────────────────────────────────────────────────
 
 void BenchmarkChartWidget::setupUi() {
     auto* layout = new QVBoxLayout(this);
@@ -61,8 +54,6 @@ void BenchmarkChartWidget::setupUi() {
 #endif
 }
 
-// ── Public API ────────────────────────────────────────────────────────────────
-
 void BenchmarkChartWidget::setResult(const BenchmarkResult& result) {
 #ifdef CPPATLAS_CHARTS_AVAILABLE
     switch (m_chartType) {
@@ -79,9 +70,7 @@ void BenchmarkChartWidget::setResult(const BenchmarkResult& result) {
 #endif
 }
 
-void BenchmarkChartWidget::compareResults(
-    const QList<BenchmarkResult>& results)
-{
+void BenchmarkChartWidget::compareResults(const QList<BenchmarkResult>& results) {
 #ifdef CPPATLAS_CHARTS_AVAILABLE
     buildComparisonChart(results);
 #else
@@ -93,19 +82,15 @@ void BenchmarkChartWidget::setChartType(ChartType type) {
     m_chartType = type;
 }
 
-// ── Chart builders (only compiled with Qt Charts) ─────────────────────────────
-
 #ifdef CPPATLAS_CHARTS_AVAILABLE
 
 namespace {
-/** Shorten a benchmark name to at most maxLen characters. */
 QString shortName(const QString& name, int maxLen = 30) {
     return name.length() > maxLen
                ? name.left(maxLen - 3) + QStringLiteral("...")
                : name;
 }
 
-/** Apply theme colours to a single chart axis. */
 void styleAxis(QAbstractAxis* axis, const Theme& theme) {
     axis->setLabelsBrush(QBrush(theme.textPrimary));
     axis->setTitleBrush(QBrush(theme.textPrimary));
@@ -116,8 +101,11 @@ void styleAxis(QAbstractAxis* axis, const Theme& theme) {
 
 void BenchmarkChartWidget::buildBarChart(const BenchmarkResult& result) {
     auto* barSet = new QBarSet(QStringLiteral("Real Time"));
-    QStringList categories;
+    // Apply displayColor if set
+    if (result.displayColor.isValid())
+        barSet->setColor(result.displayColor);
 
+    QStringList categories;
     for (const BenchmarkEntry& e : result.benchmarks) {
         *barSet << e.realTimeNs;
         categories << shortName(e.name);
@@ -143,8 +131,7 @@ void BenchmarkChartWidget::buildBarChart(const BenchmarkResult& result) {
     axisY->setTitleText(
         result.benchmarks.isEmpty()
             ? QStringLiteral("Time (ns)")
-            : QStringLiteral("Time (%1)").arg(
-                  result.benchmarks.first().timeUnit));
+            : QStringLiteral("Time (%1)").arg(result.benchmarks.first().timeUnit));
     chart->addAxis(axisY, Qt::AlignLeft);
     series->attachAxis(axisY);
 
@@ -154,17 +141,13 @@ void BenchmarkChartWidget::buildBarChart(const BenchmarkResult& result) {
 }
 
 void BenchmarkChartWidget::buildLineChart(const BenchmarkResult& result) {
-    // Detect parametric benchmarks by "/" in their name.
-    // Group by base name; x-axis = numeric value after the last "/".
     QMap<QString, QLineSeries*> seriesMap;
 
     for (const BenchmarkEntry& e : result.benchmarks) {
         const int slashIdx = e.name.lastIndexOf(QLatin1Char('/'));
-        const QString baseName =
-            (slashIdx > 0) ? e.name.left(slashIdx) : e.name;
+        const QString baseName = (slashIdx > 0) ? e.name.left(slashIdx) : e.name;
         bool ok = false;
-        const double xVal =
-            (slashIdx > 0) ? e.name.mid(slashIdx + 1).toDouble(&ok) : 0.0;
+        const double xVal = (slashIdx > 0) ? e.name.mid(slashIdx + 1).toDouble(&ok) : 0.0;
 
         if (!seriesMap.contains(baseName)) {
             auto* s = new QLineSeries();
@@ -177,7 +160,6 @@ void BenchmarkChartWidget::buildLineChart(const BenchmarkResult& result) {
     auto* chart = new QChart();
     chart->setTitle(QStringLiteral("Parametric Benchmark — Real Time (ns)"));
     chart->setAnimationOptions(QChart::SeriesAnimations);
-
     for (auto* s : seriesMap.values()) chart->addSeries(s);
     chart->createDefaultAxes();
 
@@ -185,29 +167,43 @@ void BenchmarkChartWidget::buildLineChart(const BenchmarkResult& result) {
     applyChartTheme(ThemeManager::instance()->currentThemeName());
 }
 
-void BenchmarkChartWidget::buildComparisonChart(
-    const QList<BenchmarkResult>& results)
+void BenchmarkChartWidget::buildComparisonChart(const QList<BenchmarkResult>& results)
 {
     if (results.isEmpty()) return;
 
-    // Use benchmark names from the first result as x-axis categories.
+    // Build union of benchmark names (categories) across all results
+    // to handle results that have different benchmark sets.
     QStringList categories;
-    for (const BenchmarkEntry& e : results.first().benchmarks)
-        categories << shortName(e.name, 20);
+    for (const BenchmarkResult& r : results) {
+        for (const BenchmarkEntry& e : r.benchmarks) {
+            const QString cat = shortName(e.name, 20);
+            if (!categories.contains(cat))
+                categories << cat;
+        }
+    }
 
     auto* series = new QBarSeries();
     for (const BenchmarkResult& r : results) {
-        const QString label =
-            r.label.isEmpty() ? r.optimizationLevel : r.label;
-        auto* barSet = new QBarSet(label);
-        for (const BenchmarkEntry& e : r.benchmarks)
-            *barSet << e.realTimeNs;
+        const QString lbl = r.label.isEmpty() ? r.optimizationLevel : r.label;
+        auto* barSet = new QBarSet(lbl);
+
+        // Apply user-chosen color if set
+        if (r.displayColor.isValid())
+            barSet->setColor(r.displayColor);
+
+        // Fill values in category order — 0 if this result has no entry for that category
+        for (const QString& cat : categories) {
+            double val = 0.0;
+            for (const BenchmarkEntry& e : r.benchmarks) {
+                if (shortName(e.name, 20) == cat) { val = e.realTimeNs; break; }
+            }
+            *barSet << val;
+        }
         series->append(barSet);
     }
 
     auto* chart = new QChart();
-    chart->setTitle(
-        QStringLiteral("Benchmark Comparison — Real Time (ns)"));
+    chart->setTitle(QStringLiteral("Benchmark Comparison — Real Time (ns)"));
     chart->setAnimationOptions(QChart::SeriesAnimations);
     chart->addSeries(series);
 
@@ -238,17 +234,12 @@ void BenchmarkChartWidget::applyChartTheme(const QString& themeName) {
     chart->setBackgroundBrush(QBrush(theme.panelBackground));
     chart->setTitleBrush(QBrush(theme.textPrimary));
     chart->legend()->setLabelBrush(QBrush(theme.textPrimary));
-
-    // Propagate to all axes
     for (QAbstractAxis* axis : chart->axes())
         styleAxis(axis, theme);
-
     m_chartView->setBackgroundBrush(QBrush(theme.panelBackground));
 }
 
 #endif // CPPATLAS_CHARTS_AVAILABLE
-
-// ── Theme slot ────────────────────────────────────────────────────────────────
 
 void BenchmarkChartWidget::onThemeChanged(const QString& themeName) {
 #ifdef CPPATLAS_CHARTS_AVAILABLE

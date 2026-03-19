@@ -31,78 +31,99 @@ void RadarChartWidget::setData(const QList<QPair<QString, double>>& data)
 
 void RadarChartWidget::paintEvent(QPaintEvent*)
 {
-    if (m_data.isEmpty()) return;
+    const int n = m_data.size();
+    if (n < 2) return;
 
     QPainter p(this);
     p.setRenderHint(QPainter::Antialiasing);
 
     const Theme& t = ThemeManager::instance()->currentTheme();
-    const int n    = m_data.size();
-    const QRectF rect = QRectF(0, 0, width(), height()).adjusted(40, 30, -40, -30);
-    const QPointF center = rect.center();
-    const double  radius = qMin(rect.width(), rect.height()) / 2.0;
 
-    // ── Grid rings (3 rings: 33%, 66%, 100%) ─────────────────────────────
-    for (int ring = 1; ring <= 3; ++ring) {
-        const double r = radius * ring / 3.0;
+    QFont labelFont = p.font();
+    const int fontPx = qMax(7, 9 - qMax(0, (n - 8) / 4));
+    labelFont.setPixelSize(fontPx);
+    p.setFont(labelFont);
+    QFontMetrics fm(labelFont);
+
+    int maxLabelW = 0;
+    for (const auto& pair : m_data)
+        maxLabelW = qMax(maxLabelW, fm.horizontalAdvance(pair.first));
+    const int halfMin    = qMin(width(), height()) / 2;
+    const int margin     = qMin(maxLabelW + 8, static_cast<int>(halfMin * 0.28));
+
+    const QPointF center(width() / 2.0, height() / 2.0);
+    const double  radius = halfMin - margin;
+    if (radius < 10) return;
+
+    const double angleStep = 2.0 * M_PI / n;
+
+    // ── Grid rings ────────────────────────────────────────────────────────
+    const int rings = 4;
+    for (int ring = rings; ring >= 1; --ring) {
+        const double r = radius * ring / double(rings);
         QPolygonF poly;
         for (int i = 0; i < n; ++i) {
-            const double angle = -M_PI / 2.0 + 2.0 * M_PI * i / n;
-            poly << QPointF(center.x() + r * qCos(angle),
-                            center.y() + r * qSin(angle));
+            const double a = -M_PI / 2.0 + i * angleStep;
+            poly << QPointF(center.x() + r * qCos(a), center.y() + r * qSin(a));
         }
-        p.setPen(QPen(QColor(t.border.name()), 1, Qt::DotLine));
+        QColor gc(t.border.name());
+        gc.setAlpha(ring == rings ? 90 : 50);
+        p.setPen(QPen(gc, 1, ring == rings ? Qt::SolidLine : Qt::DotLine));
+        p.setBrush(Qt::NoBrush);
         p.drawPolygon(poly);
     }
 
-    // ── Axis lines ────────────────────────────────────────────────────────
+    // ── Axis spokes ───────────────────────────────────────────────────────
     p.setPen(QPen(QColor(t.border.name()), 1));
     for (int i = 0; i < n; ++i) {
-        const double angle = -M_PI / 2.0 + 2.0 * M_PI * i / n;
-        p.drawLine(center,
-                   QPointF(center.x() + radius * qCos(angle),
-                            center.y() + radius * qSin(angle)));
+        const double a = -M_PI / 2.0 + i * angleStep;
+        p.drawLine(center, QPointF(center.x() + radius * qCos(a),
+                                   center.y() + radius * qSin(a)));
     }
 
     // ── Data polygon ──────────────────────────────────────────────────────
     QPolygonF dataPoly;
     for (int i = 0; i < n; ++i) {
-        const double angle = -M_PI / 2.0 + 2.0 * M_PI * i / n;
-        const double val   = qBound(0.0, m_data[i].second, 1.0);
-        dataPoly << QPointF(center.x() + radius * val * qCos(angle),
-                             center.y() + radius * val * qSin(angle));
+        const double a   = -M_PI / 2.0 + i * angleStep;
+        const double val = qBound(0.0, m_data[i].second, 1.0);
+        dataPoly << QPointF(center.x() + radius * val * qCos(a),
+                            center.y() + radius * val * qSin(a));
     }
-
-    QColor fillColor = QColor(t.accent.name());
-    fillColor.setAlpha(70);
-    p.setBrush(fillColor);
+    QColor fill(t.accent.name());
+    fill.setAlpha(65);
+    p.setBrush(fill);
     p.setPen(QPen(QColor(t.accent.name()), 2));
     p.drawPolygon(dataPoly);
 
-    // ── Data points ───────────────────────────────────────────────────────
+    // ── Dots ──────────────────────────────────────────────────────────────
     p.setBrush(QColor(t.accent.name()));
-    for (const QPointF& pt : dataPoly) {
-        p.drawEllipse(pt, 4.0, 4.0);
-    }
+    p.setPen(Qt::NoPen);
+    for (const QPointF& pt : dataPoly)
+        p.drawEllipse(pt, 3.5, 3.5);
 
     // ── Labels ────────────────────────────────────────────────────────────
-    p.setPen(QPen(QColor(t.textPrimary.name())));
-    QFont labelFont = p.font();
-    labelFont.setPointSize(8);
+    p.setPen(QColor(t.textPrimary.name()));
     p.setFont(labelFont);
 
+    const int boxW = qMin(maxLabelW + 6, margin * 2);
+    const int boxH = fm.height() + 4;
+
     for (int i = 0; i < n; ++i) {
-        const double angle = -M_PI / 2.0 + 2.0 * M_PI * i / n;
-        const double labelR = radius + 18.0;
-        const QPointF labelPos(center.x() + labelR * qCos(angle),
-                                center.y() + labelR * qSin(angle));
+        const double a      = -M_PI / 2.0 + i * angleStep;
+        // Place label centre at radius + 60% of margin along the spoke
+        const double labelR = radius + margin * 0.65;
+        const double lx     = center.x() + labelR * qCos(a);
+        const double ly     = center.y() + labelR * qSin(a);
 
-        // Abbreviate long names
-        QString label = m_data[i].first;
-        if (label.length() > 8) label = label.left(7) + "…";
+        const QString label = fm.elidedText(m_data[i].first, Qt::ElideRight, boxW);
 
-        const QRectF labelRect(labelPos.x() - 30, labelPos.y() - 10, 60, 20);
-        p.drawText(labelRect, Qt::AlignCenter, label);
+        Qt::AlignmentFlag hAlign;
+        if      (lx < center.x() - 4)  hAlign = Qt::AlignRight;
+        else if (lx > center.x() + 4)  hAlign = Qt::AlignLeft;
+        else                            hAlign = Qt::AlignHCenter;
+
+        const QRectF box(lx - boxW / 2.0, ly - boxH / 2.0, boxW, boxH);
+        p.drawText(box, hAlign | Qt::AlignVCenter, label);
     }
 }
 
@@ -288,8 +309,7 @@ void QuizResultsWidget::buildRadarChart(const QList<UserTopicStatDTO>& stats)
             data.append({s.topicTitle, s.masteryLevel});
         }
     }
-    // Limit to 8 axes maximum for readability
-    if (data.size() > 8) data = data.mid(0, 8);
+
     m_radarChart->setData(data);
     m_radarChart->setVisible(!data.isEmpty());
 }
