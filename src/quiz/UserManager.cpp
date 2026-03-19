@@ -164,7 +164,7 @@ QList<UserRecord> UserManager::allUsers() const
     QList<UserRecord> users;
     QSqlDatabase db = QSqlDatabase::database(QuizDatabase::CONNECTION_NAME);
     QSqlQuery q(db);
-    q.exec("SELECT id, username, display_name, avatar_color, is_admin, "
+    q.exec("SELECT id, username, display_name, avatar_color, avatar_path, is_admin, "
            "       created_at, last_login FROM users ORDER BY id");
     while (q.next()) {
         UserRecord r;
@@ -172,6 +172,7 @@ QList<UserRecord> UserManager::allUsers() const
         r.username    = q.value("username").toString();
         r.displayName = q.value("display_name").toString();
         r.avatarColor = q.value("avatar_color").toString();
+        r.avatarPath  = q.value("avatar_path").toString();
         r.isAdmin     = q.value("is_admin").toInt() == 1;
         r.createdAt   = q.value("created_at").toString();
         r.lastLogin   = q.value("last_login").toString();

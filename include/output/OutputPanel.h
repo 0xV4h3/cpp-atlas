@@ -37,10 +37,13 @@ public:
      * @brief Show problems tab
      */
     void showProblemsTab();
+
+private slots:
+    void applyTheme();
     
 private:
-    TerminalWidget* m_terminal;
-    ProblemsWidget* m_problems;
+    TerminalWidget* m_terminal = nullptr;
+    ProblemsWidget* m_problems = nullptr;
 };
 
 #endif // OUTPUTPANEL_H
