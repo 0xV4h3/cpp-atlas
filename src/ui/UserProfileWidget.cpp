@@ -108,15 +108,16 @@ void TopicScoreBar::paintEvent(QPaintEvent*)
     QPainter p(this);
     p.setRenderHint(QPainter::Antialiasing);
     const Theme& t    = ThemeManager::instance()->currentTheme();
-    const int labelW  = 100;
+    const int labelW  = 130;
     const int percentW = 38;
     const int barH    = 10;
     const int barY    = (height() - barH) / 2;
 
     p.setPen(QColor(t.textPrimary.name()));
     QFont f = p.font(); f.setPointSize(10); p.setFont(f);
-    p.drawText(QRect(0, 0, labelW, height()), Qt::AlignVCenter | Qt::AlignLeft,
-               m_topic.length() > 12 ? m_topic.left(11) + "\xe2\x80\xa6" : m_topic);
+    QFontMetrics fm(p.font());
+    const QString label = fm.elidedText(m_topic, Qt::ElideRight, labelW - 4);
+    p.drawText(QRect(0, 0, labelW, height()), Qt::AlignVCenter | Qt::AlignLeft, label);
 
     const int barX = labelW + 4;
     const int barW = width() - labelW - percentW - 8;
@@ -227,8 +228,8 @@ UserProfileWidget::UserProfileWidget(QWidget* parent)
     ringLayout->addWidget(overallLabel);
     m_progressRing->setParent(ringCol);
     ringLayout->addWidget(m_progressRing, 0, Qt::AlignCenter);
-    ringCol->setFixedWidth(160);
-    analyticsLayout->addWidget(ringCol);
+    ringCol->setFixedWidth(150);
+    analyticsLayout->addWidget(ringCol, 0);
 
     QWidget* radarCol = new QWidget(m_analyticsRow);
     radarCol->setObjectName("analyticsCard");
@@ -239,10 +240,10 @@ UserProfileWidget::UserProfileWidget(QWidget* parent)
     radarHeader->setAlignment(Qt::AlignCenter);
     radarLayout->addWidget(radarHeader);
     m_radarChart->setParent(radarCol);
-    m_radarChart->setMinimumSize(220, 220);
-    m_radarChart->setMaximumSize(280, 280);
+    m_radarChart->setMinimumSize(300, 300);
+    m_radarChart->setMaximumSize(500, 500);
     radarLayout->addWidget(m_radarChart, 0, Qt::AlignCenter);
-    analyticsLayout->addWidget(radarCol, 1);
+    analyticsLayout->addWidget(radarCol, 3);
 
     QWidget* barsCol = new QWidget(m_analyticsRow);
     barsCol->setObjectName("analyticsCard");
@@ -257,8 +258,8 @@ UserProfileWidget::UserProfileWidget(QWidget* parent)
     m_topicBarsLayout->setSpacing(6);
     barsOuterLayout->addWidget(m_topicBarsPanel, 1);
     barsOuterLayout->addStretch();
-    barsCol->setMinimumWidth(220);
-    analyticsLayout->addWidget(barsCol);
+    barsCol->setMinimumWidth(300);
+    analyticsLayout->addWidget(barsCol, 2);
 
     m_contentLayout->addWidget(m_analyticsRow);
 
@@ -372,7 +373,6 @@ void UserProfileWidget::buildAnalyticsRow(const QList<UserTopicStatDTO>& stats,
     for (const auto& s : stats) {
         if (s.attempts > 0)
             radarData.append({s.topicTitle, s.masteryLevel});
-        if (radarData.size() >= 8) break;
     }
     m_radarChart->setData(radarData);
 
@@ -388,7 +388,7 @@ void UserProfileWidget::buildAnalyticsRow(const QList<UserTopicStatDTO>& stats,
                   return a.masteryLevel > b.masteryLevel;
               });
 
-    for (int i = 0; i < qMin(8, sorted.size()); ++i) {
+    for (int i = 0; i < sorted.size(); ++i) {
         const auto& s = sorted[i];
         if (s.attempts == 0) continue;
         auto* bar = new TopicScoreBar(s.topicTitle, s.masteryLevel, m_topicBarsPanel);
