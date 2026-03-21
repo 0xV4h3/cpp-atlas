@@ -419,8 +419,8 @@ void MainWindow::setupMenus()
         bool visible = m_analysisPanel->isVisible();
         m_analysisPanel->setVisible(!visible);
         if (m_analysisPanel->isVisible()) {
-            m_mainSplitter->setSizes({m_mainSplitter->width() * 3 / 4,
-                                      m_mainSplitter->width() / 4});
+            m_mainSplitter->setSizes({m_mainSplitter->width() / 2,
+                                      m_mainSplitter->width() / 2});
         }
         updateTitlePosition();
     });
@@ -541,7 +541,7 @@ void MainWindow::setupDockWidgets()
         "QDockWidget::close-button {"
         "  subcontrol-position: top right;"
         "  subcontrol-origin: margin;"
-        "  width: 20px; height: 20px;"
+        "  width: 40px; height: 40px;"
         "  margin: 2px;"
         "}"
         );
