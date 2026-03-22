@@ -81,7 +81,6 @@ MainWindow::MainWindow(QWidget *parent)
     setupMenus();
     setupCustomTitleBar();
     setupToolbar();
-    setupDockWidgets();
     setupStatusBar();
     setupConnections();
     setupWelcomeScreen();
@@ -120,29 +119,45 @@ void MainWindow::setupUi()
     setWindowTitle("CppAtlas - C++ Learning IDE");
     resize(1200, 800);
 
-    m_editorTabs   = new EditorTabWidget(this);
+    m_editorTabs    = new EditorTabWidget(this);
     m_analysisPanel = new AnalysisPanel(this);
     m_analysisPanel->hide();
 
-    // Horizontal splitter: editor | analysis panel
+    // File tree
+    m_fileTree = new FileTreeWidget(this);
+    m_fileTree->setMinimumWidth(0);
+
+    // Inner horizontal splitter: editor | analysis panel
     m_mainSplitter = new QSplitter(Qt::Horizontal, this);
     m_mainSplitter->addWidget(m_editorTabs);
     m_mainSplitter->addWidget(m_analysisPanel);
     m_mainSplitter->setStretchFactor(0, 3);
     m_mainSplitter->setStretchFactor(1, 1);
 
-    // Output panel (standalone widget, not a dock)
-    m_outputPanel = new OutputPanel(this);
-    m_outputPanel->setMinimumHeight(80);
+    // Outer horizontal splitter: file tree | (editor + analysis)
+    m_horizSplitter = new QSplitter(Qt::Horizontal, this);
+    m_horizSplitter->addWidget(m_fileTree);
+    m_horizSplitter->addWidget(m_mainSplitter);
+    m_horizSplitter->setStretchFactor(0, 0);
+    m_horizSplitter->setStretchFactor(1, 1);
+    m_horizSplitter->setCollapsible(0, true);
+    m_horizSplitter->setCollapsible(1, true);
+    m_horizSplitter->setSizes({200, 1000});
+    m_horizSplitter->setHandleWidth(4);
 
-    // Vertical splitter: (editor+analysis) on top | output on bottom
+    // Output panel
+    m_outputPanel = new OutputPanel(this);
+    m_outputPanel->setMinimumHeight(0);
+
+    // Vertical splitter: (file tree + editors) | output panel
     m_vertSplitter = new QSplitter(Qt::Vertical, this);
-    m_vertSplitter->addWidget(m_mainSplitter);
+    m_vertSplitter->addWidget(m_horizSplitter);
     m_vertSplitter->addWidget(m_outputPanel);
     m_vertSplitter->setStretchFactor(0, 5);
     m_vertSplitter->setStretchFactor(1, 1);
-    // Allow output to collapse to min height
+    m_vertSplitter->setCollapsible(0, true);
     m_vertSplitter->setCollapsible(1, true);
+    m_vertSplitter->setHandleWidth(6);
 
     // Quiz mode window
     m_quizModeWindow = new QuizModeWindow(this);
@@ -355,13 +370,15 @@ void MainWindow::setupMenus()
     // View menu
     m_viewMenu = menuBar()->addMenu("&View");
 
-    m_toggleFileTreeAction = m_viewMenu->addAction("Toggle &File Tree");
+    m_toggleFileTreeAction = m_viewMenu->addAction("Hide &File Tree");
+    m_toggleFileTreeAction->setShortcut(QKeySequence(Qt::CTRL | Qt::Key_BracketLeft));
     connect(m_toggleFileTreeAction, &QAction::triggered, this, &MainWindow::onViewToggleFileTree);
 
-    m_toggleOutputAction = m_viewMenu->addAction("Toggle &Output Panel");
+    m_toggleOutputAction = m_viewMenu->addAction("Hide &Output Panel");
+    m_toggleOutputAction->setShortcut(QKeySequence(Qt::CTRL | Qt::Key_BracketRight));
     connect(m_toggleOutputAction, &QAction::triggered, this, &MainWindow::onViewToggleOutputPanel);
 
-    // File Tree side toggle
+    // File Tree side toggle (now moves widget inside splitter)
     m_fileTreeSideAction = m_viewMenu->addAction("File Tree: Toggle Left/Right");
     connect(m_fileTreeSideAction, &QAction::triggered, this, &MainWindow::onViewToggleFileTreeSide);
 
@@ -518,33 +535,6 @@ void MainWindow::setupToolbar()
             this, &MainWindow::onCompilerChanged);
     connect(m_standardCombo, QOverload<int>::of(&QComboBox::currentIndexChanged),
             this, &MainWindow::onStandardChanged);
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// setupDockWidgets — ONLY file tree dock remains; output is in vertSplitter
-// Remove float (undock) button; keep only close button, enlarge it
-// ─────────────────────────────────────────────────────────────────────────────
-void MainWindow::setupDockWidgets()
-{
-    m_fileTreeDock = new QDockWidget("File Tree", this);
-    m_fileTreeDock->setObjectName("fileTreeDock");
-
-    // Remove float button, keep only close button
-    m_fileTreeDock->setFeatures(QDockWidget::DockWidgetClosable);
-
-    m_fileTree = new FileTreeWidget(m_fileTreeDock);
-    m_fileTreeDock->setWidget(m_fileTree);
-    addDockWidget(Qt::LeftDockWidgetArea, m_fileTreeDock);
-
-    // Apply enlarged close button via stylesheet
-    m_fileTreeDock->setStyleSheet(
-        "QDockWidget::close-button {"
-        "  subcontrol-position: top right;"
-        "  subcontrol-origin: margin;"
-        "  width: 40px; height: 40px;"
-        "  margin: 2px;"
-        "}"
-        );
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -712,8 +702,10 @@ void MainWindow::setupWelcomeScreen()
 void MainWindow::showIDE()
 {
     m_modeStack->setCurrentIndex(0);
-    m_fileTreeDock->show();
-    // Output panel is always visible in IDE (in vertSplitter)
+    if (m_horizSplitter->sizes().at(0) == 0 && m_lastFileTreeWidth > 0) {
+        const int total = m_horizSplitter->width();
+        m_horizSplitter->setSizes({m_lastFileTreeWidth, total - m_lastFileTreeWidth});
+    }
     m_outputPanel->show();
     statusBar()->setVisible(true);
     updateMenuState(false);
@@ -727,7 +719,7 @@ void MainWindow::showWelcomeScreen()
     }
 
     m_modeStack->setCurrentIndex(1);
-    m_fileTreeDock->hide();
+    { const int w = m_horizSplitter->sizes().at(0); if (w > 0) m_lastFileTreeWidth = w; }
     m_outputPanel->hide();
     statusBar()->setVisible(false);
 
@@ -752,7 +744,7 @@ void MainWindow::onQuizModeExit()        { hideQuizModeWindow(); showWelcomeScre
 void MainWindow::showQuizModeWindow()
 {
     m_modeStack->setCurrentIndex(2);
-    m_fileTreeDock->hide();
+    { const int w = m_horizSplitter->sizes().at(0); if (w > 0) m_lastFileTreeWidth = w; }
     m_outputPanel->hide();
     statusBar()->setVisible(false);
     updateMenuState(true);
@@ -767,10 +759,15 @@ void MainWindow::hideQuizModeWindow() { showIDE(); }
 void MainWindow::onViewToggleFileTreeSide()
 {
     m_fileTreeOnLeft = !m_fileTreeOnLeft;
-    removeDockWidget(m_fileTreeDock);
-    addDockWidget(m_fileTreeOnLeft ? Qt::LeftDockWidgetArea : Qt::RightDockWidgetArea,
-                  m_fileTreeDock);
-    m_fileTreeDock->show();
+    const int ftW = m_horizSplitter->sizes().at(m_fileTreeOnLeft ? 1 : 0);
+    const int edW = m_horizSplitter->sizes().at(m_fileTreeOnLeft ? 0 : 1);
+    // Move file tree to the other side
+    m_horizSplitter->insertWidget(m_fileTreeOnLeft ? 0 : 1, m_fileTree);
+    m_horizSplitter->setCollapsible(m_fileTreeOnLeft ? 0 : 1, true);
+    m_horizSplitter->setCollapsible(m_fileTreeOnLeft ? 1 : 0, false);
+    m_horizSplitter->setSizes(m_fileTreeOnLeft
+                                  ? QList<int>{ftW > 0 ? ftW : 200, edW}
+                                  : QList<int>{edW, ftW > 0 ? ftW : 200});
     m_fileTreeSideAction->setText(m_fileTreeOnLeft
                                       ? "File Tree: Toggle Left/Right  (now Left)"
                                       : "File Tree: Toggle Left/Right  (now Right)");
@@ -795,18 +792,36 @@ void MainWindow::onToggleOutputFullHeight()
 
 void MainWindow::onViewToggleFileTree()
 {
-    m_fileTreeDock->setVisible(!m_fileTreeDock->isVisible());
+    const int ftW = m_horizSplitter->sizes().at(0);
+    if (ftW > 0) {
+        m_lastFileTreeWidth = ftW;
+        m_horizSplitter->setSizes({0, m_horizSplitter->width()});
+        if (m_toggleFileTreeAction)
+            m_toggleFileTreeAction->setText("Show &File Tree");
+    } else {
+        const int restoreW = (m_lastFileTreeWidth > 40) ? m_lastFileTreeWidth : 200;
+        const int total    = m_horizSplitter->width();
+        m_horizSplitter->setSizes({restoreW, total - restoreW});
+        if (m_toggleFileTreeAction)
+            m_toggleFileTreeAction->setText("Hide &File Tree");
+    }
 }
 
 void MainWindow::onViewToggleOutputPanel()
 {
-    m_outputPanel->setVisible(!m_outputPanel->isVisible());
-    // When re-showing, restore reasonable sizes
-    if (m_outputPanel->isVisible()) {
-        int total = m_vertSplitter->height();
-        if (m_vertSplitter->sizes().at(1) < 40) {
-            m_vertSplitter->setSizes({total * 3 / 4, total / 4});
-        }
+    const int total       = m_vertSplitter->height();
+    const int currentOutH = m_vertSplitter->sizes().at(1);
+
+    if (currentOutH > 0) {
+        m_lastOutputHeight = currentOutH;
+        m_vertSplitter->setSizes({total, 0});
+        if (m_toggleOutputAction)
+            m_toggleOutputAction->setText("Show &Output Panel");
+    } else {
+        const int restoreH = (m_lastOutputHeight > 40) ? m_lastOutputHeight : total / 4;
+        m_vertSplitter->setSizes({total - restoreH, restoreH});
+        if (m_toggleOutputAction)
+            m_toggleOutputAction->setText("Hide &Output Panel");
     }
 }
 

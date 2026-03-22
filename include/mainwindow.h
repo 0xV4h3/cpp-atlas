@@ -127,7 +127,6 @@ private:
     void setupCustomTitleBar();
     void setupMenus();
     void setupToolbar();
-    void setupDockWidgets();
     void setupStatusBar();
     void setupConnections();
     void setupWelcomeScreen();
@@ -183,8 +182,8 @@ private:
     WelcomeScreen*    m_welcomeScreen   = nullptr;
     QuizModeWindow*   m_quizModeWindow  = nullptr;
 
-    // Dock widgets
-    QDockWidget*      m_fileTreeDock    = nullptr;
+    // File tree
+    QSplitter*        m_horizSplitter   = nullptr;
 
     // Toolbar
     QToolBar*   m_mainToolbar    = nullptr;
@@ -224,6 +223,8 @@ private:
     QPoint        m_dragPosition;
     bool          m_fileTreeOnLeft   = true;
     bool          m_outputFullHeight = false;
+    int           m_lastOutputHeight  = 0;
+    int           m_lastFileTreeWidth = 200;
     QPointer<CodeEditor> m_previousEditor;
     bool          m_startupAdminRequested = false;
 
