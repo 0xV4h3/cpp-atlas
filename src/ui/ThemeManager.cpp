@@ -93,6 +93,18 @@ QString ThemeManager::generateStylesheet() const {
     qss += QString("QToolButton:hover { background-color: %1; }\n").arg(theme.accent.name());
     qss += QString("QToolButton:pressed { background-color: %1; }\n").arg(theme.accent.darker(120).name());
 
+    // ── QToolButton menu-indicator arrow ──────────────────────────────────
+    qss += QString(
+               "QToolButton[popupMode=\"1\"] { padding-right: 18px; }"
+               "QToolButton::menu-indicator {"
+               "  subcontrol-origin: padding;"
+               "  subcontrol-position: right center;"
+               "  right: 3px; width: 8px; height: 8px;"
+               "  color: %1;"
+               "}"
+               "QToolButton::menu-button { width: 14px; border: none; }"
+               ).arg(theme.textPrimary.name());
+
     // ── QTabWidget / QTabBar ───────────────────────────────────────────────
     qss += QString("QTabWidget::pane { border: none; background-color: %1; }\n").arg(theme.windowBackground.name());
     qss += QString("QTabBar::tab { background-color: %1; color: %2; padding: 8px 16px; border: 1px solid %3; border-bottom: none; }\n")

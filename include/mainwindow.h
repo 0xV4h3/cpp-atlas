@@ -92,6 +92,8 @@ private slots:
     void onViewToggleOutputPanel();
     void onViewFullscreen();
     void onViewToggleFileTreeSide();
+    void onViewToggleEditor();
+    void onViewToggleToolbar();
 
     // Tools / Settings
     void onOpenSettings();
@@ -214,6 +216,8 @@ private:
     QAction*  m_closeProjectAction     = nullptr;
     QAction*  m_fileTreeSideAction     = nullptr;
     QAction*  m_outputFullHeightAction = nullptr;
+    QAction*  m_toggleEditorAction     = nullptr;
+    QAction*  m_toggleToolbarAction    = nullptr;
 
     // State
     FileManager*  m_fileManager      = nullptr;
@@ -225,6 +229,7 @@ private:
     bool          m_outputFullHeight = false;
     int           m_lastOutputHeight  = 0;
     int           m_lastFileTreeWidth = 200;
+    int           m_lastEditorWidth   = 0;
     QPointer<CodeEditor> m_previousEditor;
     bool          m_startupAdminRequested = false;
 

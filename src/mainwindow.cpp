@@ -387,6 +387,16 @@ void MainWindow::setupMenus()
     m_outputFullHeightAction->setCheckable(true);
     connect(m_outputFullHeightAction, &QAction::toggled, this, &MainWindow::onToggleOutputFullHeight);
 
+    // Editor area toggle
+    m_toggleEditorAction = m_viewMenu->addAction("Hide &Editor");
+    m_toggleEditorAction->setShortcut(QKeySequence(Qt::CTRL | Qt::SHIFT | Qt::Key_E));
+    connect(m_toggleEditorAction, &QAction::triggered, this, &MainWindow::onViewToggleEditor);
+
+    // Main Toolbar toggle
+    m_toggleToolbarAction = m_viewMenu->addAction("Hide Main &Toolbar");
+    m_toggleToolbarAction->setShortcut(QKeySequence(Qt::CTRL | Qt::SHIFT | Qt::Key_T));
+    connect(m_toggleToolbarAction, &QAction::triggered, this, &MainWindow::onViewToggleToolbar);
+
     m_viewMenu->addSeparator();
 
     // Theme submenu
@@ -535,6 +545,11 @@ void MainWindow::setupToolbar()
             this, &MainWindow::onCompilerChanged);
     connect(m_standardCombo, QOverload<int>::of(&QComboBox::currentIndexChanged),
             this, &MainWindow::onStandardChanged);
+
+    connect(m_mainToolbar, &QToolBar::visibilityChanged, this, [this](bool visible) {
+        if (m_toggleToolbarAction)
+            m_toggleToolbarAction->setText(visible ? "Hide Main &Toolbar" : "Show Main &Toolbar");
+    });
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -829,6 +844,38 @@ void MainWindow::onViewFullscreen()
 {
     if (isFullScreen()) showNormal();
     else                showFullScreen();
+}
+
+void MainWindow::onViewToggleEditor()
+{
+    const int total  = m_mainSplitter->width();
+    const int edW    = m_mainSplitter->sizes().at(0);
+
+    if (edW > 20) {
+        m_lastEditorWidth = edW;
+        const int anaW = m_mainSplitter->sizes().at(1);
+        m_mainSplitter->setSizes({0, anaW > 0 ? total : 0});
+        if (m_toggleEditorAction)
+            m_toggleEditorAction->setText("Show &Editor");
+    } else {
+        const int restoreW = (m_lastEditorWidth > 100) ? m_lastEditorWidth : total * 3 / 4;
+        const int anaW     = m_mainSplitter->sizes().at(1);
+        if (anaW > 0) {
+            m_mainSplitter->setSizes({restoreW, qMax(1, total - restoreW)});
+        } else {
+            m_mainSplitter->setSizes({total, 0});
+        }
+        if (m_toggleEditorAction)
+            m_toggleEditorAction->setText("Hide &Editor");
+    }
+}
+
+void MainWindow::onViewToggleToolbar()
+{
+    const bool visible = m_mainToolbar->isVisible();
+    m_mainToolbar->setVisible(!visible);
+    if (m_toggleToolbarAction)
+        m_toggleToolbarAction->setText(visible ? "Show Main &Toolbar" : "Hide Main &Toolbar");
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
