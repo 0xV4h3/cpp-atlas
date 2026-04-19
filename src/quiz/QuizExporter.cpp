@@ -1,4 +1,5 @@
 #include "quiz/QuizExporter.h"
+#include "quiz/ExportCrypto.h"
 
 #include <QFile>
 #include <QJsonDocument>
@@ -7,10 +8,14 @@
 #include <QDateTime>
 #include <QDebug>
 
+// ─────────────────────────────────────────────────────────────────────────────
+// Export
+// ─────────────────────────────────────────────────────────────────────────────
+
 bool QuizExporter::exportToFile(const QList<QuestionDTO>& questions,
-                                 const QString& title,
-                                 const QString& description,
-                                 const QString& filePath)
+                                const QString& title,
+                                const QString& description,
+                                const QString& filePath)
 {
     if (questions.isEmpty()) {
         qWarning() << "[QuizExporter] exportToFile: question list is empty";
@@ -23,6 +28,9 @@ bool QuizExporter::exportToFile(const QList<QuestionDTO>& questions,
     root["description"]     = description;
     root["exported_at"]     = QDateTime::currentDateTimeUtc().toString(Qt::ISODate);
     root["question_count"]  = questions.size();
+    // Mark that answers in this file are encrypted so importFromFile knows
+    // to decrypt them.
+    root["answers_encrypted"] = true;
 
     QJsonArray questionsArr;
     for (const auto& q : questions)
@@ -42,12 +50,16 @@ bool QuizExporter::exportToFile(const QList<QuestionDTO>& questions,
     }
 
     qDebug() << "[QuizExporter] Exported" << questions.size()
-             << "questions to" << filePath;
+             << "questions to" << filePath << "(answers encrypted)";
     return true;
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+// Import
+// ─────────────────────────────────────────────────────────────────────────────
+
 QList<QuestionDTO> QuizExporter::importFromFile(const QString& filePath,
-                                                  QString* error)
+                                                QString* error)
 {
     auto fail = [&](const QString& msg) -> QList<QuestionDTO> {
         qWarning() << "[QuizExporter]" << msg;
@@ -69,7 +81,6 @@ QList<QuestionDTO> QuizExporter::importFromFile(const QString& filePath,
 
     const QJsonObject root = doc.object();
 
-    // Version check
     const int version = root.value("cppatlas_export").toInt(0);
     if (version < 1 || version > FORMAT_VERSION)
         return fail(QString("Unsupported export version: %1").arg(version));
@@ -78,32 +89,42 @@ QList<QuestionDTO> QuizExporter::importFromFile(const QString& filePath,
     if (questionsArr.isEmpty())
         return fail("No questions found in file");
 
+    // Detect whether this file has encrypted answers (v1 files without the
+    // flag are treated as plaintext for backwards compatibility).
+    const bool answersEncrypted = root.value("answers_encrypted").toBool(false);
+
     QList<QuestionDTO> result;
     result.reserve(questionsArr.size());
     for (const auto& val : questionsArr) {
         if (!val.isObject()) continue;
-        result << questionFromJson(val.toObject());
+        result << questionFromJson(val.toObject(), answersEncrypted);
     }
 
     if (error) error->clear();
     qDebug() << "[QuizExporter] Imported" << result.size()
-             << "questions from" << filePath;
+             << "questions from" << filePath
+             << (answersEncrypted ? "(answers decrypted)" : "(plaintext)");
     return result;
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Serialisation helpers
+// ─────────────────────────────────────────────────────────────────────────────
 
 QJsonObject QuizExporter::questionToJson(const QuestionDTO& q)
 {
     QJsonObject obj;
-    obj["id"]          = q.id;        // original DB id for reference; -1 for transient
-    obj["type"]        = q.type;
-    obj["content"]     = q.content;
-    obj["difficulty"]  = q.difficulty;
-    obj["points"]      = q.points;
+    obj["id"]         = q.id;
+    obj["type"]       = q.type;
+    obj["content"]    = q.content;       // question text — NOT secret, keep plain
+    obj["difficulty"] = q.difficulty;
+    obj["points"]     = q.points;
 
-    if (!q.codeSnippet.isEmpty())  obj["code_snippet"]  = q.codeSnippet;
-    if (!q.explanation.isEmpty())  obj["explanation"]   = q.explanation;
-    if (!q.hint.isEmpty())         obj["hint"]          = q.hint;
-    if (!q.refUrl.isEmpty())       obj["ref_url"]       = q.refUrl;
+    if (!q.codeSnippet.isEmpty()) obj["code_snippet"] = q.codeSnippet;
+    // explanation — shown to students after answering, keep plain
+    if (!q.explanation.isEmpty()) obj["explanation"]  = q.explanation;
+    if (!q.hint.isEmpty())        obj["hint"]         = q.hint;
+    if (!q.refUrl.isEmpty())      obj["ref_url"]      = q.refUrl;
 
     if (!q.tags.isEmpty()) {
         QJsonArray tagsArr;
@@ -111,14 +132,35 @@ QJsonObject QuizExporter::questionToJson(const QuestionDTO& q)
         obj["tags"] = tagsArr;
     }
 
+    // ── Encrypt answer-bearing data ──────────────────────────────────────────
+    // For MCQ / multi_select / true_false / code_output: the is_correct flag
+    // on each option is the answer.  We encrypt it so a student cannot open
+    // the JSON and grep for "true".
+    //
+    // For fill_blank: accepted answers are stored separately in
+    // fill_blank_answers; options are not used.  The accepted answers list
+    // comes from QuestionDTO::acceptedAnswers.
     obj["options"] = optionsToJson(q.options);
+
+    if (!q.acceptedAnswers.isEmpty()) {
+        // Serialise the accepted answers list as a JSON array string, then
+        // encrypt the whole thing as a single blob.
+        QJsonArray ansArr;
+        for (const QString& a : q.acceptedAnswers) ansArr.append(a);
+        const QString plainJson =
+            QJsonDocument(ansArr).toJson(QJsonDocument::Compact);
+        obj["accepted_answers_enc"] = ExportCrypto::encrypt(plainJson);
+        // Do NOT write a plain "accepted_answers" key.
+    }
+
     return obj;
 }
 
-QuestionDTO QuizExporter::questionFromJson(const QJsonObject& obj)
+QuestionDTO QuizExporter::questionFromJson(const QJsonObject& obj,
+                                           bool answersEncrypted)
 {
     QuestionDTO q;
-    q.id          = obj.value("id").toInt(-1);  // -1 = transient (not from DB)
+    q.id          = obj.value("id").toInt(-1);
     q.type        = obj.value("type").toString("mcq");
     q.content     = obj.value("content").toString();
     q.difficulty  = obj.value("difficulty").toInt(1);
@@ -132,24 +174,57 @@ QuestionDTO QuizExporter::questionFromJson(const QJsonObject& obj)
     for (const auto& t : tagsArr)
         q.tags << t.toString();
 
-    q.options = optionsFromJson(obj.value("options").toArray());
+    q.options = optionsFromJson(obj.value("options").toArray(), answersEncrypted);
+
+    // Decrypt accepted answers (fill_blank)
+    if (obj.contains("accepted_answers_enc")) {
+        bool ok = false;
+        const QString decrypted =
+            ExportCrypto::decrypt(obj.value("accepted_answers_enc").toString(), &ok);
+        if (ok) {
+            const QJsonArray ansArr =
+                QJsonDocument::fromJson(decrypted.toUtf8()).array();
+            for (const auto& a : ansArr)
+                q.acceptedAnswers << a.toString();
+        } else {
+            qWarning() << "[QuizExporter] Failed to decrypt accepted_answers for question"
+                       << q.id;
+        }
+    } else if (obj.contains("accepted_answers")) {
+        // Backwards compat: plaintext accepted_answers from old exports
+        const QJsonArray ansArr = obj.value("accepted_answers").toArray();
+        for (const auto& a : ansArr)
+            q.acceptedAnswers << a.toString();
+    }
+
     return q;
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Options serialisation
+// ─────────────────────────────────────────────────────────────────────────────
 
 QJsonArray QuizExporter::optionsToJson(const QList<OptionDTO>& options)
 {
     QJsonArray arr;
     for (const auto& opt : options) {
         QJsonObject o;
-        o["content"]    = opt.content;
-        o["is_correct"] = opt.isCorrect;
+        o["content"] = opt.content;
         if (!opt.codeSnippet.isEmpty()) o["code_snippet"] = opt.codeSnippet;
+
+        // Encrypt the is_correct flag: we serialise it as "1" or "0" and
+        // encrypt that tiny string.  A student cannot grep for true/false.
+        const QString correctStr = opt.isCorrect ? QStringLiteral("1")
+                                                 : QStringLiteral("0");
+        o["c"] = ExportCrypto::encrypt(correctStr);  // short key name also
+        // avoids grep for "correct"
         arr.append(o);
     }
     return arr;
 }
 
-QList<OptionDTO> QuizExporter::optionsFromJson(const QJsonArray& arr)
+QList<OptionDTO> QuizExporter::optionsFromJson(const QJsonArray& arr,
+                                               bool answersEncrypted)
 {
     QList<OptionDTO> opts;
     int order = 0;
@@ -158,13 +233,31 @@ QList<OptionDTO> QuizExporter::optionsFromJson(const QJsonArray& arr)
         const QJsonObject o = val.toObject();
         OptionDTO opt;
         opt.content     = o.value("content").toString();
-        opt.isCorrect   = o.value("is_correct").toBool(false);
         opt.codeSnippet = o.value("code_snippet").toString();
         opt.orderIndex  = order++;
+
+        if (answersEncrypted && o.contains("c")) {
+            // Decrypt the correctness flag
+            bool ok = false;
+            const QString plain =
+                ExportCrypto::decrypt(o.value("c").toString(), &ok);
+            opt.isCorrect = ok && (plain == QStringLiteral("1"));
+        } else if (o.contains("is_correct")) {
+            // Backwards compat: plaintext from old exports or non-encrypted files
+            opt.isCorrect = o.value("is_correct").toBool(false);
+        } else {
+            opt.isCorrect = false;
+        }
+
         opts << opt;
     }
     return opts;
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Utility
+// ─────────────────────────────────────────────────────────────────────────────
+
 QString QuizExporter::ensureJsonExtension(const QString& filePath)
 {
     if (filePath.endsWith(".json", Qt::CaseInsensitive))
@@ -173,8 +266,8 @@ QString QuizExporter::ensureJsonExtension(const QString& filePath)
 }
 
 bool QuizExporter::readHeader(const QString& filePath,
-                               QString& outTitle,
-                               QString& outDescription)
+                              QString& outTitle,
+                              QString& outDescription)
 {
     QFile file(filePath);
     if (!file.open(QIODevice::ReadOnly | QIODevice::Text))
