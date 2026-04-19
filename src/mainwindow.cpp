@@ -16,8 +16,11 @@
 #include "ui/QuizModeWindow.h"
 #include "ui/SettingsDialog.h"
 #include "quiz/UserManager.h"
-#include "quiz/AdminAccessController.h"
-#include "ui/QuizAdminPanel.h"
+#include "core/DevBuildGuard.h"
+#ifdef CPPATLAS_DEV_BUILD
+#  include "quiz/AdminAccessController.h"
+#  include "ui/QuizAdminPanel.h"
+#endif
 #include "core/AppSettings.h"
 #include "core/FileManager.h"
 #include "core/Project.h"
@@ -102,8 +105,12 @@ MainWindow::MainWindow(QWidget *parent)
         onSettingsChanged();
     }
 
-    m_adminShortcut = new QShortcut(QKeySequence(Qt::CTRL | Qt::ALT | Qt::SHIFT | Qt::Key_M), this);
-    connect(m_adminShortcut, &QShortcut::activated, this, &MainWindow::showQuizAdminPanel);
+#ifdef CPPATLAS_DEV_BUILD
+    m_adminShortcut = new QShortcut(
+        QKeySequence(Qt::CTRL | Qt::ALT | Qt::SHIFT | Qt::Key_M), this);
+    connect(m_adminShortcut, &QShortcut::activated,
+            this, &MainWindow::showQuizAdminPanel);
+#endif
 }
 
 MainWindow::~MainWindow()
@@ -1672,45 +1679,55 @@ void MainWindow::setStartupAdminRequested(bool enabled) { m_startupAdminRequeste
 
 void MainWindow::tryOpenAdminPanelFromStartupRequest()
 {
+#ifdef CPPATLAS_DEV_BUILD
     if (m_startupAdminRequested) showQuizAdminPanel();
+#endif
 }
 
 void MainWindow::showQuizAdminPanel()
 {
-#ifdef QT_DEBUG
-    const bool requireReleasePassword = false;
+#ifndef CPPATLAS_DEV_BUILD
+    // Belt-and-suspenders: should be unreachable in Release because neither
+    // the shortcut nor the startup flag are active there.
+    return;
 #else
-    const bool requireReleasePassword = true;
-#endif
+    // In dev builds we skip the second-factor release password —
+    // the admin account login is the only gate needed during development.
     const AdminAccessResult result =
-        AdminAccessController::instance().verifyAccess(this, requireReleasePassword);
+        AdminAccessController::instance().verifyAccess(this, /*requireReleasePassword=*/false);
 
     switch (result) {
     case AdminAccessResult::Granted:
         if (!m_adminPanel) {
             m_adminPanel = new QuizAdminPanel(this);
             m_adminPanel->setAttribute(Qt::WA_DeleteOnClose);
-            connect(m_adminPanel, &QObject::destroyed, this, [this]() { m_adminPanel = nullptr; });
+            connect(m_adminPanel, &QObject::destroyed,
+                    this, [this]() { m_adminPanel = nullptr; });
         }
         m_adminPanel->show();
         m_adminPanel->raise();
         m_adminPanel->activateWindow();
         break;
+
     case AdminAccessResult::NotLoggedIn:
         QMessageBox::warning(this, tr("Admin Access"),
                              tr("You must be logged in to access the admin panel."));
         break;
+
     case AdminAccessResult::NotAdmin:
         QMessageBox::warning(this, tr("Admin Access"),
                              tr("Your account does not have administrator privileges."));
         break;
+
     case AdminAccessResult::PasswordRejected:
         QMessageBox::warning(this, tr("Admin Access"),
                              tr("Admin password verification failed."));
         break;
+
     case AdminAccessResult::Error:
         QMessageBox::critical(this, tr("Admin Access"),
                               tr("Admin authentication is not configured."));
         break;
     }
+#endif // CPPATLAS_DEV_BUILD
 }

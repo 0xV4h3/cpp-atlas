@@ -74,6 +74,7 @@ set(QUIZ_SOURCES
     ${CMAKE_CURRENT_SOURCE_DIR}/quiz/AnswerEvaluationService.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/quiz/ProgressAnalyzer.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/quiz/QuizExporter.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/quiz/ExportCrypto.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/quiz/QuizContentExporter.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/quiz/AdaptiveSystem.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/quiz/AdminContentService.cpp

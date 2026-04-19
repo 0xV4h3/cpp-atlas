@@ -8,12 +8,33 @@ set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTOUIC ON)
 set(CMAKE_AUTORCC ON)
 
+# ============================================================
+# Developer-only build flag
+# Enabled automatically for Debug; must be explicitly set for Release.
+# Exposes: admin panel, quiz_admin CLI, admin user creation.
+# In non-dev builds ALL admin UI / CLI / API is stripped at compile time.
+# ============================================================
+option(CPPATLAS_DEV_BUILD
+    "Enable developer-only admin tools (admin panel, quiz_admin CLI). Auto-ON for Debug."
+    OFF)
+
+if(CMAKE_BUILD_TYPE STREQUAL "Debug" OR CMAKE_BUILD_TYPE STREQUAL "RelWithDebInfo")
+    set(CPPATLAS_DEV_BUILD ON CACHE BOOL "" FORCE)
+    message(STATUS "Dev build detected — admin tools ENABLED")
+endif()
+
+if(CPPATLAS_DEV_BUILD)
+    message(STATUS "CPPATLAS_DEV_BUILD=ON  → admin panel and quiz_admin CLI included")
+    add_compile_definitions(CPPATLAS_DEV_BUILD)
+else()
+    message(STATUS "CPPATLAS_DEV_BUILD=OFF → admin panel and quiz_admin CLI EXCLUDED")
+endif()
+
 # Try Qt6 first, fall back to Qt5 if not available
 find_package(Qt6 COMPONENTS Widgets Test Sql QUIET)
 if(Qt6_FOUND)
     message(STATUS "Using Qt6")
     set(QT_VERSION_MAJOR 6)
-    # QScintilla for Qt6
     find_path(QSCINTILLA_INCLUDE_DIR Qsci/qsciscintilla.h
         PATHS
             /usr/include/qt6
@@ -22,11 +43,9 @@ if(Qt6_FOUND)
             ${Qt6Widgets_INCLUDE_DIRS}
         PATH_SUFFIXES Qsci
     )
-
     if(NOT QSCINTILLA_INCLUDE_DIR)
         find_path(QSCINTILLA_INCLUDE_DIR Qsci/qsciscintilla.h)
     endif()
-
     find_library(QSCINTILLA_LIBRARY
         NAMES qscintilla2_qt6 qscintilla2-qt6 libqscintilla2_qt6
         PATHS
@@ -39,7 +58,6 @@ else()
     message(STATUS "Qt6 not found, falling back to Qt5")
     find_package(Qt5 REQUIRED COMPONENTS Widgets Test Sql)
     set(QT_VERSION_MAJOR 5)
-    # QScintilla for Qt5
     find_path(QSCINTILLA_INCLUDE_DIR Qsci/qsciscintilla.h
         PATHS
             /usr/include/x86_64-linux-gnu/qt5
@@ -48,7 +66,6 @@ else()
             /usr/include
             /usr/local/include
     )
-
     find_library(QSCINTILLA_LIBRARY
         NAMES qscintilla2_qt5 qscintilla2-qt5
         PATHS
@@ -89,14 +106,11 @@ To fix: sudo apt install fonts-noto-color-emoji
     endif()
 endif()
 
-# Export for subdirectories
 set(QSCINTILLA_INCLUDE_DIR ${QSCINTILLA_INCLUDE_DIR} CACHE PATH "QScintilla include directory")
 set(QSCINTILLA_LIBRARY ${QSCINTILLA_LIBRARY} CACHE FILEPATH "QScintilla library")
 
 # ============================================================
 # Google Benchmark (FetchContent)
-# Used as a compile-time library for user benchmark code.
-# NOT linked into the main CppAtlas binary directly.
 # ============================================================
 include(FetchContent)
 
@@ -122,8 +136,7 @@ set(GOOGLE_BENCHMARK_LIBRARY
 message(STATUS "Google Benchmark source: ${googlebenchmark_SOURCE_DIR}")
 
 # ============================================================
-# CppInsights — prebuilt binary detection
-# Building from source requires LLVM — impractical here.
+# CppInsights
 # ============================================================
 find_program(CPPINSIGHTS_EXECUTABLE
     NAMES insights insights.exe
@@ -132,7 +145,7 @@ find_program(CPPINSIGHTS_EXECUTABLE
         /usr/local/bin
         /usr/bin
         "$ENV{HOME}/.local/bin"
-    DOC "Path to cppinsights binary (https://github.com/andreasfertig/cppinsights)"
+    DOC "Path to cppinsights binary"
 )
 
 if(CPPINSIGHTS_EXECUTABLE)
@@ -142,8 +155,7 @@ else()
 endif()
 
 # ============================================================
-# Qt Charts — optional, for BenchmarkChartWidget
-# Falls back to table-only view if unavailable.
+# Qt Charts — optional
 # ============================================================
 if(Qt6_FOUND)
     find_package(Qt6 COMPONENTS Charts QUIET)
@@ -167,5 +179,10 @@ endif()
 
 add_subdirectory(src)
 enable_testing()
-add_subdirectory(tools/quiz_admin)
+
+# quiz_admin CLI — dev builds only
+if(CPPATLAS_DEV_BUILD)
+    add_subdirectory(tools/quiz_admin)
+endif()
+
 add_subdirectory(tests)
